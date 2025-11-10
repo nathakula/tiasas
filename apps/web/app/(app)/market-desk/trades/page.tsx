@@ -8,5 +8,16 @@ export default async function TradesPage() {
   const orgId = await getActiveOrgId();
   if (!orgId) return <div>No active org.</div>;
   const trades = await prisma.trade.findMany({ where: { orgId }, orderBy: { date: "desc" }, take: 200 });
-  return <TradesClient initialTrades={trades} />;
+  const formatted = trades.map((t: any) => ({
+    id: t.id,
+    date: t.date.toISOString(),
+    symbol: t.symbol,
+    side: String(t.side),
+    qty: t.qty?.toString?.() ?? String(t.qty),
+    price: t.price?.toString?.() ?? String(t.price),
+    fees: t.fees?.toString?.() ?? String(t.fees),
+    strategyTag: t.strategyTag,
+    notes: t.notes,
+  }));
+  return <TradesClient initialTrades={formatted} />;
 }
