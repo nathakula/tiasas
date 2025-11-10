@@ -21,8 +21,15 @@ export async function POST(req: Request) {
   if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { activeOrg } = await req.json().catch(() => ({}));
   if (!activeOrg) return NextResponse.json({ error: "Missing activeOrg" }, { status: 400 });
+  // Set cookie on the response so the browser persists it
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set("active_org", activeOrg, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+  });
+  // Also mutate the request cookies for this immediate request context
   const cookieStore = await cookies();
   cookieStore.set("active_org", activeOrg);
-  return NextResponse.json({ ok: true });
+  return res;
 }
-
