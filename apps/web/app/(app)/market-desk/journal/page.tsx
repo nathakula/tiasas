@@ -16,7 +16,8 @@ export default async function JournalPage() {
   return (
     <div className="space-y-6">
       <DailyPnlForm />
-      <JournalClient initialEntries={entries} />
+      {/* Showing only the list for now; creation moved to Daily P&L form */}
+      <JournalClient initialEntries={entries} showCreate={false} />
     </div>
   );
 }

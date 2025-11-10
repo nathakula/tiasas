@@ -11,7 +11,7 @@ type Entry = {
   tags: string[];
 };
 
-export default function JournalClient({ initialEntries }: { initialEntries: Entry[] }) {
+export default function JournalClient({ initialEntries, showCreate = true }: { initialEntries: Entry[]; showCreate?: boolean }) {
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [text, setText] = useState("");
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
@@ -59,16 +59,18 @@ export default function JournalClient({ initialEntries }: { initialEntries: Entr
 
   return (
     <div className="space-y-6">
-      <div className="card p-4">
-        <div className="grid md:grid-cols-4 gap-2">
-          <input className="border rounded-md px-2 py-1" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <input className="border rounded-md px-2 py-1 md:col-span-2" placeholder="Write a note" value={text} onChange={(e) => setText(e.target.value)} />
-          <input className="border rounded-md px-2 py-1" placeholder="tags,comma,separated" value={tags} onChange={(e) => setTags(e.target.value)} />
+      {showCreate && (
+        <div className="card p-4">
+          <div className="grid md:grid-cols-4 gap-2">
+            <input className="border rounded-md px-2 py-1" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <input className="border rounded-md px-2 py-1 md:col-span-2" placeholder="Write a note" value={text} onChange={(e) => setText(e.target.value)} />
+            <input className="border rounded-md px-2 py-1" placeholder="tags,comma,separated" value={tags} onChange={(e) => setTags(e.target.value)} />
+          </div>
+          <div className="mt-3">
+            <button className="px-3 py-1.5 rounded-2xl bg-black text-white" onClick={createEntry}>Add entry</button>
+          </div>
         </div>
-        <div className="mt-3">
-          <button className="px-3 py-1.5 rounded-2xl bg-black text-white" onClick={createEntry}>Add entry</button>
-        </div>
-      </div>
+      )}
       <ul className="space-y-3">
         {entries.map((e) => (
           <li key={e.id} className="card p-4">

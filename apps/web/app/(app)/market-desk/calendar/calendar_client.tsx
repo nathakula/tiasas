@@ -1,6 +1,7 @@
 "use client";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
+import { isWeekend, isUsMarketHoliday } from "@/lib/market-calendar";
 
 export default function CalendarClient({ days, counts, pnl }: { days: string[]; counts: Record<string, { e: number; t: number }>; pnl: Record<string, { realized: string; unrealized: string; navEnd: string; note: string }> }) {
   const [open, setOpen] = useState<string | null>(null);
@@ -44,8 +45,16 @@ export default function CalendarClient({ days, counts, pnl }: { days: string[]; 
           const k = format(d, "yyyy-MM-dd");
           const c = counts[k] ?? { e: 0, t: 0 };
           const hasPnl = !!pnl[k];
+          const weekend = isWeekend(d);
+          const holiday = isUsMarketHoliday(d);
+          const disabled = weekend || holiday;
           return (
-            <button key={k} className={`card p-2 min-h-[90px] text-left ${hasPnl ? "ring-1 ring-emerald-400" : ""}`} onClick={() => openFor(d)}>
+            <button
+              key={k}
+              className={`card p-2 min-h-[90px] text-left ${hasPnl ? "ring-1 ring-emerald-400" : ""} ${disabled ? "opacity-60 grayscale" : "hover:shadow"}`}
+              onClick={() => (!disabled ? openFor(d) : null)}
+              title={disabled ? (weekend ? "Weekend" : "Market holiday") : "Click to add/edit P&L"}
+            >
               <div className="text-xs text-slate-500">{format(d, "d MMM")}</div>
               <div className="text-xs mt-2">📝 {c.e} · 🔁 {c.t}</div>
               {hasPnl && (
@@ -76,4 +85,3 @@ export default function CalendarClient({ days, counts, pnl }: { days: string[]; 
     </>
   );
 }
-
