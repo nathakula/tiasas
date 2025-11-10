@@ -89,3 +89,43 @@ export function isUsMarketHoliday(date: Date) {
   return list.some((d) => d.getFullYear() === y && d.getMonth() === date.getMonth() && d.getDate() === date.getDate());
 }
 
+export function usMarketHolidayMap(year: number): Record<string, { name: string; type: "HOLIDAY" | "EARLY_CLOSE" }> {
+  const m = new Map<string, { name: string; type: "HOLIDAY" | "EARLY_CLOSE" }>();
+  const keyOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const addH = (d: Date, name: string) => m.set(keyOf(d), { name, type: "HOLIDAY" });
+  const addE = (d: Date, name: string) => m.set(keyOf(d), { name, type: "EARLY_CLOSE" });
+
+  addH(observed(new Date(year, 0, 1)), "New Year's Day (observed)");
+  addH(nthWeekdayOfMonth(year, 0, 1, 3), "Martin Luther King Jr. Day");
+  addH(nthWeekdayOfMonth(year, 1, 1, 3), "Presidents' Day");
+  addH(goodFriday(year), "Good Friday");
+  addH(lastWeekdayOfMonth(year, 4, 1), "Memorial Day");
+  addH(observed(new Date(year, 5, 19)), "Juneteenth (observed)");
+  const indepObserved = observed(new Date(year, 6, 4));
+  addH(indepObserved, "Independence Day (observed)");
+  addH(nthWeekdayOfMonth(year, 8, 1, 1), "Labor Day");
+  addH(nthWeekdayOfMonth(year, 10, 4, 4), "Thanksgiving");
+  // Day after Thanksgiving often early close
+  const thanksgiving = nthWeekdayOfMonth(year, 10, 4, 4);
+  const dayAfter = new Date(thanksgiving); dayAfter.setDate(thanksgiving.getDate() + 1);
+  if (dayAfter.getDay() >= 1 && dayAfter.getDay() <= 5) addE(dayAfter, "Day after Thanksgiving (early close)");
+  // Christmas
+  addH(observed(new Date(year, 11, 25)), "Christmas (observed)");
+  // Christmas Eve early close when weekday and not observed holiday
+  const xmasEve = new Date(year, 11, 24);
+  if (xmasEve.getDay() >= 1 && xmasEve.getDay() <= 5 && keyOf(xmasEve) !== keyOf(observed(new Date(year, 11, 25)))) {
+    addE(xmasEve, "Christmas Eve (early close)");
+  }
+  // July 3 early close if weekday and not the observed holiday
+  const july3 = new Date(year, 6, 3);
+  if (july3.getDay() >= 1 && july3.getDay() <= 5 && keyOf(july3) !== keyOf(indepObserved)) {
+    addE(july3, "July 3 (early close)");
+  }
+  return Object.fromEntries(m.entries());
+}
+
+export function holidayName(date: Date): string | null {
+  const map = usMarketHolidayMap(date.getFullYear());
+  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return map[key]?.name ?? null;
+}

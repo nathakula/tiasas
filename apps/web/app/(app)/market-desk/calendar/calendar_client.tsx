@@ -1,17 +1,52 @@
 "use client";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
-import { isWeekend, isUsMarketHoliday } from "@/lib/market-calendar";
+import { isWeekend, isUsMarketHoliday, holidayName } from "@/lib/market-calendar";
 
-export default function CalendarClient({ days, counts, pnl }: { days: string[]; counts: Record<string, { e: number; t: number }>; pnl: Record<string, { realized: string; unrealized: string; navEnd: string; note: string }> }) {
+export default function CalendarClient({ initialMonth, days, counts, pnl }: { initialMonth: string; days: string[]; counts: Record<string, { e: number; t: number }>; pnl: Record<string, { realized: string; unrealized: string; navEnd: string; note: string }> }) {
   const [open, setOpen] = useState<string | null>(null);
+  const [month, setMonth] = useState<string>(initialMonth); // yyyy-MM
+  const [data, setData] = useState<{ counts: typeof counts; pnl: typeof pnl; days: string[] }>({ counts, pnl, days });
   const [realized, setRealized] = useState("");
   const [unrealized, setUnrealized] = useState("");
   const [navEnd, setNavEnd] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const dayList = useMemo(() => days.map((d) => new Date(d)), [days]);
+  const dayList = useMemo(() => data.days.map((d) => new Date(d)), [data.days]);
+
+  async function loadMonth(yyyyMM: string) {
+    const [y, m] = yyyyMM.split("-").map(Number);
+    const start = new Date(y, m - 1, 1);
+    const end = new Date(y, m, 0);
+    const params = (from: Date, to: Date) => `from=${from.toISOString().slice(0,10)}&to=${to.toISOString().slice(0,10)}`;
+    const [entries, trades, pnlRows] = await Promise.all([
+      fetch(`/api/journal?${params(start, end)}`).then(r=>r.json()),
+      fetch(`/api/trades?${params(start, end)}`).then(r=>r.json()),
+      fetch(`/api/pnl/daily?${params(start, end)}`).then(r=>r.json()),
+    ]);
+    const each: string[] = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) each.push(new Date(d).toISOString());
+    const byDay = new Map<string, { e: number; t: number }>();
+    each.forEach((iso) => {
+      const k = iso.slice(0,10);
+      byDay.set(k, { e: 0, t: 0 });
+    });
+    entries.forEach((e: any) => {
+      const k = e.date.slice(0,10);
+      byDay.set(k, { ...(byDay.get(k) ?? { e: 0, t: 0 }), e: (byDay.get(k)?.e ?? 0) + 1 });
+    });
+    trades.forEach((t: any) => {
+      const k = t.date.slice(0,10);
+      byDay.set(k, { ...(byDay.get(k) ?? { e: 0, t: 0 }), t: (byDay.get(k)?.t ?? 0) + 1 });
+    });
+    const pnlMap = new Map<string, { realized: string; unrealized: string; navEnd: string; note: string }>();
+    pnlRows.forEach((p: any) => {
+      const k = p.date.slice(0,10);
+      pnlMap.set(k, { realized: p.realizedPnl, unrealized: p.unrealizedPnl, navEnd: p.navEnd, note: p.note ?? "" });
+    });
+    setData({ counts: Object.fromEntries(byDay.entries()) as any, pnl: Object.fromEntries(pnlMap.entries()) as any, days: each });
+  }
 
   function openFor(day: Date) {
     const key = format(day, "yyyy-MM-dd");
@@ -40,25 +75,66 @@ export default function CalendarClient({ days, counts, pnl }: { days: string[]; 
 
   return (
     <>
+      {/* Controls */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-sm text-slate-600">Month</div>
+        <div className="flex items-center gap-2">
+          <button className="px-2 py-1 border rounded-md" onClick={() => { const d = new Date(month+"-01"); d.setMonth(d.getMonth()-1); const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; setMonth(next); loadMonth(next); }}>Prev</button>
+          <select className="border rounded-md px-2 py-1" value={month.split("-")[1]} onChange={(e)=>{ const next = `${month.split("-")[0]}-${e.target.value}`; setMonth(next); loadMonth(next); }}>
+            {Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0")).map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <select className="border rounded-md px-2 py-1" value={month.split("-")[0]} onChange={(e)=>{ const next = `${e.target.value}-${month.split("-")[1]}`; setMonth(next); loadMonth(next); }}>
+            {Array.from({length:11},(_,i)=> (new Date().getFullYear()-5+i)).map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <button className="px-2 py-1 border rounded-md" onClick={() => { const d = new Date(month+"-01"); d.setMonth(d.getMonth()+1); const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; setMonth(next); loadMonth(next); }}>Next</button>
+        </div>
+      </div>
+      {/* Weekday headers */}
+      <div className="grid grid-cols-7 gap-2 mb-1 text-xs text-slate-500">
+        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d)=>(<div key={d} className="px-2">{d}</div>))}
+      </div>
       <div className="grid grid-cols-7 gap-2">
+        {(() => {
+          const items: JSX.Element[] = [];
+          const first = dayList[0];
+          if (first) {
+            const blanks = first.getDay(); // 0=Sun
+            for (let i = 0; i < blanks; i++) items.push(<div key={`b-${i}`} />);
+          }
+          return items;
+        })()}
         {dayList.map((d) => {
           const k = format(d, "yyyy-MM-dd");
-          const c = counts[k] ?? { e: 0, t: 0 };
-          const hasPnl = !!pnl[k];
+          const c = data.counts[k] ?? { e: 0, t: 0 };
+          const p = data.pnl[k];
+          const hasPnl = !!p;
           const weekend = isWeekend(d);
           const holiday = isUsMarketHoliday(d);
-          const disabled = weekend || holiday;
+          const today = new Date();
+          const future = d > new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const disabled = weekend || holiday || future;
+          const realizedNum = hasPnl ? Number(p.realized) : 0;
+          const profit = hasPnl && realizedNum > 0;
+          const loss = hasPnl && realizedNum < 0;
+          const badge = holiday ? "Holiday" : weekend ? "Weekend" : future ? "Future" : null;
+          const hName = holiday ? holidayName(d) : null;
+          const badgeTitle = holiday ? `Market holiday: ${hName ?? ""}` : weekend ? "Weekend" : future ? "Future date" : "";
           return (
             <button
               key={k}
-              className={`card p-2 min-h-[90px] text-left ${hasPnl ? "ring-1 ring-emerald-400" : ""} ${disabled ? "opacity-60 grayscale" : "hover:shadow"}`}
+              className={`card p-2 min-h-[90px] text-left relative ${profit ? "ring-1 ring-emerald-400 bg-emerald-50" : ""} ${loss ? "ring-1 ring-red-400 bg-red-50" : ""} ${disabled ? "opacity-60" : "hover:shadow"}`}
               onClick={() => (!disabled ? openFor(d) : null)}
-              title={disabled ? (weekend ? "Weekend" : "Market holiday") : "Click to add/edit P&L"}
+              title={disabled ? (holiday ? "Market holiday" : weekend ? "Weekend" : "Future date") : "Click to add/edit P&L"}
             >
               <div className="text-xs text-slate-500">{format(d, "d MMM")}</div>
               <div className="text-xs mt-2">📝 {c.e} · 🔁 {c.t}</div>
               {hasPnl && (
-                <div className="text-xs mt-1 text-emerald-700">P&L: {pnl[k].realized}</div>
+                <div className={`text-xs mt-1 ${profit ? "text-emerald-700" : loss ? "text-red-700" : "text-slate-600"}`}>P&L: {p.realized}</div>
+              )}
+              {badge && (
+                <span className={`absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded-full border ${holiday ? "bg-amber-50 border-amber-300" : weekend ? "bg-slate-100" : "bg-white"}`} title={badgeTitle}>
+                  {holiday && hName ? hName : badge}
+                </span>
               )}
             </button>
           );
