@@ -27,5 +27,5 @@ export default async function CalendarPage() {
   }
 
   const pnlByDate = new Map(pnl.map(p => [format(p.date, "yyyy-MM-dd"), { realized: p.realizedPnl.toString(), unrealized: p.unrealizedPnl.toString(), navEnd: p.navEnd.toString(), note: p.note ?? "" }]));
-  return <CalendarClient initialMonth={format(today, "yyyy-MM")} days={days.map(d=>d.toISOString())} counts={Object.fromEntries(Array.from(byDay.entries()))} pnl={Object.fromEntries(pnlByDate.entries())} />;
+  return <CalendarClient initialMonth={format(today, "yyyy-MM")} days={days.map(d=>d.toISOString().slice(0,10))} counts={Object.fromEntries(Array.from(byDay.entries()))} pnl={Object.fromEntries(pnlByDate.entries())} />;
 }

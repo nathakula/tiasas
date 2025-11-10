@@ -36,10 +36,11 @@ export async function POST(req: Request) {
   const parsed = upsertSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const d = parsed.data;
+  const dateIso = `${d.date}T00:00:00.000Z`;
   const up = await prisma.dailyPnl.upsert({
-    where: { orgId_date: { orgId, date: new Date(d.date) } },
+    where: { orgId_date: { orgId, date: new Date(dateIso) } },
     update: { realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, navEnd: d.navEnd as any, note: d.note ?? null },
-    create: { orgId, date: new Date(d.date), realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, navEnd: d.navEnd as any, note: d.note ?? null },
+    create: { orgId, date: new Date(dateIso), realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, navEnd: d.navEnd as any, note: d.note ?? null },
   });
   await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "UPSERT", entity: "DailyPnl", entityId: up.id, before: null, after: up } });
   return NextResponse.json(up);

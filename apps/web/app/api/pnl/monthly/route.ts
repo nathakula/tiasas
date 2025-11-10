@@ -35,38 +35,31 @@ export async function GET(req: Request) {
     rangeTo = new Date(y, 11, 31);
   }
 
-  const rows = (await prisma.$queryRaw`WITH m AS (
+  const rows = (await prisma.$queryRaw`WITH base AS (
       SELECT date_trunc('month', date)::date AS month,
-             SUM("realizedPnl") AS realized,
-             max(date) AS last_day
+             date, "navEnd", "unrealizedPnl", "realizedPnl"
         FROM "DailyPnl"
        WHERE "orgId" = ${orgId} AND date BETWEEN ${rangeFrom} AND ${rangeTo}
-       GROUP BY 1
-    ), e AS (
-      SELECT date_trunc('month', d.date)::date AS month,
-             (SELECT d2."navEnd" FROM "DailyPnl" d2 
-               WHERE d2."orgId" = d."orgId" AND date_trunc('month', d2.date) = date_trunc('month', d.date)
-               ORDER BY d2.date DESC LIMIT 1) AS end_nav,
-             (SELECT d3."unrealizedPnl" FROM "DailyPnl" d3 
-               WHERE d3."orgId" = d."orgId" AND date_trunc('month', d3.date) = date_trunc('month', d.date)
-               ORDER BY d3.date DESC LIMIT 1) AS unrealized_snapshot
-        FROM "DailyPnl" d
-       WHERE d."orgId" = ${orgId} AND d.date BETWEEN ${rangeFrom} AND ${rangeTo}
-       GROUP BY 1
-    ), a AS (
-      SELECT m.month,
-             m.realized,
-             e.end_nav,
-             e.unrealized_snapshot
-        FROM m LEFT JOIN e ON e.month = m.month
+    ), sum_month AS (
+      SELECT month, SUM("realizedPnl") AS realized
+        FROM base
+       GROUP BY month
+    ), endrows AS (
+      SELECT DISTINCT ON (month) month, "navEnd", "unrealizedPnl"
+        FROM base
+       ORDER BY month, date DESC
+    ), merged AS (
+      SELECT s.month, s.realized, e."navEnd" AS end_nav, e."unrealizedPnl" AS unrealized_snapshot
+        FROM sum_month s
+        LEFT JOIN endrows e USING (month)
     )
-    SELECT a.month::text,
-           a.realized,
-           a.end_nav,
-           a.unrealized_snapshot,
-           LAG(a.end_nav) OVER (ORDER BY a.month) AS prev_end_nav
-      FROM a
-     ORDER BY a.month`) as unknown as Row[];
+    SELECT m.month::text,
+           m.realized,
+           m.end_nav,
+           m.unrealized_snapshot,
+           LAG(m.end_nav) OVER (ORDER BY m.month) AS prev_end_nav
+      FROM merged m
+     ORDER BY m.month`) as unknown as Row[];
 
   const data = rows.map((r) => {
     const month = r.month.slice(0, 7); // yyyy-mm
@@ -81,4 +74,3 @@ export async function GET(req: Request) {
 
   return NextResponse.json({ months: data });
 }
-

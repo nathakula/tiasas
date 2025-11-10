@@ -16,7 +16,8 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const dayList = useMemo(() => data.days.map((d) => new Date(d)), [data.days]);
+  // Keep days as YYYY-MM-DD strings; avoid timezone shifts
+  const dayList = useMemo(() => data.days as string[], [data.days]);
 
   async function loadMonth(yyyyMM: string) {
     const [y, m] = yyyyMM.split("-").map(Number);
@@ -148,28 +149,28 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
           const items: JSX.Element[] = [];
           const first = dayList[0];
           if (first) {
-            const blanks = first.getDay(); // 0=Sun
+            const blanks = new Date(`${first}T12:00:00Z`).getDay(); // 0=Sun
             for (let i = 0; i < blanks; i++) items.push(<div key={`b-${i}`} />);
           }
           return items;
         })()}
-        {dayList.map((d) => {
-          const k = format(d, "yyyy-MM-dd");
+        {dayList.map((k) => {
           const c = data.counts[k] ?? { e: 0, t: 0 };
           const p = data.pnl[k];
           const hasPnl = !!p;
-          const weekend = isWeekend(d);
-          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+          const dObj = new Date(`${k}T12:00:00Z`);
+          const key = k;
           const override = calMap[key];
-          const holiday = override?.type === "HOLIDAY" ? true : isUsMarketHoliday(d);
+          const weekend = isWeekend(dObj);
+          const holiday = override?.type === "HOLIDAY" ? true : isUsMarketHoliday(dObj);
           const earlyClose = override?.type === "EARLY_CLOSE";
           const today = new Date();
-          const future = d > new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const future = dObj > new Date(today.getFullYear(), today.getMonth(), today.getDate());
           const disabled = weekend || holiday || future;
           const realizedNum = hasPnl ? Number(p.realized) : 0;
           const profit = hasPnl && realizedNum > 0;
           const loss = hasPnl && realizedNum < 0;
-          const hName = holiday ? (override?.name ?? holidayName(d)) : null;
+          const hName = holiday ? (override?.name ?? holidayName(dObj)) : null;
           const badge = holiday ? (hName || "Holiday") : earlyClose ? (override?.name || "Early close") : weekend ? "Weekend" : future ? "Future" : null;
           const badgeTitle = holiday ? `Market holiday: ${hName ?? ""}` : earlyClose ? "Early close" : weekend ? "Weekend" : future ? "Future date" : "";
           return (
@@ -179,7 +180,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
               onClick={() => (!disabled ? openFor(d) : null)}
               title={disabled ? (holiday ? "Market holiday" : weekend ? "Weekend" : "Future date") : "Click to add/edit P&L"}
             >
-              <div className="text-xs text-slate-500">{format(d, "d MMM")}</div>
+              <div className="text-xs text-slate-500">{format(dObj, "d MMM")}</div>
               <div className="text-xs mt-2">📝 {c.e} · 🔁 {c.t}</div>
               {hasPnl && (
                 <div className={`text-xs mt-1 ${profit ? "text-emerald-700" : loss ? "text-red-700" : "text-slate-600"}`}>P&L: {p.realized}</div>
