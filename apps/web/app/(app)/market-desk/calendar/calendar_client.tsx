@@ -2,12 +2,14 @@
 import { format } from "date-fns";
 import { useMemo, useState, useEffect } from "react";
 import { isWeekend, isUsMarketHoliday, holidayName } from "@/lib/market-calendar";
+import { MonthBanner } from "@/components/month-banner";
 
 export default function CalendarClient({ initialMonth, days, counts, pnl }: { initialMonth: string; days: string[]; counts: Record<string, { e: number; t: number }>; pnl: Record<string, { realized: string; unrealized: string; navEnd: string; note: string }> }) {
   const [open, setOpen] = useState<string | null>(null);
   const [month, setMonth] = useState<string>(initialMonth); // yyyy-MM
   const [data, setData] = useState<{ counts: typeof counts; pnl: typeof pnl; days: string[] }>({ counts, pnl, days });
   const [calMap, setCalMap] = useState<Record<string, { name: string; type: "HOLIDAY" | "EARLY_CLOSE" }>>({});
+  const [summary, setSummary] = useState<{ month: string; realized: number | null; endNav: number | null; navChange: number | null; returnPct: number | null; unrealizedSnapshot: number | null } | null>(null);
   const [realized, setRealized] = useState("");
   const [unrealized, setUnrealized] = useState("");
   const [navEnd, setNavEnd] = useState("");
@@ -21,11 +23,12 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
     const start = new Date(y, m - 1, 1);
     const end = new Date(y, m, 0);
     const params = (from: Date, to: Date) => `from=${from.toISOString().slice(0,10)}&to=${to.toISOString().slice(0,10)}`;
-    const [entries, trades, pnlRows, mapResp] = await Promise.all([
+    const [entries, trades, pnlRows, mapResp, monthly] = await Promise.all([
       fetch(`/api/journal?${params(start, end)}`).then(safeJson),
       fetch(`/api/trades?${params(start, end)}`).then(safeJson),
       fetch(`/api/pnl/daily?${params(start, end)}`).then(safeJson),
       fetch(`/api/market-calendar?year=${y}`).then(safeJson),
+      fetch(`/api/pnl/monthly?from=${start.toISOString().slice(0,10)}&to=${end.toISOString().slice(0,10)}`).then(safeJson),
     ]);
     const each: string[] = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) each.push(new Date(d).toISOString());
@@ -49,6 +52,11 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
     });
     setData({ counts: Object.fromEntries(byDay.entries()) as any, pnl: Object.fromEntries(pnlMap.entries()) as any, days: each });
     if (mapResp && (mapResp as any).days) setCalMap((mapResp as any).days);
+    if (monthly && (monthly as any).months) {
+      const mKey = `${y}-${String(m).padStart(2,"0")}`;
+      const item = (monthly as any).months.find((x: any) => x.month === mKey);
+      if (item) setSummary(item);
+    }
   }
 
   // Initial refresh to ensure CSV overrides and map are loaded
@@ -62,7 +70,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
 
   function openFor(day: Date) {
     const key = format(day, "yyyy-MM-dd");
-    const ex = pnl[key];
+    const ex = data.pnl[key];
     setOpen(key);
     setRealized(ex?.realized ?? "");
     setUnrealized(ex?.unrealized ?? "");
@@ -87,6 +95,18 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
 
   return (
     <>
+      {/* Month summary banner */}
+      {summary && (
+        <MonthBanner
+          month={summary.month}
+          realized={summary.realized}
+          endNav={summary.endNav}
+          navChange={summary.navChange}
+          returnPct={summary.returnPct}
+          unrealizedSnapshot={summary.unrealizedSnapshot}
+          navSeries={data.days.map((iso)=>({ date: iso.slice(8,10), nav: data.pnl[iso.slice(0,10)] ? Number(data.pnl[iso.slice(0,10)].navEnd) : NaN })).filter(p=>!Number.isNaN(p.nav))}
+        />
+      )}
       {/* Controls */}
       <div className="flex items-center justify-between mb-3">
         <div className="text-sm text-slate-600">Month</div>

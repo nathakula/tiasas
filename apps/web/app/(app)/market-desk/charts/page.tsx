@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getActiveOrgId } from "@/lib/org";
 import { format } from "date-fns";
 import { MonthlyPnlChart, NavByMonthChart, YtdCards } from "./charts_widgets";
+import { MonthBanner } from "@/components/month-banner";
 
 export default async function ChartsPage() {
   const orgId = await getActiveOrgId();
@@ -12,8 +13,19 @@ export default async function ChartsPage() {
     realizedPnl: Number(d.realizedPnl),
     navEnd: Number(d.navEnd),
   })));
+  const latest = monthly.at(-1);
   return (
     <div className="space-y-6">
+      {latest && (
+        <MonthBanner
+          month={latest.month}
+          realized={latest.realized}
+          endNav={latest.navEnd}
+          navChange={undefined as any}
+          returnPct={undefined as any}
+          unrealizedSnapshot={null}
+        />
+      )}
       <YtdCards monthly={monthly} />
       <div className="card p-4">
         <div className="font-medium mb-2">Monthly Realized P&L</div>
