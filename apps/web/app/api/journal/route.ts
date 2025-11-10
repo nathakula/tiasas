@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { z } from "zod";
 import { NextResponse } from "next/server";
@@ -40,6 +41,6 @@ export async function POST(req: Request) {
   const created = await prisma.journalEntry.create({
     data: { orgId, userId: user!.id, date: new Date(parsed.data.date), text: parsed.data.text, tags: parsed.data.tags },
   });
-  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "CREATE", entity: "JournalEntry", entityId: created.id, before: null, after: created } });
+  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "CREATE", entity: "JournalEntry", entityId: created.id, before: Prisma.DbNull, after: JSON.parse(JSON.stringify(created)) } });
   return NextResponse.json(created);
 }

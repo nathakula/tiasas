@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { z } from "zod";
 import { NextResponse } from "next/server";
@@ -27,7 +28,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const existing = await prisma.trade.findFirst({ where: { id: params.id, orgId } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const updated = await prisma.trade.update({ where: { id: params.id }, data: parsed.data as any });
-  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "UPDATE", entity: "Trade", entityId: updated.id, before: existing, after: updated } });
+  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "UPDATE", entity: "Trade", entityId: updated.id, before: JSON.parse(JSON.stringify(existing)), after: JSON.parse(JSON.stringify(updated)) } });
   return NextResponse.json(updated);
 }
 
@@ -40,6 +41,6 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
   const existing = await prisma.trade.findFirst({ where: { id: params.id, orgId } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   await prisma.trade.delete({ where: { id: params.id } });
-  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "DELETE", entity: "Trade", entityId: params.id, before: existing, after: null } });
+  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "DELETE", entity: "Trade", entityId: params.id, before: JSON.parse(JSON.stringify(existing)), after: Prisma.DbNull } });
   return NextResponse.json({ ok: true });
 }

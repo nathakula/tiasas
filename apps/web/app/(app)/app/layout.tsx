@@ -1,6 +1,7 @@
 // Note: Authenticated app shell under /app with sidebar
 import Link from "next/link";
 import { ReactNode } from "react";
+import type { Route } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -61,10 +62,9 @@ function Section({ label }: { label: string }) {
   return <div className="mt-4 px-2 text-xs uppercase text-slate-500">{label}</div>;
 }
 
-function NavLink({ href, children }: { href: string; children: ReactNode }) {
+function NavLink({ href, children }: { href: Route; children: ReactNode }) {
   return (
-    {/* Cast to any to satisfy typedRoutes while allowing dynamic links */}
-    <Link className="block px-3 py-2 rounded-md hover:bg-slate-100" href={href as any}>
+    <Link className="block px-3 py-2 rounded-md hover:bg-slate-100" href={href}>
       {children}
     </Link>
   );

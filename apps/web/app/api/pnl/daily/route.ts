@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { z } from "zod";
 import { NextResponse } from "next/server";
@@ -42,6 +43,6 @@ export async function POST(req: Request) {
     update: { realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, navEnd: d.navEnd as any, note: d.note ?? null },
     create: { orgId, date: new Date(dateIso), realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, navEnd: d.navEnd as any, note: d.note ?? null },
   });
-  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "UPSERT", entity: "DailyPnl", entityId: up.id, before: null, after: up } });
+  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "UPSERT", entity: "DailyPnl", entityId: up.id, before: Prisma.DbNull, after: JSON.parse(JSON.stringify(up)) } });
   return NextResponse.json(up);
 }
