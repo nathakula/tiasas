@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { z } from "zod";
 import { NextResponse } from "next/server";
@@ -57,6 +58,6 @@ export async function POST(req: Request) {
       notes: d.notes ?? null,
     },
   });
-  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "CREATE", entity: "Trade", entityId: created.id, before: null, after: created } });
+  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "CREATE", entity: "Trade", entityId: created.id, before: Prisma.DbNull, after: JSON.parse(JSON.stringify(created)) } });
   return NextResponse.json(created);
 }
