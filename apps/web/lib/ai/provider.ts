@@ -11,13 +11,20 @@ export type ChatJsonParams = {
   temperature?: number;
 };
 
+function buildChatUrl(baseUrlEnv?: string) {
+  const base = (baseUrlEnv || "https://api.openai.com/v1").replace(/\/+$/, "");
+  if (base.endsWith("/chat/completions") || base.endsWith("/responses")) return base;
+  if (/\/v\d(\w+)?$/.test(base)) return base + "/chat/completions";
+  return base + "/v1/chat/completions";
+}
+
 export async function chatJson<T = any>({ system, user, model, schema, temperature = 0.2 }: ChatJsonParams): Promise<T> {
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
   const mdl = model || process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-  const url = baseUrl.replace(/\/$/, "") + "/chat/completions";
+  const url = buildChatUrl(baseUrl);
   const body: any = {
     model: mdl,
     messages: [
@@ -39,7 +46,7 @@ export async function chatJson<T = any>({ system, user, model, schema, temperatu
     body.response_format = { type: "json_object" };
   }
 
-  const res = await fetch(url, {
+  let res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -47,7 +54,21 @@ export async function chatJson<T = any>({ system, user, model, schema, temperatu
     },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
+  // Retry once without JSON schema if provider doesn't support it
+  if (!res.ok && schema) {
+    const errText = await res.text().catch(() => "");
+    // Retry with json_object and a stronger instruction
+    const fallbackBody = { ...body, response_format: { type: "json_object" }, messages: [
+      { role: "system", content: (system || "") + "\nYou must return VALID JSON only." },
+      { role: "user", content: user },
+    ] };
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(fallbackBody),
+    });
+    if (!res.ok) throw new Error(`LLM error ${res.status}: ${errText}`);
+  } else if (!res.ok) {
     const errText = await res.text().catch(() => "");
     throw new Error(`LLM error ${res.status}: ${errText}`);
   }
@@ -65,4 +86,3 @@ export function coerceJson<T = any>(text: string): T {
   }
   throw new Error("LLM did not return valid JSON");
 }
-

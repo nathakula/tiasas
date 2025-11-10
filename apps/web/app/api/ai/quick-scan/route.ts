@@ -45,7 +45,25 @@ export async function POST(req: Request) {
         additionalProperties: true,
       },
     } as const;
-    const result = await chatJson<QuickScanResult>({ system: systemGuard, user: prompt, schema });
+    let result = await chatJson<QuickScanResult>({ system: systemGuard, user: prompt, schema });
+    // Enrich with Yahoo snapshot if fields are thin
+    const q: any = dataJson.quote || {};
+    const last = Number(q.regularMarketPrice ?? q.last ?? dataJson.lastClose ?? 0) || 0;
+    const lo = Number(q.fiftyTwoWeekLow ?? 0) || (last ? last * 0.7 : 0);
+    const hi = Number(q.fiftyTwoWeekHigh ?? 0) || (last ? last * 1.3 : 0);
+    if (!Array.isArray(result.supports) || result.supports.length === 0) {
+      result.supports = [lo, last && last*0.95].filter(Boolean).map((p)=>({ price: Number(p) }));
+    }
+    if (!Array.isArray(result.resistances) || result.resistances.length === 0) {
+      result.resistances = [last && last*1.05, hi].filter(Boolean).map((p)=>({ price: Number(p) }));
+    }
+    if (!Array.isArray(result.ranges) || result.ranges.length === 0) {
+      result.ranges = ((dataJson as any).ranges ?? []).map((r: any)=>({ period: r.period, chgPct: r.chgPct ?? 0, high: hi, low: lo, atr: null }));
+    }
+    if ((!Array.isArray(result.catalysts) || result.catalysts.length === 0) && q.earningsTimestamp) {
+      result.catalysts = [{ date: new Date(q.earningsTimestamp*1000).toISOString().slice(0,10), label: 'Earnings' }];
+    }
+    if (!result.disclaimer) result.disclaimer = 'For research only. Not investment advice.';
     return NextResponse.json(result);
   } catch (e: any) {
     // Fallback: derive simple supports/resistances from Yahoo snapshot when LLM unavailable

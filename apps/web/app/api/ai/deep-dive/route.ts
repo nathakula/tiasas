@@ -47,7 +47,18 @@ export async function POST(req: Request) {
         additionalProperties: true,
       },
     } as const;
-    const out = await chatJson<DeepDiveResult>({ system: systemGuard, user: prompt, schema });
+    let out = await chatJson<DeepDiveResult>({ system: systemGuard, user: prompt, schema });
+    // Enrich technical zones if empty
+    const q: any = (dataJson as any).quote || {};
+    const last = Number(q.regularMarketPrice ?? q.last ?? (dataJson as any).lastClose ?? 0) || 0;
+    const lo = Number(q.fiftyTwoWeekLow ?? 0) || (last ? last * 0.7 : 0);
+    const hi = Number(q.fiftyTwoWeekHigh ?? 0) || (last ? last * 1.3 : 0);
+    out.technicalZones ||= { supports: [], resistances: [] } as any;
+    if (!Array.isArray(out.technicalZones.supports) || out.technicalZones.supports.length === 0) out.technicalZones.supports = [lo, last && last*0.95].filter(Boolean).map((p)=>({ price: Number(p) }));
+    if (!Array.isArray(out.technicalZones.resistances) || out.technicalZones.resistances.length === 0) out.technicalZones.resistances = [last && last*1.05, hi].filter(Boolean).map((p)=>({ price: Number(p) }));
+    if (!out.disclaimer) out.disclaimer = 'For research only. Not investment advice.';
+    // Ensure valuation is printable
+    if (out && typeof (out as any).valuationContext === 'object') (out as any).valuationContext = JSON.stringify((out as any).valuationContext);
     return NextResponse.json(out);
   } catch (e: any) {
     const q: any = (dataJson as any).quote || {};

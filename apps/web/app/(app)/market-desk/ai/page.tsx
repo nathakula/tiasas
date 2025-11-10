@@ -234,7 +234,7 @@ function DeepDiveView({ data }: { data: any }) {
   return (
     <div className="space-y-3">
       <div className="text-sm text-slate-600">{data.ticker}</div>
-      <div className="card p-3"><div className="font-medium">Overview</div><p className="text-sm mt-1 whitespace-pre-wrap">{data.overview}</p></div>
+      <div className="card p-3"><div className="font-medium">Overview</div><p className="text-sm mt-1 whitespace-pre-wrap">{typeof data.overview === 'string' ? data.overview : (()=>{ try { return JSON.stringify(data.overview); } catch { return String(data.overview); } })()}</p></div>
       <div className="card p-3"><div className="font-medium">Recent Results</div>
         {Array.isArray(data.recentResults) ? (
           <ul className="list-disc list-inside text-sm space-y-1 mt-1">{data.recentResults.map((x:any,i:number)=>(<li key={i}>{typeof x==='string'?x:JSON.stringify(x)}</li>))}</ul>
@@ -247,7 +247,7 @@ function DeepDiveView({ data }: { data: any }) {
         <PriceList title="Resistances" items={resistances} />
       </div>
       {momentum && <div className="text-sm text-slate-700">{momentum}</div>}
-      <div className="card p-3"><div className="font-medium">Valuation</div><p className="text-sm mt-1 whitespace-pre-wrap">{data.valuationContext}</p></div>
+      <div className="card p-3"><div className="font-medium">Valuation</div><p className="text-sm mt-1 whitespace-pre-wrap">{typeof data.valuationContext === 'string' ? data.valuationContext : (()=>{ try { return JSON.stringify(data.valuationContext); } catch { return String(data.valuationContext); } })()}</p></div>
       {Array.isArray(data.comps) && data.comps.length>0 && (
         <div className="card p-3">
           <div className="font-medium mb-1">Comps</div>
