@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 type Mode = "PNL" | "JOURNAL";
 
@@ -96,7 +96,7 @@ export default function BulkUploadPage() {
   }
 
   // Load recent imports on mount and whenever the mode changes
-  React.useEffect(() => { refreshImports(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mode]);
+  useEffect(() => { refreshImports(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mode]);
 
   return (
     <div className="space-y-4">
