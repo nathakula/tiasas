@@ -113,14 +113,25 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "po
   );
 }
 
-function PriceList({ title, items }: { title: string; items: { price: number; note?: string }[] }) {
+function PriceList({ title, items }: { title: string; items: any[] }) {
+  function toPrice(item: any): { price?: number; label?: string } {
+    if (item == null) return {};
+    if (typeof item === 'number') return { price: item };
+    const d: any = item;
+    const price = d.price ?? d.level ?? d.entryLevel ?? d.exitLevel ?? d.value ?? undefined;
+    const label = d.note ?? d.description ?? d.reason ?? d.label ?? undefined;
+    return { price: (typeof price === 'number' ? price : Number(price)), label };
+  }
   return (
     <div className="card p-3">
       <div className="text-sm font-medium mb-1">{title}</div>
       <ul className="text-sm space-y-1">
-        {items?.map((l, i) => (
-          <li key={i} className="flex justify-between"><span>{l.note ?? ''}</span><span>${l.price.toFixed(2)}</span></li>
-        ))}
+        {(items ?? []).map((it, i) => {
+          const p = toPrice(it);
+          const priceText = (p.price != null && !Number.isNaN(p.price)) ? `$${Number(p.price).toFixed(2)}` : '-';
+          const label = p.label ?? '';
+          return <li key={i} className="flex justify-between"><span>{label}</span><span>{priceText}</span></li>;
+        })}
         {!items?.length && <li className="text-slate-500">-</li>}
       </ul>
     </div>
@@ -219,7 +230,13 @@ function DeepDiveView({ data }: { data: any }) {
     <div className="space-y-3">
       <div className="text-sm text-slate-600">{data.ticker}</div>
       <div className="card p-3"><div className="font-medium">Overview</div><p className="text-sm mt-1 whitespace-pre-wrap">{data.overview}</p></div>
-      <div className="card p-3"><div className="font-medium">Recent Results</div><p className="text-sm mt-1 whitespace-pre-wrap">{data.recentResults}</p></div>
+      <div className="card p-3"><div className="font-medium">Recent Results</div>
+        {Array.isArray(data.recentResults) ? (
+          <ul className="list-disc list-inside text-sm space-y-1 mt-1">{data.recentResults.map((x:any,i:number)=>(<li key={i}>{typeof x==='string'?x:JSON.stringify(x)}</li>))}</ul>
+        ) : (
+          <p className="text-sm mt-1 whitespace-pre-wrap">{String(data.recentResults ?? '')}</p>
+        )}
+      </div>
       <div className="grid md:grid-cols-2 gap-3">
         <PriceList title="Supports" items={supports} />
         <PriceList title="Resistances" items={resistances} />
@@ -229,7 +246,7 @@ function DeepDiveView({ data }: { data: any }) {
       {Array.isArray(data.comps) && data.comps.length>0 && (
         <div className="card p-3">
           <div className="font-medium mb-1">Comps</div>
-          <div className="flex flex-wrap gap-2">{data.comps.map((c:string,i:number)=>(<span key={i} className="px-2 py-0.5 text-xs border rounded">{c}</span>))}</div>
+          <div className="flex flex-wrap gap-2">{data.comps.map((c:any,i:number)=>(<span key={i} className="px-2 py-0.5 text-xs border rounded">{typeof c==='string'?c:JSON.stringify(c)}</span>))}</div>
         </div>
       )}
       <div className="grid md:grid-cols-3 gap-3">
