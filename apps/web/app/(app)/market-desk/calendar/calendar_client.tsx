@@ -91,14 +91,32 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
       <div className="flex items-center justify-between mb-3">
         <div className="text-sm text-slate-600">Month</div>
         <div className="flex items-center gap-2">
-          <button className="px-2 py-1 border rounded-md" onClick={() => { const d = new Date(month+"-01"); d.setMonth(d.getMonth()-1); const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; setMonth(next); loadMonth(next); }}>Prev</button>
+          <button
+            className="px-2 py-1 border rounded-md"
+            onClick={() => {
+              const [ys, ms] = month.split("-");
+              let y = Number(ys); let m = Number(ms) - 1;
+              if (m < 1) { m = 12; y -= 1; }
+              const next = `${y}-${String(m).padStart(2, "0")}`;
+              setMonth(next); loadMonth(next);
+            }}
+          >Prev</button>
           <select className="border rounded-md px-2 py-1" value={month.split("-")[1]} onChange={(e)=>{ const next = `${month.split("-")[0]}-${e.target.value}`; setMonth(next); loadMonth(next); }}>
             {Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0")).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <select className="border rounded-md px-2 py-1" value={month.split("-")[0]} onChange={(e)=>{ const next = `${e.target.value}-${month.split("-")[1]}`; setMonth(next); loadMonth(next); }}>
             {Array.from({length:11},(_,i)=> (new Date().getFullYear()-5+i)).map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          <button className="px-2 py-1 border rounded-md" onClick={() => { const d = new Date(month+"-01"); d.setMonth(d.getMonth()+1); const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; setMonth(next); loadMonth(next); }}>Next</button>
+          <button
+            className="px-2 py-1 border rounded-md"
+            onClick={() => {
+              const [ys, ms] = month.split("-");
+              let y = Number(ys); let m = Number(ms) + 1;
+              if (m > 12) { m = 1; y += 1; }
+              const next = `${y}-${String(m).padStart(2, "0")}`;
+              setMonth(next); loadMonth(next);
+            }}
+          >Next</button>
         </div>
       </div>
       {/* Weekday headers */}
