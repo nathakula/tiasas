@@ -1,0 +1,18 @@
+{
+  "name": "tiasas",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --filter @tiasas/web dev",
+    "build": "pnpm --filter @tiasas/web build",
+    "lint": "pnpm --filter @tiasas/web lint",
+    "test": "pnpm --filter @tiasas/web test",
+    "seed": "pnpm --filter @tiasas/web seed",
+    "prisma:generate": "pnpm --filter @tiasas/web prisma:generate",
+    "prisma:migrate": "pnpm --filter @tiasas/web prisma:migrate"
+  }
+}
