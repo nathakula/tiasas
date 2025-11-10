@@ -63,7 +63,8 @@ function Section({ label }: { label: string }) {
 
 function NavLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link className="block px-3 py-2 rounded-md hover:bg-slate-100" href={href}>
+    {/* Cast to any to satisfy typedRoutes while allowing dynamic links */}
+    <Link className="block px-3 py-2 rounded-md hover:bg-slate-100" href={href as any}>
       {children}
     </Link>
   );
