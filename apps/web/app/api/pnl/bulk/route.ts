@@ -24,20 +24,35 @@ function normalizeRows(payload: z.infer<typeof PayloadSchema>) {
   const out: z.infer<typeof RowSchema>[] = [];
   if (payload.rows) return payload.rows;
   if (!payload.text) return out;
-  const [header, ...lines] = parseCsv(payload.text);
-  const h = header.map((s) => s.toLowerCase());
-  const idx = {
+  const rows = parseCsv(payload.text);
+  if (rows.length === 0) return out;
+  let [header, ...lines] = rows;
+  const toLower = (arr: string[]) => arr.map((s) => s.toLowerCase());
+  let h = toLower(header);
+  let idx = {
     date: h.indexOf("date"),
     realized: h.indexOf("realized"),
     unrealized: h.indexOf("unrealized"),
     nav: h.indexOf("nav"),
     note: h.indexOf("note"),
   };
+  const headerLooksLikeData = () => {
+    const d = header?.[0] ?? "";
+    return /^\d{4}[-/.]\d{1,2}([-/\\.]\d{1,2})?$/.test(d) || /\d/.test(header?.[1] ?? "");
+  };
+  if (idx.date < 0 || idx.realized < 0) {
+    if (headerLooksLikeData()) {
+      // Assume positional columns: date, realized, [unrealized], [nav], [note]
+      lines = [header, ...lines];
+      const first = lines[0] ?? [];
+      idx = { date: 0, realized: 1, unrealized: first.length > 2 ? 2 : -1, nav: first.length > 3 ? 3 : -1, note: first.length > 4 ? 4 : -1 } as any;
+    }
+  }
   for (const cols of lines) {
     const date = cols[idx.date];
     const realized = toDecimalString(cols[idx.realized]);
-    const unrealized = toDecimalString(cols[idx.unrealized]);
-    const nav = toDecimalString(cols[idx.nav]);
+    const unrealized = idx.unrealized >= 0 ? toDecimalString(cols[idx.unrealized]) : undefined;
+    const nav = idx.nav >= 0 ? toDecimalString(cols[idx.nav]) : undefined;
     const note = idx.note >= 0 ? cols[idx.note] : undefined;
     if (!date || !realized) continue;
     out.push({ date, realized, unrealized, nav, note });

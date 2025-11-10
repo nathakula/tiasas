@@ -22,9 +22,21 @@ function normalizeRows(payload: z.infer<typeof PayloadSchema>) {
   const out: z.infer<typeof RowSchema>[] = [];
   if (payload.rows) return payload.rows;
   if (!payload.text) return out;
-  const [header, ...lines] = parseCsv(payload.text);
-  const h = header.map((s) => s.toLowerCase());
-  const idx = { date: h.indexOf("date"), nav: h.indexOf("nav") };
+  const rows = parseCsv(payload.text);
+  if (rows.length === 0) return out;
+  let [header, ...lines] = rows;
+  let h = header.map((s) => s.toLowerCase());
+  let idx = { date: h.indexOf("date"), nav: h.indexOf("nav") };
+  // Heuristic: if header does not include expected names, treat header as a data row
+  // and assume positional columns (0=date, 1=nav)
+  const headerLooksLikeData = () => {
+    const d = header?.[0] ?? "";
+    return /^\d{4}[-/.]\d{1,2}([-/\\.]\d{1,2})?$/.test(d) || /\d/.test(header?.[1] ?? "");
+  };
+  if ((idx.date < 0 || idx.nav < 0) && headerLooksLikeData()) {
+    lines = [header, ...lines];
+    idx = { date: 0 as number, nav: 1 as number } as any;
+  }
   for (const cols of lines) {
     const date = cols[idx.date];
     const nav = toDecimalString(cols[idx.nav]);
