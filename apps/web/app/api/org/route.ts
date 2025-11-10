@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
@@ -15,7 +16,6 @@ export async function POST(req: Request) {
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   const org = await prisma.org.create({ data: { name: parsed.data.name } });
   await prisma.membership.create({ data: { orgId: org.id, userId: user!.id, role: "OWNER" } as any });
-  await prisma.auditLog.create({ data: { orgId: org.id, userId: user!.id, action: "CREATE", entity: "Org", entityId: org.id, before: null, after: org } });
+  await prisma.auditLog.create({ data: { orgId: org.id, userId: user!.id, action: "CREATE", entity: "Org", entityId: org.id, before: Prisma.DbNull, after: JSON.parse(JSON.stringify(org)) } });
   return NextResponse.json(org);
 }
-
