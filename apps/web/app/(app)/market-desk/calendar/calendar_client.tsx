@@ -32,7 +32,9 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
       fetch(`/api/pnl/monthly?from=${start.toISOString().slice(0,10)}&to=${end.toISOString().slice(0,10)}`).then(safeJson),
     ]);
     const each: string[] = [];
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) each.push(new Date(d).toISOString());
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      each.push(new Date(d).toISOString().slice(0, 10));
+    }
     const byDay = new Map<string, { e: number; t: number }>();
     each.forEach((iso) => {
       const k = iso.slice(0,10);
@@ -54,9 +56,10 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
     setData({ counts: Object.fromEntries(byDay.entries()) as any, pnl: Object.fromEntries(pnlMap.entries()) as any, days: each });
     if (mapResp && (mapResp as any).days) setCalMap((mapResp as any).days);
     if (monthly && (monthly as any).months) {
-      const mKey = `${y}-${String(m).padStart(2,"0")}`;
+      const mKey = `${y}-${String(m).padStart(2, "0")}`;
       const item = (monthly as any).months.find((x: any) => x.month === mKey);
       if (item) setSummary(item);
+      else setSummary({ month: mKey, realized: 0, endNav: 0, navChange: 0, returnPct: null, unrealizedSnapshot: 0 });
     }
   }
 
