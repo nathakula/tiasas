@@ -1,10 +1,14 @@
 "use client";
 import { signIn } from "next-auth/react";
+import { Logo } from "@/components/logo";
 
 export default function SignIn() {
   return (
     <main className="max-w-md mx-auto px-6 py-16">
       <div className="card p-8 text-center">
+        <div className="flex justify-center mb-4">
+          <Logo size="md" />
+        </div>
         <h1 className="text-2xl font-semibold mb-2">Sign in</h1>
         <p className="text-slate-600 mb-6">Use your Google account</p>
         <button

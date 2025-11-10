@@ -13,8 +13,28 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="card p-4">
-        <div className="font-medium mb-1">Profile</div>
-        <div className="text-sm text-slate-600">{user?.name ?? user?.email}</div>
+        <div className="font-medium mb-3">Profile</div>
+        <div className="flex items-center gap-4">
+          {user?.image ? (
+            // Use img to avoid remote image domain config requirements
+            <img
+              src={user.image}
+              alt={user?.name ?? "Avatar"}
+              width={48}
+              height={48}
+              className="w-12 h-12 rounded-full border object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full border bg-slate-100 flex items-center justify-center text-slate-500">
+              {(user?.name ?? user?.email ?? "?").slice(0, 1).toUpperCase()}
+            </div>
+          )}
+          <div>
+            <div className="text-base font-medium">{user?.name ?? "—"}</div>
+            <div className="text-sm text-slate-600">{user?.email ?? "—"}</div>
+          </div>
+        </div>
       </div>
       <div className="card p-4">
         <div className="font-medium mb-2">Organizations</div>
@@ -31,4 +51,3 @@ export default async function SettingsPage() {
     </div>
   );
 }
-

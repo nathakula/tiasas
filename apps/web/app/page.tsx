@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 export default function Page() {
   return (
     <main className="max-w-5xl mx-auto px-6 py-16">
       <section className="text-center mb-16">
-        <h1 className="text-4xl font-semibold mb-4">TIASAS</h1>
+        <div className="flex justify-center mb-4">
+          <Logo size="lg" />
+        </div>
+        <h1 className="text-4xl font-semibold mb-2">TIASAS</h1>
         <p className="text-slate-600">A family studio for craft and markets.</p>
       </section>
       <section className="grid md:grid-cols-3 gap-6">

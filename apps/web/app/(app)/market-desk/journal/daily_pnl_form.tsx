@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function DailyPnlForm() {
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
@@ -8,6 +8,34 @@ export function DailyPnlForm() {
   const [navEnd, setNavEnd] = useState<string>("");
   const [note, setNote] = useState<string>("");
   const [saving, setSaving] = useState(false);
+
+  // Prefill on date change if a record already exists
+  useEffect(() => {
+    let ignore = false;
+    async function loadExisting() {
+      const res = await fetch(`/api/pnl/daily?from=${date}&to=${date}`);
+      if (!res.ok) {
+        if (!ignore) {
+          setRealized(""); setUnrealized(""); setNavEnd(""); setNote("");
+        }
+        return;
+      }
+      const rows = await res.json();
+      const row = Array.isArray(rows) ? rows[0] : null;
+      if (!ignore) {
+        if (row) {
+          setRealized(String(row.realizedPnl ?? ""));
+          setUnrealized(String(row.unrealizedPnl ?? ""));
+          setNavEnd(String(row.navEnd ?? ""));
+          setNote(String(row.note ?? ""));
+        } else {
+          setRealized(""); setUnrealized(""); setNavEnd(""); setNote("");
+        }
+      }
+    }
+    loadExisting();
+    return () => { ignore = true; };
+  }, [date]);
 
   async function save() {
     if (!realized) return alert("Realized P&L is required");
@@ -42,4 +70,3 @@ export function DailyPnlForm() {
     </div>
   );
 }
-

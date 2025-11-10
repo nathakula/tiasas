@@ -46,6 +46,10 @@ Local dev boots the site at `http://localhost:13000`.
 - v0.1 ships with a paper broker adapter and analysis placeholder only; real integrations are not included.
 - UI uses minimal shadcn-like primitives vendored under `components/ui` to avoid requiring a codegen step.
 
+## Branding
+- Place your logo file at `apps/web/public/tiasas-logo.png`.
+- It is referenced by the `Logo` component (`apps/web/components/logo.tsx`) and used on the landing page, sign-in view, and the app sidebar.
+
 ## Developer Runbook (local)
 - Create app (shown for reference; already scaffolded here):
   - `pnpm create next-app apps/web --ts --eslint --tailwind --app --src-dir --import-alias @/*`

@@ -1,5 +1,0 @@
-date,name,type
-# Example rows. Add/override as needed. Dates must be YYYY-MM-DD, type is HOLIDAY or EARLY_CLOSE.
-2025-11-27,Thanksgiving Day,HOLIDAY
-2025-11-28,Day after Thanksgiving (early close),EARLY_CLOSE
-2025-12-24,Christmas Eve (early close),EARLY_CLOSE
