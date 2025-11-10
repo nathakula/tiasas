@@ -30,6 +30,15 @@ Local dev boots the site at `http://localhost:13000`.
 - Supabase Postgres for the database
 - Set all environment variables from `.env.example` in your environment provider
 
+### AI Provider (OpenAI-compatible)
+- Add to `apps/web/.env` (or your deployment env):
+```
+OPENAI_BASE_URL=https://api.openai.com/v1   # or your local OpenAI-compatible server URL
+OPENAI_API_KEY=sk-...                        # required
+OPENAI_MODEL=gpt-4o-mini                     # any model your provider supports
+```
+- The code uses a lightweight provider wrapper at `apps/web/lib/ai/provider.ts` so you can later point to a local LLM (e.g., vLLM/LM Studio/OpenRouter-compatible) by changing `OPENAI_BASE_URL` and `OPENAI_MODEL` only.
+
 ## Structure
 - `apps/web` — Next.js app (landing + Market Desk)
 - `packages/config` — shared ESLint/TS config

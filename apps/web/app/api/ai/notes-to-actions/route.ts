@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { prisma } from "@/lib/db";
+import { chatJson } from "@/lib/ai/provider";
 
 const Schema = z.object({ journalEntryId: z.string().min(1) });
 
@@ -15,13 +16,13 @@ export async function POST(req: Request) {
   const entry = await prisma.journalEntry.findUnique({ where: { id } });
   if (!entry || entry.orgId !== orgId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const symbols = Array.from(new Set((entry.text.match(/\b[A-Z]{1,5}\b/g) ?? []).slice(0,5)));
-  const lines = entry.text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-  const tasks = lines.slice(0,6).map((l, i) => ({
-    horizon: (i%3===0?"today":i%3===1?"this_week":"this_month") as const,
-    symbol: symbols[i%symbols.length],
-    text: l.replace(/^[-*]\s*/,"")
-  }));
-  return NextResponse.json(tasks);
+  try {
+    const symbols = Array.from(new Set((entry.text.match(/\b[A-Z]{1,5}\b/g) ?? []).slice(0,5)));
+    const sys = "Return ONLY JSON array of {horizon:'today'|'this_week'|'this_month', text:string, symbol?:string}";
+    const user = `Task: Convert the journal text into action items.\nSymbols: ${symbols.join(', ')}\nText:\n${entry.text}`;
+    const tasks = await chatJson<any[]>({ system: sys, user, temperature: 0 });
+    return NextResponse.json(tasks);
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message ?? "LLM failed" }, { status: 500 });
+  }
 }
-

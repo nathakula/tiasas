@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import type { MacroResult } from "@/lib/ai/types";
+import { chatJson } from "@/lib/ai/provider";
+import { macroPrompt, systemGuard } from "@/lib/ai/prompts";
 
 const Schema = z.object({ watchlist: z.array(z.string()).optional(), note: z.string().optional() });
 
@@ -13,15 +15,13 @@ export async function POST(req: Request) {
 
   const now = new Date();
   const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay()+6)%7));
-  const days = Array.from({length:5}, (_,i)=>{ const d = new Date(monday); d.setDate(monday.getDate()+i); return d;});
-
-  const weekAhead = days.map((d, i) => ({ date: d.toISOString().slice(0,10), item: ["CPI","FOMC","Jobs","PPI","OPEX"][i%5] }));
-  const out: MacroResult = {
-    summary: "Risk tone balanced; watch rates, dollar, and liquidity (stub).",
-    weekAhead,
-    watchouts: ["Event-driven gaps", "Positioning into prints"],
-    disclaimer: "For research only. Not investment advice.",
-  };
-  return NextResponse.json(out);
+  const days = Array.from({length:5}, (_,i)=>{ const d = new Date(monday); d.setDate(monday.getDate()+i); return { date: d.toISOString().slice(0,10) };});
+  const calendarJson = { days, known: ["CPI","FOMC","Jobs","PPI","OPEX"] };
+  try {
+    const prompt = macroPrompt({ watchlist: parsed.data.watchlist ?? [], calendarJson });
+    const out = await chatJson<MacroResult>({ system: systemGuard, user: prompt });
+    return NextResponse.json(out);
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message ?? "LLM failed" }, { status: 500 });
+  }
 }
-
