@@ -26,7 +26,13 @@ export async function POST(req: Request) {
     // Fallback: split lines into tasks
     const lines = entry.text.split(/\n+/).map((s)=>s.trim()).filter(Boolean).slice(0,9);
     const syms = Array.from(new Set((entry.text.match(/\b[A-Z]{1,5}\b/g) ?? []).slice(0,5)));
-    const tasks = lines.map((l, i) => ({ horizon: (i%3===0?'today':i%3===1?'this_week':'this_month') as const, text: l.replace(/^[-*]\s*/,''), symbol: syms[i%Math.max(1, syms.length)] }));
+    type Horizon = 'today'|'this_week'|'this_month';
+    const horizons: Horizon[] = ['today','this_week','this_month'];
+    const tasks = lines.map((l, i) => ({
+      horizon: horizons[i % horizons.length],
+      text: l.replace(/^[-*]\s*/,''),
+      symbol: syms[i%Math.max(1, syms.length)]
+    }));
     return NextResponse.json(tasks);
   }
 }
