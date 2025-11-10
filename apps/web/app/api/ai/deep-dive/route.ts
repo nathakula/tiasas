@@ -4,6 +4,7 @@ import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import type { DeepDiveResult } from "@/lib/ai/types";
 import { chatJson } from "@/lib/ai/provider";
 import { deepDivePrompt, systemGuard } from "@/lib/ai/prompts";
+import { getSnapshot } from "@/lib/market/yahoo";
 
 const Schema = z.object({ ticker: z.string().min(1), focus: z.string().optional() });
 
@@ -13,7 +14,8 @@ export async function POST(req: Request) {
   const parsed = Schema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const { ticker, focus } = parsed.data;
-  const dataJson = { fundamentals: null, earnings: [], tech: {}, multiples: {}, comps: [] };
+  const snap = await getSnapshot(ticker).catch(() => null);
+  const dataJson = { fundamentals: null, earnings: [], tech: {}, multiples: { pe: snap?.quote?.pe ?? null }, quote: snap?.quote ?? null, ranges: snap?.ranges ?? [] };
   try {
     const prompt = deepDivePrompt({ ticker, focus, dataJson });
     const schema = {

@@ -4,6 +4,7 @@ import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import type { QuickScanResult } from "@/lib/ai/types";
 import { chatJson } from "@/lib/ai/provider";
 import { quickScanPrompt, systemGuard } from "@/lib/ai/prompts";
+import { getSnapshot } from "@/lib/market/yahoo";
 
 const Schema = z.object({ ticker: z.string().min(1), window: z.enum(["1m","3m","6m","1y"]).default("3m") });
 
@@ -15,7 +16,12 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const { ticker, window } = parsed.data;
 
-  const dataJson = { lastPrice: null, highs: [], lows: [], earnings: null, catalysts: [] };
+  const snap = await getSnapshot(ticker).catch(() => null);
+  const dataJson = {
+    quote: snap?.quote ?? null,
+    ranges: snap?.ranges ?? [],
+    lastClose: snap?.lastClose ?? null,
+  };
   try {
     const prompt = quickScanPrompt({ ticker, window, dataJson });
     const schema = {
