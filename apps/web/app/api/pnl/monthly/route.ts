@@ -6,6 +6,7 @@ type Row = {
   month: string; // yyyy-mm-01
   realized: string | number | null;
   end_nav: string | number | null;
+  end_date: string | Date | null;
   unrealized_snapshot: string | number | null;
   prev_end_nav: string | number | null;
 };
@@ -45,17 +46,18 @@ export async function GET(req: Request) {
         FROM base
        GROUP BY month
     ), endrows AS (
-      SELECT DISTINCT ON (month) month, "navEnd", "unrealizedPnl"
+      SELECT DISTINCT ON (month) month, date AS end_date, "navEnd", "unrealizedPnl"
         FROM base
        ORDER BY month, date DESC
     ), merged AS (
-      SELECT s.month, s.realized, e."navEnd" AS end_nav, e."unrealizedPnl" AS unrealized_snapshot
+      SELECT s.month, s.realized, e."navEnd" AS end_nav, e.end_date AS end_date, e."unrealizedPnl" AS unrealized_snapshot
         FROM sum_month s
         LEFT JOIN endrows e USING (month)
     )
     SELECT m.month::text,
            m.realized,
            m.end_nav,
+           m.end_date,
            m.unrealized_snapshot,
            LAG(m.end_nav) OVER (ORDER BY m.month) AS prev_end_nav
       FROM merged m
@@ -64,7 +66,10 @@ export async function GET(req: Request) {
   const data = rows.map((r) => {
     const month = r.month.slice(0, 7); // yyyy-mm
     const realized = r.realized == null ? null : Number(r.realized);
-    const endNav = r.end_nav == null ? null : Number(r.end_nav);
+    // Only treat endNav as valid if the endrow date equals actual calendar month-end
+    const endRowDate = r.end_date ? new Date(r.end_date) : null;
+    const calEnd = new Date(new Date(r.month).getFullYear(), new Date(r.month).getMonth()+1, 0);
+    const endNav = r.end_nav == null || !endRowDate || endRowDate.toDateString() !== calEnd.toDateString() ? null : Number(r.end_nav);
     const prevEndNav = r.prev_end_nav == null ? null : Number(r.prev_end_nav);
     const navChange = endNav != null && prevEndNav != null ? endNav - prevEndNav : null;
     const returnPct = navChange != null && prevEndNav && prevEndNav !== 0 ? navChange / prevEndNav : null;

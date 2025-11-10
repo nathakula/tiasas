@@ -12,7 +12,7 @@ export default function ChartsClient() {
       const res = await fetch(`/api/pnl/monthly?year=${year}`);
       if (!res.ok) { setMonthly([]); return; }
       const data = await res.json();
-      const months = (data.months || []).map((m: any) => ({ month: m.month, realized: Number(m.realized ?? 0), navEnd: Number(m.endNav ?? 0) }));
+      const months = (data.months || []).map((m: any) => ({ month: m.month, realized: Number(m.realized ?? 0), navEnd: m.endNav == null ? null : Number(m.endNav) }));
       setMonthly(months);
     }
     load();
@@ -38,4 +38,3 @@ export default function ChartsClient() {
     </div>
   );
 }
-

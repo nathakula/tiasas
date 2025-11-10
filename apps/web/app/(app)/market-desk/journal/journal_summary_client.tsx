@@ -21,5 +21,5 @@ export default function JournalSummaryClient() {
   }, []);
 
   if (!data) return null;
-  return <MonthBanner month={data.month} realized={data.realized} endNav={data.endNav} navChange={data.navChange} returnPct={data.returnPct} unrealizedSnapshot={data.unrealizedSnapshot} />;
+  return <MonthBanner month={data.month} realized={data.realized} endNav={data.endNav} prevEndNav={data.prevEndNav} navChange={data.navChange} returnPct={data.returnPct} unrealizedSnapshot={data.unrealizedSnapshot} />;
 }

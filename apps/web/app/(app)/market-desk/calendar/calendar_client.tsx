@@ -9,7 +9,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
   const [month, setMonth] = useState<string>(initialMonth); // yyyy-MM
   const [data, setData] = useState<{ counts: typeof counts; pnl: typeof pnl; days: string[] }>({ counts, pnl, days });
   const [calMap, setCalMap] = useState<Record<string, { name: string; type: "HOLIDAY" | "EARLY_CLOSE" }>>({});
-  const [summary, setSummary] = useState<{ month: string; realized: number | null; endNav: number | null; navChange: number | null; returnPct: number | null; unrealizedSnapshot: number | null } | null>(null);
+  const [summary, setSummary] = useState<{ month: string; realized: number | null; endNav: number | null; prevEndNav: number | null; navChange: number | null; returnPct: number | null; unrealizedSnapshot: number | null } | null>(null);
   const [realized, setRealized] = useState("");
   const [unrealized, setUnrealized] = useState("");
   const [navEnd, setNavEnd] = useState("");
@@ -59,7 +59,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
       const mKey = `${y}-${String(m).padStart(2, "0")}`;
       const item = (monthly as any).months.find((x: any) => x.month === mKey);
       if (item) setSummary(item);
-      else setSummary({ month: mKey, realized: 0, endNav: 0, navChange: 0, returnPct: null, unrealizedSnapshot: 0 });
+      else setSummary({ month: mKey, realized: 0, endNav: 0, prevEndNav: null, navChange: 0, returnPct: null, unrealizedSnapshot: 0 });
     }
   }
 
@@ -105,6 +105,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
           month={summary.month}
           realized={summary.realized}
           endNav={summary.endNav}
+          prevEndNav={summary.prevEndNav}
           navChange={summary.navChange}
           returnPct={summary.returnPct}
           unrealizedSnapshot={summary.unrealizedSnapshot}

@@ -9,6 +9,7 @@ export function MonthBanner({
   month,
   realized,
   endNav,
+  prevEndNav,
   navChange,
   returnPct,
   unrealizedSnapshot,
@@ -16,6 +17,7 @@ export function MonthBanner({
   month: string; // yyyy-mm
   realized: number | null;
   endNav: number | null;
+  prevEndNav: number | null;
   navChange: number | null;
   returnPct: number | null;
   unrealizedSnapshot: number | null;
@@ -29,9 +31,10 @@ export function MonthBanner({
       </div>
       <div className="grid md:grid-cols-5 gap-3 items-center">
         <Stat label="Realized (MTD)" value={fmtUSD(realized ?? 0)} tone={profit ? "pos" : loss ? "neg" : undefined} />
-        <Stat label="NAV change" value={fmtUSD(navChange ?? 0)} />
-        <Stat label="Return %" value={returnPct == null ? "—" : `${(returnPct * 100).toFixed(2)}%`} />
-        <Stat label="End NAV" value={fmtUSD(endNav ?? 0)} />
+        <Stat label="Begin NAV" value={prevEndNav == null ? "--" : fmtUSD(prevEndNav)} />
+        <Stat label="NAV change" value={navChange == null ? "-" : fmtUSD(navChange)} />
+        <Stat label="Return %" value={returnPct == null ? "-" : `${(returnPct * 100).toFixed(2)}%`} />
+        {endNav != null && <Stat label="End NAV" value={fmtUSD(endNav)} />}
         <Stat label="Unrealized (last)" value={fmtUSD(unrealizedSnapshot ?? 0)} />
       </div>
     </div>
