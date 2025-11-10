@@ -149,7 +149,8 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
           const items: JSX.Element[] = [];
           const first = dayList[0];
           if (first) {
-            const blanks = new Date(`${first}T12:00:00Z`).getDay(); // 0=Sun
+            const fObj = first.includes("T") ? new Date(first) : new Date(`${first}T12:00:00Z`);
+            const blanks = fObj.getDay(); // 0=Sun
             for (let i = 0; i < blanks; i++) items.push(<div key={`b-${i}`} />);
           }
           return items;
@@ -158,8 +159,8 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
           const c = data.counts[k] ?? { e: 0, t: 0 };
           const p = data.pnl[k];
           const hasPnl = !!p;
-          const dObj = new Date(`${k}T12:00:00Z`);
-          const key = k;
+          const dObj = k.includes("T") ? new Date(k) : new Date(`${k}T12:00:00Z`);
+          const key = k.includes("T") ? k.slice(0, 10) : k;
           const override = calMap[key];
           const weekend = isWeekend(dObj);
           const holiday = override?.type === "HOLIDAY" ? true : isUsMarketHoliday(dObj);
@@ -177,7 +178,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
             <button
               key={k}
               className={`card p-2 min-h-[90px] text-left relative ${profit ? "ring-1 ring-emerald-400 bg-emerald-50" : ""} ${loss ? "ring-1 ring-red-400 bg-red-50" : ""} ${disabled ? "opacity-60" : "hover:shadow"}`}
-              onClick={() => (!disabled ? openFor(d) : null)}
+              onClick={() => (!disabled ? openFor(dObj) : null)}
               title={disabled ? (holiday ? "Market holiday" : weekend ? "Weekend" : "Future date") : "Click to add/edit P&L"}
             >
               <div className="text-xs text-slate-500">{format(dObj, "d MMM")}</div>
