@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/ratelimit";
@@ -25,6 +26,6 @@ export async function POST(req: Request) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const created = await prisma.connection.create({ data: { orgId, provider: parsed.data.provider as any, status: "DISCONNECTED", createdBy: user!.id } });
-  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "CREATE", entity: "Connection", entityId: created.id, before: null, after: created } });
+  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "CREATE", entity: "Connection", entityId: created.id, before: Prisma.DbNull, after: JSON.parse(JSON.stringify(created)) } });
   return NextResponse.json(created);
 }
