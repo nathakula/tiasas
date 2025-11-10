@@ -23,6 +23,10 @@ export async function POST(req: Request) {
     const tasks = await chatJson<any[]>({ system: sys, user, temperature: 0 });
     return NextResponse.json(tasks);
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "LLM failed" }, { status: 500 });
+    // Fallback: split lines into tasks
+    const lines = entry.text.split(/\n+/).map((s)=>s.trim()).filter(Boolean).slice(0,9);
+    const syms = Array.from(new Set((entry.text.match(/\b[A-Z]{1,5}\b/g) ?? []).slice(0,5)));
+    const tasks = lines.map((l, i) => ({ horizon: (i%3===0?'today':i%3===1?'this_week':'this_month') as const, text: l.replace(/^[-*]\s*/,''), symbol: syms[i%Math.max(1, syms.length)] }));
+    return NextResponse.json(tasks);
   }
 }

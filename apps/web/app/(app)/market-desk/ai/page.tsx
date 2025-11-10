@@ -166,7 +166,12 @@ function ListBox({ title, items }: { title: string; items: any[] }) {
   );
 }
 
-function Table({ rows, cols }: { rows: any[]; cols: { key: string; label: string }[] }) {
+function Table({ rows, cols }: { rows: any; cols: { key: string; label: string }[] }) {
+  const arr: any[] = Array.isArray(rows)
+    ? rows
+    : (rows && typeof rows === 'object')
+      ? Object.entries(rows).map(([k, v]) => ({ key: k, value: v }))
+      : [];
   return (
     <table className="w-full text-sm">
       <thead>
@@ -175,12 +180,12 @@ function Table({ rows, cols }: { rows: any[]; cols: { key: string; label: string
         </tr>
       </thead>
       <tbody>
-        {rows.map((r, i) => (
+        {arr.map((r, i) => (
           <tr key={i} className="border-t">
             {cols.map((c) => <td key={c.key} className="py-1 pr-2">{String(r[c.key] ?? '')}</td>)}
           </tr>
         ))}
-        {rows.length===0 && <tr><td className="py-2 text-slate-500" colSpan={cols.length}>No data</td></tr>}
+        {arr.length===0 && <tr><td className="py-2 text-slate-500" colSpan={cols.length}>No data</td></tr>}
       </tbody>
     </table>
   );
@@ -274,10 +279,11 @@ function MacroView({ data }: { data: any }) {
   );
 }
 
-function TasksView({ items }: { items: any[] }) {
+function TasksView({ items }: { items: any }) {
   const groups = useMemo(() => {
     const g: Record<string, string[]> = { today: [], this_week: [], this_month: [] } as any;
-    (items||[]).forEach((t:any)=>{ (g[t.horizon] ||= []).push(t.text + (t.symbol?` (${t.symbol})`:'')); });
+    const list: any[] = Array.isArray(items) ? items : [];
+    list.forEach((t:any)=>{ const key = t?.horizon ?? 'today'; (g[key] ||= []).push((t?.text ?? '') + (t?.symbol?` (${t.symbol})`:'')); });
     return g;
   }, [items]);
   return (

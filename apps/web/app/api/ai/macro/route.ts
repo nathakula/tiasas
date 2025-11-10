@@ -22,6 +22,13 @@ export async function POST(req: Request) {
     const out = await chatJson<MacroResult>({ system: systemGuard, user: prompt });
     return NextResponse.json(out);
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "LLM failed" }, { status: 500 });
+    // Fallback summary
+    const wk = days.map((d, i) => ({ date: d.date, item: calendarJson.known[i%calendarJson.known.length] }));
+    return NextResponse.json({
+      summary: "This is a fallback macro summary. Watch rates and liquidity; review event calendar.",
+      weekAhead: wk,
+      watchouts: ["Event-driven gaps", "Overnight headlines"],
+      disclaimer: "For research only. Not investment advice.",
+    } satisfies MacroResult);
   }
 }

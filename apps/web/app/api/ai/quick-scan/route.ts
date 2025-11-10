@@ -48,6 +48,26 @@ export async function POST(req: Request) {
     const result = await chatJson<QuickScanResult>({ system: systemGuard, user: prompt, schema });
     return NextResponse.json(result);
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "LLM failed" }, { status: 500 });
+    // Fallback: derive simple supports/resistances from Yahoo snapshot when LLM unavailable
+    const q = (dataJson as any).quote || {};
+    const last = Number(q.regularMarketPrice ?? q.last ?? dataJson.lastClose ?? 0) || 0;
+    const lo = Number(q.fiftyTwoWeekLow ?? 0) || (last * 0.7);
+    const hi = Number(q.fiftyTwoWeekHigh ?? 0) || (last * 1.3);
+    const supports = [lo, last * 0.95].filter(Boolean).map((p) => ({ price: Number(p) }));
+    const resistances = [last * 1.05, hi].filter(Boolean).map((p) => ({ price: Number(p) }));
+    const result: QuickScanResult = {
+      ticker,
+      window,
+      trend: last > (q.previousClose ?? last) ? 'up' : 'sideways',
+      supports,
+      resistances,
+      entryIdeas: supports.slice(0,2).map((s)=>`Consider buy near ${s.price.toFixed(2)} if volume confirms`),
+      exitIdeas: resistances.slice(0,2).map((r)=>`Trim near ${r.price.toFixed(2)}`),
+      ranges: (dataJson as any).ranges?.map((r: any)=>({ period: r.period, chgPct: r.chgPct ?? 0, high: hi, low: lo, atr: null })) ?? [],
+      catalysts: q.earningsTimestamp ? [{ date: new Date(q.earningsTimestamp*1000).toISOString().slice(0,10), label: 'Earnings' }] : [],
+      macroNote: undefined,
+      disclaimer: 'For research only. Not investment advice.',
+    };
+    return NextResponse.json(result);
   }
 }

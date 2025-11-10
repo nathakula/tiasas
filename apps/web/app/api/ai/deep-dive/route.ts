@@ -50,6 +50,23 @@ export async function POST(req: Request) {
     const out = await chatJson<DeepDiveResult>({ system: systemGuard, user: prompt, schema });
     return NextResponse.json(out);
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "LLM failed" }, { status: 500 });
+    const q: any = (dataJson as any).quote || {};
+    const overview = `${ticker} deep dive (fallback). Last ${q.last ?? q.regularMarketPrice ?? '-'} ${q.currency ?? ''}. PE ${q.trailingPE ?? q.pe ?? '-'}.`;
+    const supports = [q.fiftyTwoWeekLow, (q.regularMarketPrice ?? 0)*0.95].filter(Boolean).map((p:number)=>({ price: Number(p) }));
+    const resistances = [(q.regularMarketPrice ?? 0)*1.05, q.fiftyTwoWeekHigh].filter(Boolean).map((p:number)=>({ price: Number(p) }));
+    const out: DeepDiveResult = {
+      ticker,
+      overview,
+      recentResults: `Fallback summary. 52w range ${q.fiftyTwoWeekLow ?? '-'} - ${q.fiftyTwoWeekHigh ?? '-'}.`,
+      technicalZones: { supports, resistances, momentumNote: undefined },
+      valuationContext: `Trailing PE: ${q.trailingPE ?? q.pe ?? '-'}`,
+      comps: [],
+      risks: ["Macro sensitivity", "Execution"],
+      alternativeCases: ["Upside: demand strength", "Downside: multiple compression"],
+      checklist: ["Define risk", "Size appropriately", "Have exit plan"],
+      sources: [],
+      disclaimer: 'For research only. Not investment advice.',
+    };
+    return NextResponse.json(out);
   }
 }
