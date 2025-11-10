@@ -7,9 +7,10 @@ import { cookies } from "next/headers";
 
 const upsertSchema = z.object({
   date: z.string(),
-  realizedPnl: z.string(),
-  unrealizedPnl: z.string(),
+  realizedPnl: z.string(), // required
+  unrealizedPnl: z.string().optional(), // optional, default 0
   navEnd: z.string(),
+  note: z.string().optional(),
 });
 
 export async function GET(req: Request) {
@@ -37,8 +38,8 @@ export async function POST(req: Request) {
   const d = parsed.data;
   const up = await prisma.dailyPnl.upsert({
     where: { orgId_date: { orgId, date: new Date(d.date) } },
-    update: { realizedPnl: d.realizedPnl as any, unrealizedPnl: d.unrealizedPnl as any, navEnd: d.navEnd as any },
-    create: { orgId, date: new Date(d.date), realizedPnl: d.realizedPnl as any, unrealizedPnl: d.unrealizedPnl as any, navEnd: d.navEnd as any },
+    update: { realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, navEnd: d.navEnd as any, note: d.note ?? null },
+    create: { orgId, date: new Date(d.date), realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, navEnd: d.navEnd as any, note: d.note ?? null },
   });
   await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "UPSERT", entity: "DailyPnl", entityId: up.id, before: null, after: up } });
   return NextResponse.json(up);

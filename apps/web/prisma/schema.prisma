@@ -167,6 +167,7 @@ model DailyPnl {
   realizedPnl  Decimal @db.Decimal(20, 8)
   unrealizedPnl Decimal @db.Decimal(20, 8)
   navEnd       Decimal @db.Decimal(20, 8)
+  note         String?
 
   org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
@@ -218,4 +219,3 @@ model AuditLog {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-

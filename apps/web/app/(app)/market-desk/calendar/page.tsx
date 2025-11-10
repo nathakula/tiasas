@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getActiveOrgId } from "@/lib/org";
 import { startOfMonth, endOfMonth, eachDayOfInterval, format } from "date-fns";
+import CalendarClient from "./calendar_client";
 
 export default async function CalendarPage() {
   const orgId = await getActiveOrgId();
@@ -8,9 +9,10 @@ export default async function CalendarPage() {
   const today = new Date();
   const start = startOfMonth(today);
   const end = endOfMonth(today);
-  const [entries, trades] = await Promise.all([
+  const [entries, trades, pnl] = await Promise.all([
     prisma.journalEntry.findMany({ where: { orgId, date: { gte: start, lte: end } } }),
     prisma.trade.findMany({ where: { orgId, date: { gte: start, lte: end } } }),
+    prisma.dailyPnl.findMany({ where: { orgId, date: { gte: start, lte: end } } }),
   ]);
   const days = eachDayOfInterval({ start, end });
   const byDay = new Map<string, { e: number; t: number }>();
@@ -24,18 +26,6 @@ export default async function CalendarPage() {
     byDay.set(k, { ...(byDay.get(k) ?? { e: 0, t: 0 }), t: (byDay.get(k)?.t ?? 0) + 1 });
   }
 
-  return (
-    <div className="grid grid-cols-7 gap-2">
-      {days.map((d) => {
-        const k = format(d, "yyyy-MM-dd");
-        const c = byDay.get(k) ?? { e: 0, t: 0 };
-        return (
-          <div key={k} className="card p-2 min-h-[90px]">
-            <div className="text-xs text-slate-500">{format(d, "d MMM")}</div>
-            <div className="text-xs mt-2">📝 {c.e} · 🔁 {c.t}</div>
-          </div>
-        );
-      })}
-    </div>
-  );
+  const pnlByDate = new Map(pnl.map(p => [format(p.date, "yyyy-MM-dd"), { realized: p.realizedPnl.toString(), unrealized: p.unrealizedPnl.toString(), navEnd: p.navEnd.toString(), note: p.note ?? "" }]));
+  return <CalendarClient days={days.map(d=>d.toISOString())} counts={Object.fromEntries(Array.from(byDay.entries()))} pnl={Object.fromEntries(pnlByDate.entries())} />;
 }

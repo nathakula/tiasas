@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getActiveOrgId } from "@/lib/org";
 import JournalClient from "./journal_client";
+import { DailyPnlForm } from "./daily_pnl_form";
 
 export const dynamic = "force-dynamic";
 
@@ -12,5 +13,10 @@ export default async function JournalPage() {
     orderBy: { date: "desc" },
     take: 100,
   });
-  return <JournalClient initialEntries={entries} />;
+  return (
+    <div className="space-y-6">
+      <DailyPnlForm />
+      <JournalClient initialEntries={entries} />
+    </div>
+  );
 }
