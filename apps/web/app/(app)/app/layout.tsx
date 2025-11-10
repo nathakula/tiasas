@@ -7,6 +7,8 @@ import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { OrgSelector } from "@/components/org-selector";
+import { Logo } from "@/components/logo";
+import { UserMenu } from "@/components/user-menu";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -24,7 +26,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen grid grid-cols-[240px_1fr]">
       <aside className="bg-white border-r">
-        <div className="p-4 font-semibold">TIASAS</div>
+        <div className="p-4">
+          <Logo size="sm" withText href="/app/market-desk" />
+        </div>
         <nav className="px-2 space-y-1">
           <Section label="Home" />
           <NavLink href="/app/market-desk">Overview</NavLink>
@@ -41,7 +45,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <header className="flex items-center justify-between p-4 border-b bg-white gap-3">
           <div className="text-sm text-slate-600">Active org</div>
           <OrgSelector memberships={memberships} activeOrg={activeOrg} />
-          <div className="ml-auto text-sm">{session.user?.name ?? session.user?.email}</div>
+          <div className="ml-auto">
+            <UserMenu name={session.user?.name ?? session.user?.email} />
+          </div>
         </header>
         <div className="p-6">{children}</div>
       </main>
