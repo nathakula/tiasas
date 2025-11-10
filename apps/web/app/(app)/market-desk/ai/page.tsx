@@ -126,7 +126,7 @@ function PriceList({ title, items }: { title: string; items: any[] }) {
     <div className="card p-3">
       <div className="text-sm font-medium mb-1">{title}</div>
       <ul className="text-sm space-y-1">
-        {(items ?? []).map((it, i) => {
+        {(Array.isArray(items) ? items : items ? [items] : []).map((it, i) => {
           const p = toPrice(it);
           const priceText = (p.price != null && !Number.isNaN(p.price)) ? `$${Number(p.price).toFixed(2)}` : '-';
           const label = p.label ?? '';
@@ -138,7 +138,7 @@ function PriceList({ title, items }: { title: string; items: any[] }) {
   );
 }
 
-function ListBox({ title, items }: { title: string; items: any[] }) {
+function ListBox({ title, items }: { title: string; items: any }) {
   function fmt(item: any): string {
     if (item == null) return "";
     if (typeof item === "string") return item;
@@ -159,7 +159,7 @@ function ListBox({ title, items }: { title: string; items: any[] }) {
     <div className="card p-3">
       <div className="text-sm font-medium mb-1">{title}</div>
       <ul className="list-disc list-inside text-sm space-y-1">
-        {(items ?? []).map((t, i) => <li key={i}>{fmt(t)}</li>)}
+        {(Array.isArray(items) ? items : items ? [items] : []).map((t, i) => <li key={i}>{fmt(t)}</li>)}
         {!items?.length && <li className="text-slate-500">-</li>}
       </ul>
     </div>
