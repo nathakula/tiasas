@@ -12,6 +12,7 @@ export default function BulkUploadPage() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<any | null>(null);
+  const [imports, setImports] = useState<any[]>([]);
 
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
@@ -55,6 +56,7 @@ export default function BulkUploadPage() {
         setProgress(Math.round(((i + chunkSize) / parts.length) * 100));
       }
       setResult({ imported, skipped, errors });
+      await refreshImports();
     } catch (e: any) {
       alert(e.message);
     } finally { setBusy(false); setProgress(100); }
@@ -70,8 +72,31 @@ export default function BulkUploadPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "Undo failed");
       alert("Undo successful");
+      await refreshImports();
     } catch (e: any) { alert(e.message); } finally { setBusy(false); }
   }
+
+  async function undo(id: string) {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/bulk/undo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ importId: id }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Undo failed");
+      await refreshImports();
+    } catch (e: any) { alert(e.message); } finally { setBusy(false); }
+  }
+
+  async function refreshImports() {
+    try {
+      const type = mode === "PNL" ? "PNL" : "JOURNAL";
+      const res = await fetch(`/api/bulk/imports?type=${type}&limit=5`);
+      const data = await res.json();
+      setImports(data.imports ?? []);
+    } catch { setImports([]); }
+  }
+
+  // Load recent imports on mount and whenever the mode changes
+  React.useEffect(() => { refreshImports(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mode]);
 
   return (
     <div className="space-y-4">
@@ -120,6 +145,43 @@ export default function BulkUploadPage() {
         <div className="font-medium mb-2">Templates</div>
         <div className="text-sm">Daily P&L: headers "date,realized,unrealized,nav,note" — <a className="text-blue-600 underline" href="/templates/pnl_template.csv" download>Download template</a></div>
         <div className="text-sm">Journal: headers "date,text,tags" — <a className="text-blue-600 underline" href="/templates/journal_template.csv" download>Download template</a></div>
+      </div>
+
+      <div className="card p-4">
+        <div className="font-medium mb-2">Recent imports</div>
+        <div className="text-xs text-slate-600 mb-2">Showing the last 5 imports for this type. Undo rolls back the changes from that import.</div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-slate-500">
+              <th className="py-1">When</th>
+              <th>Imported</th>
+              <th>Skipped</th>
+              <th>Errors</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {imports.map((imp) => {
+              const s = imp.summary || {};
+              const imported = s.imported ?? s.created ?? 0;
+              const skipped = s.skipped ?? 0;
+              const errors = Array.isArray(s.errors) ? s.errors.length : 0;
+              const when = imp.createdAt || imp.created_at || imp.created_at_utc || imp.created_at_local || imp.created;
+              return (
+                <tr key={imp.id} className="border-t">
+                  <td className="py-1">{new Date(when).toLocaleString()}</td>
+                  <td>{imported}</td>
+                  <td>{skipped}</td>
+                  <td>{errors}</td>
+                  <td><button className="text-blue-600" disabled={busy} onClick={() => undo(imp.id)}>Undo</button></td>
+                </tr>
+              );
+            })}
+            {imports.length === 0 && (
+              <tr><td className="py-2 text-slate-500" colSpan={5}>No imports yet.</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
