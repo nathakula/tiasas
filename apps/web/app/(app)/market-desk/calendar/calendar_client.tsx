@@ -1,12 +1,13 @@
 "use client";
 import { format } from "date-fns";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { isWeekend, isUsMarketHoliday, holidayName } from "@/lib/market-calendar";
 
 export default function CalendarClient({ initialMonth, days, counts, pnl }: { initialMonth: string; days: string[]; counts: Record<string, { e: number; t: number }>; pnl: Record<string, { realized: string; unrealized: string; navEnd: string; note: string }> }) {
   const [open, setOpen] = useState<string | null>(null);
   const [month, setMonth] = useState<string>(initialMonth); // yyyy-MM
   const [data, setData] = useState<{ counts: typeof counts; pnl: typeof pnl; days: string[] }>({ counts, pnl, days });
+  const [calMap, setCalMap] = useState<Record<string, { name: string; type: "HOLIDAY" | "EARLY_CLOSE" }>>({});
   const [realized, setRealized] = useState("");
   const [unrealized, setUnrealized] = useState("");
   const [navEnd, setNavEnd] = useState("");
@@ -20,10 +21,11 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
     const start = new Date(y, m - 1, 1);
     const end = new Date(y, m, 0);
     const params = (from: Date, to: Date) => `from=${from.toISOString().slice(0,10)}&to=${to.toISOString().slice(0,10)}`;
-    const [entries, trades, pnlRows] = await Promise.all([
-      fetch(`/api/journal?${params(start, end)}`).then(r=>r.json()),
-      fetch(`/api/trades?${params(start, end)}`).then(r=>r.json()),
-      fetch(`/api/pnl/daily?${params(start, end)}`).then(r=>r.json()),
+    const [entries, trades, pnlRows, mapResp] = await Promise.all([
+      fetch(`/api/journal?${params(start, end)}`).then(safeJson),
+      fetch(`/api/trades?${params(start, end)}`).then(safeJson),
+      fetch(`/api/pnl/daily?${params(start, end)}`).then(safeJson),
+      fetch(`/api/market-calendar?year=${y}`).then(safeJson),
     ]);
     const each: string[] = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) each.push(new Date(d).toISOString());
@@ -32,20 +34,30 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
       const k = iso.slice(0,10);
       byDay.set(k, { e: 0, t: 0 });
     });
-    entries.forEach((e: any) => {
+    (entries || []).forEach((e: any) => {
       const k = e.date.slice(0,10);
       byDay.set(k, { ...(byDay.get(k) ?? { e: 0, t: 0 }), e: (byDay.get(k)?.e ?? 0) + 1 });
     });
-    trades.forEach((t: any) => {
+    (trades || []).forEach((t: any) => {
       const k = t.date.slice(0,10);
       byDay.set(k, { ...(byDay.get(k) ?? { e: 0, t: 0 }), t: (byDay.get(k)?.t ?? 0) + 1 });
     });
     const pnlMap = new Map<string, { realized: string; unrealized: string; navEnd: string; note: string }>();
-    pnlRows.forEach((p: any) => {
+    (pnlRows || []).forEach((p: any) => {
       const k = p.date.slice(0,10);
       pnlMap.set(k, { realized: p.realizedPnl, unrealized: p.unrealizedPnl, navEnd: p.navEnd, note: p.note ?? "" });
     });
     setData({ counts: Object.fromEntries(byDay.entries()) as any, pnl: Object.fromEntries(pnlMap.entries()) as any, days: each });
+    if (mapResp && (mapResp as any).days) setCalMap((mapResp as any).days);
+  }
+
+  // Initial refresh to ensure CSV overrides and map are loaded
+  useEffect(() => { loadMonth(month); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function safeJson(res: Response) {
+    if (!res.ok) return null;
+    try { return await res.json(); } catch { return null; }
   }
 
   function openFor(day: Date) {
@@ -109,16 +121,19 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
           const p = data.pnl[k];
           const hasPnl = !!p;
           const weekend = isWeekend(d);
-          const holiday = isUsMarketHoliday(d);
+          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+          const override = calMap[key];
+          const holiday = override?.type === "HOLIDAY" ? true : isUsMarketHoliday(d);
+          const earlyClose = override?.type === "EARLY_CLOSE";
           const today = new Date();
           const future = d > new Date(today.getFullYear(), today.getMonth(), today.getDate());
           const disabled = weekend || holiday || future;
           const realizedNum = hasPnl ? Number(p.realized) : 0;
           const profit = hasPnl && realizedNum > 0;
           const loss = hasPnl && realizedNum < 0;
-          const badge = holiday ? "Holiday" : weekend ? "Weekend" : future ? "Future" : null;
-          const hName = holiday ? holidayName(d) : null;
-          const badgeTitle = holiday ? `Market holiday: ${hName ?? ""}` : weekend ? "Weekend" : future ? "Future date" : "";
+          const hName = holiday ? (override?.name ?? holidayName(d)) : null;
+          const badge = holiday ? (hName || "Holiday") : earlyClose ? (override?.name || "Early close") : weekend ? "Weekend" : future ? "Future" : null;
+          const badgeTitle = holiday ? `Market holiday: ${hName ?? ""}` : earlyClose ? "Early close" : weekend ? "Weekend" : future ? "Future date" : "";
           return (
             <button
               key={k}
@@ -132,8 +147,8 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
                 <div className={`text-xs mt-1 ${profit ? "text-emerald-700" : loss ? "text-red-700" : "text-slate-600"}`}>P&L: {p.realized}</div>
               )}
               {badge && (
-                <span className={`absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded-full border ${holiday ? "bg-amber-50 border-amber-300" : weekend ? "bg-slate-100" : "bg-white"}`} title={badgeTitle}>
-                  {holiday && hName ? hName : badge}
+                <span className={`absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded-full border ${holiday ? "bg-amber-50 border-amber-300" : earlyClose ? "bg-amber-50 border-amber-300" : weekend ? "bg-slate-100" : "bg-white"}`} title={badgeTitle}>
+                  {(holiday && hName) ? hName : badge}
                 </span>
               )}
             </button>
