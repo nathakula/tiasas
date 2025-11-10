@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/db";
-import { cookies } from "next/headers";
+import { getActiveOrgId } from "@/lib/org";
 import { startOfMonth, endOfMonth, eachDayOfInterval, format } from "date-fns";
 
 export default async function CalendarPage() {
-  const orgId = (await cookies()).get("active_org")?.value ?? null;
+  const orgId = await getActiveOrgId();
   if (!orgId) return <div>No active org.</div>;
   const today = new Date();
   const start = startOfMonth(today);
@@ -39,4 +39,3 @@ export default async function CalendarPage() {
     </div>
   );
 }
-

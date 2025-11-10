@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/db";
-import { cookies } from "next/headers";
+import { getActiveOrgId } from "@/lib/org";
 import { format } from "date-fns";
 import { MonthlyPnlChart, NavByMonthChart, YtdCards } from "./charts_widgets";
 
 export default async function ChartsPage() {
-  const orgId = (await cookies()).get("active_org")?.value ?? null;
+  const orgId = await getActiveOrgId();
   if (!orgId) return <div>No active org.</div>;
   const daily = await prisma.dailyPnl.findMany({ where: { orgId }, orderBy: { date: "asc" } });
   const monthly = aggregateMonthly(daily.map((d) => ({
@@ -38,4 +38,3 @@ function aggregateMonthly(rows: { date: Date; realizedPnl: number; navEnd: numbe
   }
   return Array.from(map.values());
 }
-

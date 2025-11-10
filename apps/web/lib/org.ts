@@ -15,9 +15,6 @@ export async function getActiveOrgId(): Promise<string | null> {
     orderBy: { createdAt: "asc" },
   });
   const first = memberships[0]?.orgId ?? null;
-  if (first) {
-    cookieStore.set("active_org", first);
-  }
   return first;
 }
 

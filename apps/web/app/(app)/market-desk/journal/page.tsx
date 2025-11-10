@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
-import { cookies } from "next/headers";
+import { getActiveOrgId } from "@/lib/org";
 import JournalClient from "./journal_client";
 
 export const dynamic = "force-dynamic";
 
 export default async function JournalPage() {
-  const orgId = (await cookies()).get("active_org")?.value ?? null;
+  const orgId = await getActiveOrgId();
   if (!orgId) return <div>No active org.</div>;
   const entries = await prisma.journalEntry.findMany({
     where: { orgId },
@@ -14,4 +14,3 @@ export default async function JournalPage() {
   });
   return <JournalClient initialEntries={entries} />;
 }
-

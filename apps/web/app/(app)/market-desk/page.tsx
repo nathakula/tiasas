@@ -1,12 +1,8 @@
 import { prisma } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { cookies } from "next/headers";
+import { getActiveOrgId } from "@/lib/org";
 
 export default async function MarketDeskOverview() {
-  const session = await getServerSession(authOptions);
-  const cookieStore = await cookies();
-  const orgId = cookieStore.get("active_org")?.value ?? null;
+  const orgId = await getActiveOrgId();
   if (!orgId) return <div className="text-slate-600">No active organization.</div>;
 
   const [entriesCount, tradesCount, latestNav] = await Promise.all([
@@ -32,4 +28,3 @@ function Card({ title, value }: { title: string; value: string | number }) {
     </div>
   );
 }
-
