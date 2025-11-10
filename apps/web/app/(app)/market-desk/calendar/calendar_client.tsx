@@ -105,7 +105,6 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
           navChange={summary.navChange}
           returnPct={summary.returnPct}
           unrealizedSnapshot={summary.unrealizedSnapshot}
-          navSeries={data.days.map((iso)=>({ date: iso.slice(8,10), nav: data.pnl[iso.slice(0,10)] ? Number(data.pnl[iso.slice(0,10)].navEnd) : NaN })).filter(p=>!Number.isNaN(p.nav))}
         />
       )}
       {/* Controls */}

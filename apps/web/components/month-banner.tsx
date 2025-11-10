@@ -1,5 +1,4 @@
 "use client";
-import { BarChart, Bar, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
 
 function fmtUSD(n: number | null | undefined) {
   if (n == null) return "—";
@@ -13,7 +12,6 @@ export function MonthBanner({
   navChange,
   returnPct,
   unrealizedSnapshot,
-  navSeries,
 }: {
   month: string; // yyyy-mm
   realized: number | null;
@@ -21,7 +19,6 @@ export function MonthBanner({
   navChange: number | null;
   returnPct: number | null;
   unrealizedSnapshot: number | null;
-  navSeries?: { date: string; nav: number }[];
 }) {
   const profit = (realized ?? 0) > 0;
   const loss = (realized ?? 0) < 0;
@@ -37,18 +34,6 @@ export function MonthBanner({
         <Stat label="End NAV" value={fmtUSD(endNav ?? 0)} />
         <Stat label="Unrealized (last)" value={fmtUSD(unrealizedSnapshot ?? 0)} />
       </div>
-      {navSeries && navSeries.length > 1 && (
-        <div className="h-20 mt-3">
-          <ResponsiveContainer>
-            <LineChart data={navSeries}>
-              <XAxis dataKey="date" hide />
-              <YAxis hide domain={["dataMin", "dataMax"]} />
-              <Tooltip formatter={(v: any) => fmtUSD(Number(v))} labelFormatter={() => month} />
-              <Line type="monotone" dataKey="nav" stroke="#0ea5e9" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
     </div>
   );
 }
@@ -61,4 +46,3 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "po
     </div>
   );
 }
-
