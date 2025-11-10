@@ -127,12 +127,28 @@ function PriceList({ title, items }: { title: string; items: { price: number; no
   );
 }
 
-function ListBox({ title, items }: { title: string; items: string[] }) {
+function ListBox({ title, items }: { title: string; items: any[] }) {
+  function fmt(item: any): string {
+    if (item == null) return "";
+    if (typeof item === "string") return item;
+    if (typeof item === "number" || typeof item === "boolean") return String(item);
+    // Try common fields from LLMs
+    const d = (item as any);
+    const parts: string[] = [];
+    if (d.description) parts.push(String(d.description));
+    if (d.text && parts.length === 0) parts.push(String(d.text));
+    const level = d.level ?? d.entryLevel ?? d.exitLevel ?? d.price;
+    if (level != null) parts.push(`@ ${level}`);
+    const note = d.note ?? d.reason;
+    if (note && parts.length === 0) parts.push(String(note));
+    if (parts.length > 0) return parts.join(" ");
+    try { return JSON.stringify(d); } catch { return String(d); }
+  }
   return (
     <div className="card p-3">
       <div className="text-sm font-medium mb-1">{title}</div>
       <ul className="list-disc list-inside text-sm space-y-1">
-        {items?.map((t, i) => <li key={i}>{t}</li>)}
+        {(items ?? []).map((t, i) => <li key={i}>{fmt(t)}</li>)}
         {!items?.length && <li className="text-slate-500">-</li>}
       </ul>
     </div>
