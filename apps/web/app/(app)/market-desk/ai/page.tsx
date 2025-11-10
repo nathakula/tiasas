@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 type Tab = "quick"|"deep"|"macro"|"notes";
 
@@ -42,7 +42,7 @@ function QuickScan() {
         </select>
         <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Scan</button>
       </div>
-      {res && <pre className="text-xs bg-slate-50 p-2 rounded overflow-auto">{JSON.stringify(res, null, 2)}</pre>}
+      {res && <QuickScanView data={res} />}
     </div>
   );
 }
@@ -62,7 +62,7 @@ function DeepDive() {
         <input className="border rounded px-2 py-1" placeholder="Focus (optional)" value={focus} onChange={(e)=>setFocus(e.target.value)} />
         <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Deep Dive</button>
       </div>
-      {res && <pre className="text-xs bg-slate-50 p-2 rounded overflow-auto">{JSON.stringify(res, null, 2)}</pre>}
+      {res && <DeepDiveView data={res} />}
     </div>
   );
 }
@@ -81,7 +81,7 @@ function MacroBox() {
         <input className="border rounded px-2 py-1" placeholder="Watchlist" value={watchlist} onChange={(e)=>setWatchlist(e.target.value)} />
         <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Generate</button>
       </div>
-      {res && <pre className="text-xs bg-slate-50 p-2 rounded overflow-auto">{JSON.stringify(res, null, 2)}</pre>}
+      {res && <MacroView data={res} />}
     </div>
   );
 }
@@ -99,8 +99,159 @@ function NotesActions() {
         <input className="border rounded px-2 py-1" placeholder="Journal entry id" value={id} onChange={(e)=>setId(e.target.value)} />
         <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Convert</button>
       </div>
-      {res && <pre className="text-xs bg-slate-50 p-2 rounded overflow-auto">{JSON.stringify(res, null, 2)}</pre>}
+      {res && <TasksView items={res} />}
     </div>
   );
 }
 
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "pos"|"neg" }) {
+  return (
+    <div>
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className={`text-lg font-semibold ${tone==='pos'? 'text-emerald-700': tone==='neg'?'text-red-700':''}`}>{value}</div>
+    </div>
+  );
+}
+
+function PriceList({ title, items }: { title: string; items: { price: number; note?: string }[] }) {
+  return (
+    <div className="card p-3">
+      <div className="text-sm font-medium mb-1">{title}</div>
+      <ul className="text-sm space-y-1">
+        {items?.map((l, i) => (
+          <li key={i} className="flex justify-between"><span>{l.note ?? ''}</span><span>${l.price.toFixed(2)}</span></li>
+        ))}
+        {!items?.length && <li className="text-slate-500">-</li>}
+      </ul>
+    </div>
+  );
+}
+
+function ListBox({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="card p-3">
+      <div className="text-sm font-medium mb-1">{title}</div>
+      <ul className="list-disc list-inside text-sm space-y-1">
+        {items?.map((t, i) => <li key={i}>{t}</li>)}
+        {!items?.length && <li className="text-slate-500">-</li>}
+      </ul>
+    </div>
+  );
+}
+
+function Table({ rows, cols }: { rows: any[]; cols: { key: string; label: string }[] }) {
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left text-slate-500">
+          {cols.map((c) => <th key={c.key} className="py-1 pr-2">{c.label}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => (
+          <tr key={i} className="border-t">
+            {cols.map((c) => <td key={c.key} className="py-1 pr-2">{String(r[c.key] ?? '')}</td>)}
+          </tr>
+        ))}
+        {rows.length===0 && <tr><td className="py-2 text-slate-500" colSpan={cols.length}>No data</td></tr>}
+      </tbody>
+    </table>
+  );
+}
+
+function QuickScanView({ data }: { data: any }) {
+  const trendTone = data?.trend === 'up' ? 'pos' : data?.trend === 'down' ? 'neg' : undefined;
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-slate-600">{data.ticker} · window {data.window}</div>
+      </div>
+      <div className="grid md:grid-cols-5 gap-3 items-start">
+        <Stat label="Trend" value={String(data.trend ?? '-')} tone={trendTone as any} />
+        <Stat label="Supports" value={String(data.supports?.length ?? 0)} />
+        <Stat label="Resistances" value={String(data.resistances?.length ?? 0)} />
+        <Stat label="Ideas" value={`${(data.entryIdeas?.length ?? 0)+(data.exitIdeas?.length ?? 0)}`} />
+        <Stat label="Catalysts" value={String(data.catalysts?.length ?? 0)} />
+      </div>
+      <div className="grid md:grid-cols-2 gap-3">
+        <PriceList title="Support Levels" items={data.supports ?? []} />
+        <PriceList title="Resistance Levels" items={data.resistances ?? []} />
+      </div>
+      <div className="grid md:grid-cols-2 gap-3">
+        <ListBox title="Entry Ideas" items={data.entryIdeas ?? []} />
+        <ListBox title="Exit Ideas" items={data.exitIdeas ?? []} />
+      </div>
+      <div className="card p-3">
+        <div className="text-sm font-medium mb-1">Ranges</div>
+        <Table rows={data.ranges ?? []} cols={[{key:'period',label:'Period'},{key:'chgPct',label:'Chg %'},{key:'high',label:'High'},{key:'low',label:'Low'},{key:'atr',label:'ATR'}]} />
+      </div>
+      <div className="card p-3">
+        <div className="text-sm font-medium mb-1">Catalysts</div>
+        <Table rows={(data.catalysts ?? []).map((c:any)=>({date:c.date,label:c.label}))} cols={[{key:'date',label:'Date'},{key:'label',label:'Label'}]} />
+      </div>
+      {data.macroNote && <div className="text-sm text-slate-700">{data.macroNote}</div>}
+      <div className="text-xs text-slate-500">{data.disclaimer}</div>
+    </div>
+  );
+}
+
+function DeepDiveView({ data }: { data: any }) {
+  const supports = data?.technicalZones?.supports ?? [];
+  const resistances = data?.technicalZones?.resistances ?? [];
+  const momentum = data?.technicalZones?.momentumNote;
+  return (
+    <div className="space-y-3">
+      <div className="text-sm text-slate-600">{data.ticker}</div>
+      <div className="card p-3"><div className="font-medium">Overview</div><p className="text-sm mt-1 whitespace-pre-wrap">{data.overview}</p></div>
+      <div className="card p-3"><div className="font-medium">Recent Results</div><p className="text-sm mt-1 whitespace-pre-wrap">{data.recentResults}</p></div>
+      <div className="grid md:grid-cols-2 gap-3">
+        <PriceList title="Supports" items={supports} />
+        <PriceList title="Resistances" items={resistances} />
+      </div>
+      {momentum && <div className="text-sm text-slate-700">{momentum}</div>}
+      <div className="card p-3"><div className="font-medium">Valuation</div><p className="text-sm mt-1 whitespace-pre-wrap">{data.valuationContext}</p></div>
+      {Array.isArray(data.comps) && data.comps.length>0 && (
+        <div className="card p-3">
+          <div className="font-medium mb-1">Comps</div>
+          <div className="flex flex-wrap gap-2">{data.comps.map((c:string,i:number)=>(<span key={i} className="px-2 py-0.5 text-xs border rounded">{c}</span>))}</div>
+        </div>
+      )}
+      <div className="grid md:grid-cols-3 gap-3">
+        <ListBox title="Risks" items={data.risks ?? []} />
+        <ListBox title="Alternative Cases" items={data.alternativeCases ?? []} />
+        <ListBox title="Checklist" items={data.checklist ?? []} />
+      </div>
+      <div className="text-xs text-slate-500">{data.disclaimer}</div>
+    </div>
+  );
+}
+
+function MacroView({ data }: { data: any }) {
+  const week = data?.weekAhead ?? [];
+  return (
+    <div className="space-y-3">
+      <div className="card p-3"><div className="font-medium">Summary</div><p className="text-sm mt-1 whitespace-pre-wrap">{data.summary}</p></div>
+      <div className="card p-3">
+        <div className="font-medium mb-1">Week Ahead</div>
+        <Table rows={week} cols={[{key:'date',label:'Date'},{key:'item',label:'Item'}]} />
+      </div>
+      <ListBox title="Watchouts" items={data.watchouts ?? []} />
+      <div className="text-xs text-slate-500">{data.disclaimer}</div>
+    </div>
+  );
+}
+
+function TasksView({ items }: { items: any[] }) {
+  const groups = useMemo(() => {
+    const g: Record<string, string[]> = { today: [], this_week: [], this_month: [] } as any;
+    (items||[]).forEach((t:any)=>{ (g[t.horizon] ||= []).push(t.text + (t.symbol?` (${t.symbol})`:'')); });
+    return g;
+  }, [items]);
+  return (
+    <div className="grid md:grid-cols-3 gap-3">
+      <ListBox title="Today" items={groups.today ?? []} />
+      <ListBox title="This Week" items={groups.this_week ?? []} />
+      <ListBox title="This Month" items={groups.this_month ?? []} />
+    </div>
+  );
+}
