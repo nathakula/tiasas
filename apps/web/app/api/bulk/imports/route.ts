@@ -9,7 +9,11 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type") ?? undefined;
   const limit = Number(searchParams.get("limit") ?? 5);
-  const rows = await prisma.$queryRaw`SELECT id, "createdAt", type, summary FROM "BulkImport" WHERE "orgId" = ${orgId} ${type ? prisma.$unsafe(`AND type = '${type}'`) : prisma.$unsafe("")} ORDER BY "createdAt" DESC LIMIT ${limit}` as any;
+  let rows: any[] = [];
+  if (type) {
+    rows = await prisma.$queryRaw`SELECT id, "createdAt", type, summary FROM "BulkImport" WHERE "orgId" = ${orgId} AND type = ${type} ORDER BY "createdAt" DESC LIMIT ${limit}` as any;
+  } else {
+    rows = await prisma.$queryRaw`SELECT id, "createdAt", type, summary FROM "BulkImport" WHERE "orgId" = ${orgId} ORDER BY "createdAt" DESC LIMIT ${limit}` as any;
+  }
   return NextResponse.json({ imports: rows });
 }
-
