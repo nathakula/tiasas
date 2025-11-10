@@ -10,7 +10,9 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: false,
+      // In dev, allow linking a Google account to a pre-seeded user
+      // to avoid OAuthAccountNotLinked loops.
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   callbacks: {
