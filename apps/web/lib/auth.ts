@@ -15,6 +15,20 @@ export const authOptions: NextAuthOptions = {
       allowDangerousEmailAccountLinking: true,
     }),
   ],
+  events: {
+    async signIn({ user }) {
+      try {
+        const memberships = await prisma.membership.count({ where: { userId: user.id } });
+        if (memberships === 0) {
+          const base = user.name?.split(" ")[0] || user.email?.split("@")[0] || "Personal";
+          const org = await prisma.org.create({ data: { name: `${base}'s Workspace` } });
+          await prisma.membership.create({ data: { userId: user.id, orgId: org.id, role: "OWNER" as any } });
+        }
+      } catch (e) {
+        console.error("signIn provisioning error", e);
+      }
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
