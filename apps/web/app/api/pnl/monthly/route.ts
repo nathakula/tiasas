@@ -66,10 +66,8 @@ export async function GET(req: Request) {
   const data = rows.map((r) => {
     const month = r.month.slice(0, 7); // yyyy-mm
     const realized = r.realized == null ? null : Number(r.realized);
-    // Only treat endNav as valid if the endrow date equals actual calendar month-end
-    const endRowDate = r.end_date ? new Date(r.end_date) : null;
-    const calEnd = new Date(new Date(r.month).getFullYear(), new Date(r.month).getMonth()+1, 0);
-    const endNav = r.end_nav == null || !endRowDate || endRowDate.toDateString() !== calEnd.toDateString() ? null : Number(r.end_nav);
+    // Treat the last available day within the month as the month-end snapshot
+    const endNav = r.end_nav == null ? null : Number(r.end_nav);
     const prevEndNav = r.prev_end_nav == null ? null : Number(r.prev_end_nav);
     const navChange = endNav != null && prevEndNav != null ? endNav - prevEndNav : null;
     const returnPct = navChange != null && prevEndNav && prevEndNav !== 0 ? navChange / prevEndNav : null;
@@ -77,5 +75,8 @@ export async function GET(req: Request) {
     return { month, realized, endNav, prevEndNav, navChange, returnPct, unrealizedSnapshot };
   });
 
-  return NextResponse.json({ months: data });
+  const response = NextResponse.json({ months: data });
+  // Cache for 5 minutes since P&L data doesn't change frequently
+  response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+  return response;
 }

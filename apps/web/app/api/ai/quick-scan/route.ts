@@ -5,12 +5,19 @@ import type { QuickScanResult } from "@/lib/ai/types";
 import { chatJson } from "@/lib/ai/provider";
 import { quickScanPrompt, systemGuard } from "@/lib/ai/prompts";
 import { getSnapshot } from "@/lib/market/yahoo";
+import { rateLimit } from "@/lib/ratelimit";
 
 const Schema = z.object({ ticker: z.string().min(1), window: z.enum(["1m","3m","6m","1y"]).default("3m") });
 
 export async function POST(req: Request) {
   const auth = await requireAuthOrgMembership();
   if ("error" in auth) return auth.error;
+  const { session } = auth as any;
+
+  // Rate limit AI requests: 10 requests per minute
+  const rl = rateLimit(`ai:quick-scan:${session.user.email}`, 10, 60000);
+  if (!rl.ok) return NextResponse.json({ error: "Rate limited. Please try again in a minute." }, { status: 429 });
+
   const body = await req.json().catch(() => ({}));
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

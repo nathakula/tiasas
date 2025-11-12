@@ -3,13 +3,19 @@ import { z } from "zod";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { prisma } from "@/lib/db";
 import { chatJson } from "@/lib/ai/provider";
+import { rateLimit } from "@/lib/ratelimit";
 
 const Schema = z.object({ journalEntryId: z.string().min(1) });
 
 export async function POST(req: Request) {
   const auth = await requireAuthOrgMembership();
   if ("error" in auth) return auth.error;
-  const { orgId } = auth;
+  const { orgId, session } = auth as any;
+
+  // Rate limit AI requests: 20 requests per minute (this is lighter weight)
+  const rl = rateLimit(`ai:notes-to-actions:${session.user.email}`, 20, 60000);
+  if (!rl.ok) return NextResponse.json({ error: "Rate limited. Please try again in a minute." }, { status: 429 });
+
   const parsed = Schema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const id = parsed.data.journalEntryId;

@@ -4,12 +4,18 @@ import { useMemo, useState, useEffect } from "react";
 import { isWeekend, isUsMarketHoliday, holidayName } from "@/lib/market-calendar";
 import { MonthBanner } from "@/components/month-banner";
 
-export default function CalendarClient({ initialMonth, days, counts, pnl }: { initialMonth: string; days: string[]; counts: Record<string, { e: number; t: number }>; pnl: Record<string, { realized: string; unrealized: string; navEnd: string; note: string }> }) {
+export default function CalendarClient({ initialMonth, days, counts, pnl, initialSummary }: {
+  initialMonth: string;
+  days: string[];
+  counts: Record<string, { e: number; t: number }>;
+  pnl: Record<string, { realized: string; unrealized: string; navEnd: string; note: string }>;
+  initialSummary: { month: string; realized: number | null; endNav: number | null; prevEndNav: number | null; navChange: number | null; returnPct: number | null; unrealizedSnapshot: number | null };
+}) {
   const [open, setOpen] = useState<string | null>(null);
   const [month, setMonth] = useState<string>(initialMonth); // yyyy-MM
   const [data, setData] = useState<{ counts: typeof counts; pnl: typeof pnl; days: string[] }>({ counts, pnl, days });
   const [calMap, setCalMap] = useState<Record<string, { name: string; type: "HOLIDAY" | "EARLY_CLOSE" }>>({});
-  const [summary, setSummary] = useState<{ month: string; realized: number | null; endNav: number | null; prevEndNav: number | null; navChange: number | null; returnPct: number | null; unrealizedSnapshot: number | null } | null>(null);
+  const [summary, setSummary] = useState(initialSummary);
   const [realized, setRealized] = useState("");
   const [unrealized, setUnrealized] = useState("");
   const [navEnd, setNavEnd] = useState("");
@@ -19,17 +25,29 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
   // Keep days as YYYY-MM-DD strings; avoid timezone shifts
   const dayList = useMemo(() => data.days as string[], [data.days]);
 
+  // Load market calendar once on mount (only static data)
+  useEffect(() => {
+    const year = new Date().getFullYear();
+    fetch(`/api/market-calendar?year=${year}`)
+      .then(safeJson)
+      .then((resp) => {
+        if (resp && (resp as any).days) setCalMap((resp as any).days);
+      });
+  }, []);
+
   async function loadMonth(yyyyMM: string) {
     const [y, m] = yyyyMM.split("-").map(Number);
     const start = new Date(y, m - 1, 1);
     const end = new Date(y, m, 0);
     const params = (from: Date, to: Date) => `from=${from.toISOString().slice(0,10)}&to=${to.toISOString().slice(0,10)}`;
-    const [entries, trades, pnlRows, mapResp, monthly] = await Promise.all([
+    const prevMonthStart = new Date(y, m - 2, 1);
+    const prevMonthEnd = new Date(y, m - 1, 0);
+    const [entries, trades, pnlRows, monthly] = await Promise.all([
       fetch(`/api/journal?${params(start, end)}`).then(safeJson),
       fetch(`/api/trades?${params(start, end)}`).then(safeJson),
       fetch(`/api/pnl/daily?${params(start, end)}`).then(safeJson),
-      fetch(`/api/market-calendar?year=${y}`).then(safeJson),
-      fetch(`/api/pnl/monthly?from=${start.toISOString().slice(0,10)}&to=${end.toISOString().slice(0,10)}`).then(safeJson),
+      // Fetch one extra month before so prevEndNav is available for banner
+      fetch(`/api/pnl/monthly?from=${prevMonthStart.toISOString().slice(0,10)}&to=${end.toISOString().slice(0,10)}`).then(safeJson),
     ]);
     const each: string[] = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -54,18 +72,13 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
       pnlMap.set(k, { realized: p.realizedPnl, unrealized: p.unrealizedPnl, navEnd: p.navEnd, note: p.note ?? "" });
     });
     setData({ counts: Object.fromEntries(byDay.entries()) as any, pnl: Object.fromEntries(pnlMap.entries()) as any, days: each });
-    if (mapResp && (mapResp as any).days) setCalMap((mapResp as any).days);
     if (monthly && (monthly as any).months) {
       const mKey = `${y}-${String(m).padStart(2, "0")}`;
       const item = (monthly as any).months.find((x: any) => x.month === mKey);
       if (item) setSummary(item);
-      else setSummary({ month: mKey, realized: 0, endNav: 0, prevEndNav: null, navChange: 0, returnPct: null, unrealizedSnapshot: 0 });
+      else setSummary({ month: mKey, realized: 0, endNav: null, prevEndNav: null, navChange: null, returnPct: null, unrealizedSnapshot: null });
     }
   }
-
-  // Initial refresh to ensure CSV overrides and map are loaded
-  useEffect(() => { loadMonth(month); // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function safeJson(res: Response) {
     if (!res.ok) return null;
@@ -93,8 +106,20 @@ export default function CalendarClient({ initialMonth, days, counts, pnl }: { in
     });
     setSaving(false);
     if (!res.ok) return alert("Failed to save");
+
+    // Optimistic update: update local state instead of full reload
+    const updated = { realized, unrealized: unrealized || "0", navEnd: navEnd || "0", note: note || "" };
+    setData((prev) => ({
+      ...prev,
+      pnl: { ...prev.pnl, [open]: updated },
+    }));
+
+    // Recalculate summary if needed
+    const currentMonthData = Object.entries(data.pnl).filter(([date]) => date.startsWith(month));
+    const totalRealized = currentMonthData.reduce((sum, [, p]) => sum + Number(p.realized), 0) + Number(realized) - Number(data.pnl[open]?.realized || 0);
+    setSummary((prev) => ({ ...prev, realized: totalRealized }));
+
     setOpen(null);
-    location.reload();
   }
 
   return (

@@ -13,7 +13,10 @@ export async function GET(req: Request) {
   const algo = usMarketHolidayMap(year) as Record<string, { name: string; type: Kind }>;
   const fromCsv = readCsvOverrides(year);
   const merged: Record<string, { name: string; type: Kind }> = { ...algo, ...fromCsv } as any;
-  return NextResponse.json({ year, days: merged });
+  const response = NextResponse.json({ year, days: merged });
+  // Cache for 1 day since market calendar rarely changes
+  response.headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=172800');
+  return response;
 }
 
 function readCsvOverrides(year: number): Record<string, { name: string; type: Kind }> {

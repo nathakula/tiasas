@@ -25,7 +25,10 @@ export async function GET(req: Request) {
   if (from || to) where.date = { gte: from ? new Date(from) : undefined, lte: to ? new Date(to) : undefined };
   if (tags.length) where.tags = { hasSome: tags };
   const rows = await prisma.journalEntry.findMany({ where, orderBy: { date: "desc" } });
-  return NextResponse.json(rows);
+  const response = NextResponse.json(rows);
+  // Cache for 2 minutes
+  response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+  return response;
 }
 
 export async function POST(req: Request) {
