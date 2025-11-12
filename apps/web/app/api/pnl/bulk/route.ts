@@ -36,6 +36,7 @@ function normalizeRows(payload: z.infer<typeof PayloadSchema>) {
     nav: h.indexOf("nav"),
     note: h.indexOf("note"),
   };
+  if (idx.note < 0) idx.note = h.indexOf("notes");
   const headerLooksLikeData = () => {
     const d = header?.[0] ?? "";
     return /^\d{4}[-/.]\d{1,2}([-/\\.]\d{1,2})?$/.test(d) || /\d/.test(header?.[1] ?? "");
@@ -93,10 +94,13 @@ export async function POST(req: Request) {
           if (strategy === "skip" && existing) { results.skipped++; continue; }
           if (dryRun) { results.imported++; continue; }
           if (existing) before.push(existing);
+          const updateData: any = { realizedPnl: row.realized as any, unrealizedPnl: (row.unrealized ?? "0") as any, note: row.note ?? null };
+          if (typeof row.nav !== 'undefined') updateData.navEnd = row.nav as any; // preserve existing month-end NAV when nav not provided
+          const createData: any = { orgId, date: new Date(dateIso), realizedPnl: row.realized as any, unrealizedPnl: (row.unrealized ?? "0") as any, navEnd: (row.nav ?? "0") as any, note: row.note ?? null };
           const up = await tx.dailyPnl.upsert({
             where: { orgId_date: { orgId, date: new Date(dateIso) } },
-            update: { realizedPnl: row.realized as any, unrealizedPnl: (row.unrealized ?? "0") as any, navEnd: (row.nav ?? "0") as any, note: row.note ?? null },
-            create: { orgId, date: new Date(dateIso), realizedPnl: row.realized as any, unrealizedPnl: (row.unrealized ?? "0") as any, navEnd: (row.nav ?? "0") as any, note: row.note ?? null },
+            update: updateData,
+            create: createData,
           });
           after.push(up);
           results.imported++;

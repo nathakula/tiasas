@@ -17,25 +17,33 @@ export function MonthlyPnlChart({ monthly }: { monthly: { month: string; realize
   );
 }
 
-export function NavByMonthChart({ monthly }: { monthly: { month: string; navEnd: number }[] }) {
+export function NavByMonthChart({ monthly }: { monthly: { month: string; navEnd: number | null }[] }) {
+  const data = monthly.filter((m) => m.navEnd != null);
+  const hasData = data.length > 0;
+  const showDots = data.length <= 2; // if only 1-2 points, show dots so it's visible
   return (
     <div className="h-64">
-      <ResponsiveContainer>
-        <LineChart data={monthly}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" />
-          <YAxis />
-          <Tooltip />
-          <Line type="monotone" dataKey="navEnd" stroke="#10b981" strokeWidth={2} dot={false} />
-        </LineChart>
-      </ResponsiveContainer>
+      {hasData ? (
+        <ResponsiveContainer>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip />
+            <Line type="monotone" dataKey="navEnd" stroke="#10b981" strokeWidth={2} dot={showDots} />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="flex items-center justify-center h-full text-slate-500 text-sm">No month-end NAV data</div>
+      )}
     </div>
   );
 }
 
-export function YtdCards({ monthly }: { monthly: { month: string; realized: number; navEnd: number }[] }) {
+export function YtdCards({ monthly }: { monthly: { month: string; realized: number; navEnd: number | null }[] }) {
   const ytdRealized = monthly.reduce((acc, m) => acc + (m.realized ?? 0), 0);
-  const lastNav = monthly.at(-1)?.navEnd ?? 0;
+  const lastNav = (monthly.findLast?.((m) => m.navEnd != null)?.navEnd ?? monthly.at(-1)?.navEnd) ?? 0;
+  const monthsCount = monthly.filter((m) => (m.navEnd != null) || (Math.abs(m.realized ?? 0) > 0)).length;
   return (
     <div className="grid md:grid-cols-3 gap-4">
       <div className="card p-4">
@@ -48,7 +56,7 @@ export function YtdCards({ monthly }: { monthly: { month: string; realized: numb
       </div>
       <div className="card p-4">
         <div className="text-slate-500 text-sm">Months</div>
-        <div className="text-2xl font-semibold">{monthly.length}</div>
+        <div className="text-2xl font-semibold">{monthsCount}</div>
       </div>
     </div>
   );
@@ -57,4 +65,3 @@ export function YtdCards({ monthly }: { monthly: { month: string; realized: numb
 function fmt(n: number) {
   return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n);
 }
-

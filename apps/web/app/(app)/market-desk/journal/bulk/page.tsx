@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState, useEffect } from "react";
+import { parseCsv } from "@/lib/csv";
 
 type Mode = "PNL" | "JOURNAL" | "NAV";
 
@@ -14,6 +15,9 @@ export default function BulkUploadPage() {
   const [result, setResult] = useState<any | null>(null);
   const [imports, setImports] = useState<any[]>([]);
   const [navPreview, setNavPreview] = useState<{ i: number; inputDate: string; date: string; nav: string; exists?: boolean; existingNav?: string | null; selected?: boolean }[]>([]);
+  const [detectedCols, setDetectedCols] = useState<string>("");
+  // hook to update detected column hint
+  useDetectColumns(text, mode, setDetectedCols);
 
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
@@ -143,10 +147,11 @@ export default function BulkUploadPage() {
           <button className="ml-auto px-2 py-1 border rounded-md" disabled={busy} onClick={undoLast}>Undo last import</button>
         </div>
         <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <div className="text-sm text-slate-600 mb-1">Paste CSV</div>
+        <div>
+          <div className="text-sm text-slate-600 mb-1">Paste CSV</div>
           <textarea className="w-full h-48 border rounded-md p-2 font-mono text-xs" value={text} onChange={(e)=>setText(e.target.value)} placeholder={mode === "NAV" ? "date,nav (YYYY-MM or MM/DD/YYYY)" : mode === "PNL" ? "date,realized,unrealized,note" : "date,text,tags"} />
-          </div>
+          {detectedCols && <div className="mt-1 text-xs text-slate-500">Detected columns: {detectedCols}</div>}
+        </div>
           <div>
             <div className="text-sm text-slate-600 mb-1">or Drag & Drop .csv</div>
             <div onDrop={onDrop} onDragOver={(e)=>e.preventDefault()} className="h-48 border-dashed border rounded-md flex items-center justify-center text-slate-500">
@@ -283,4 +288,40 @@ function NavPreviewTable({ rows, onToggle }: { rows: { date: string; nav: string
       </table>
     </div>
   );
+}
+
+// Detect and display how we'll interpret the first pasted line
+function useDetectColumns(text: string, mode: "PNL" | "JOURNAL" | "NAV", setDetected: (s: string)=>void) {
+  const [last, setLast] = useState<string>("");
+  useEffect(() => {
+    if (text === last) return;
+    setLast(text);
+    const rows = parseCsv(text || "");
+    if (rows.length === 0) { setDetected(""); return; }
+    const parts = rows[0] ?? [];
+    const lower = parts.map(s=>s.toLowerCase());
+    const has = (name: string) => lower.includes(name);
+    const header = has('date') && (mode === 'NAV' ? has('nav') : mode === 'PNL' ? has('realized') : has('text'));
+    if (header) { setDetected(lower.join(', ')); return; }
+    if (mode === 'NAV') {
+      setDetected(parts.length >= 2 ? 'date, nav' : 'date, nav (need 2 columns)');
+      return;
+    }
+    if (mode === 'PNL') {
+      const cols = ['date','realized'];
+      if (parts.length >= 3) cols.push('unrealized');
+      if (parts.length >= 4) {
+        const c = lower[3];
+        cols.push(c === 'notes' ? 'note' : (c || 'nav'));
+      }
+      if (parts.length >= 5) cols.push('note');
+      setDetected(cols.join(', '));
+      return;
+    }
+    if (mode === 'JOURNAL') {
+      setDetected(parts.length >= 2 ? (parts.length >= 3 ? 'date, text, tags' : 'date, text') : 'date, text');
+      return;
+    }
+    setDetected("");
+  }, [text, mode]);
 }

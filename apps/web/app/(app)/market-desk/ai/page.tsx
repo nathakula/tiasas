@@ -26,9 +26,14 @@ function QuickScan() {
   const [ticker, setTicker] = useState("");
   const [window, setWindow] = useState("3m");
   const [res, setRes] = useState<any | null>(null);
+  const [snap, setSnap] = useState<any | null>(null);
   async function run() {
-    const r = await fetch('/api/ai/quick-scan', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ticker, window })});
+    const [r, s] = await Promise.all([
+      fetch('/api/ai/quick-scan', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ticker, window })}),
+      fetch(`/api/market/snapshot?t=${encodeURIComponent(ticker)}`)
+    ]);
     setRes(await r.json());
+    setSnap(await s.json());
   }
   return (
     <div className="card p-4 space-y-3">
@@ -42,6 +47,7 @@ function QuickScan() {
         </select>
         <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Scan</button>
       </div>
+      {snap?.snapshot && <QuoteCard data={snap.snapshot} />}
       {res && <QuickScanView data={res} />}
     </div>
   );
@@ -51,9 +57,14 @@ function DeepDive() {
   const [ticker, setTicker] = useState("");
   const [focus, setFocus] = useState("");
   const [res, setRes] = useState<any | null>(null);
+  const [snap, setSnap] = useState<any | null>(null);
   async function run() {
-    const r = await fetch('/api/ai/deep-dive', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ticker, focus: focus || undefined })});
+    const [r, s] = await Promise.all([
+      fetch('/api/ai/deep-dive', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ticker, focus: focus || undefined })}),
+      fetch(`/api/market/snapshot?t=${encodeURIComponent(ticker)}`)
+    ]);
     setRes(await r.json());
+    setSnap(await s.json());
   }
   return (
     <div className="card p-4 space-y-3">
@@ -62,6 +73,7 @@ function DeepDive() {
         <input className="border rounded px-2 py-1" placeholder="Focus (optional)" value={focus} onChange={(e)=>setFocus(e.target.value)} />
         <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Deep Dive</button>
       </div>
+      {snap?.snapshot && <QuoteCard data={snap.snapshot} />}
       {res && <DeepDiveView data={res} />}
     </div>
   );
@@ -150,6 +162,12 @@ function ListBox({ title, items }: { title: string; items: any }) {
     if (d.text && parts.length === 0) parts.push(String(d.text));
     const level = d.level ?? d.entryLevel ?? d.exitLevel ?? d.price;
     if (level != null) parts.push(`@ ${level}`);
+    if (d.upside || d.downside) {
+      const ups = d.upside ? `Upside: ${d.upside}` : '';
+      const dns = d.downside ? `Downside: ${d.downside}` : '';
+      const combo = [ups, dns].filter(Boolean).join(" | ");
+      if (combo) parts.push(combo);
+    }
     const note = d.note ?? d.reason;
     if (note && parts.length === 0) parts.push(String(note));
     if (parts.length > 0) return parts.join(" ");
@@ -231,6 +249,17 @@ function DeepDiveView({ data }: { data: any }) {
   const supports = data?.technicalZones?.supports ?? [];
   const resistances = data?.technicalZones?.resistances ?? [];
   const momentum = data?.technicalZones?.momentumNote;
+  function renderValuation(v: any) {
+    try {
+      const obj = typeof v === 'string' && v.trim().startsWith('{') ? JSON.parse(v) : v;
+      const m = obj?.multiples ?? obj;
+      if (m && typeof m === 'object') {
+        const rows = Object.entries(m).map(([k, val]) => `${k}: ${val}`);
+        return rows.length ? rows.join(', ') : String(v ?? '');
+      }
+      return String(v ?? '');
+    } catch { return String(v ?? ''); }
+  }
   return (
     <div className="space-y-3">
       <div className="text-sm text-slate-600">{data.ticker}</div>
@@ -247,7 +276,7 @@ function DeepDiveView({ data }: { data: any }) {
         <PriceList title="Resistances" items={resistances} />
       </div>
       {momentum && <div className="text-sm text-slate-700">{momentum}</div>}
-      <div className="card p-3"><div className="font-medium">Valuation</div><p className="text-sm mt-1 whitespace-pre-wrap">{typeof data.valuationContext === 'string' ? data.valuationContext : (()=>{ try { return JSON.stringify(data.valuationContext); } catch { return String(data.valuationContext); } })()}</p></div>
+      <div className="card p-3"><div className="font-medium">Valuation</div><p className="text-sm mt-1 whitespace-pre-wrap">{renderValuation(data.valuationContext)}</p></div>
       {Array.isArray(data.comps) && data.comps.length>0 && (
         <div className="card p-3">
           <div className="font-medium mb-1">Comps</div>
@@ -262,6 +291,28 @@ function DeepDiveView({ data }: { data: any }) {
       <div className="text-xs text-slate-500">{data.disclaimer}</div>
     </div>
   );
+}
+
+function QuoteCard({ data }: { data: any }) {
+  const q = data?.quote ?? {};
+  const last = q.last ?? q.regularMarketPrice ?? null;
+  const changePct = q.changePct ?? q.regularMarketChangePercent ?? null;
+  const lo = q.fiftyTwoWeekLow ?? null;
+  const hi = q.fiftyTwoWeekHigh ?? null;
+  return (
+    <div className="card p-3">
+      <div className="flex items-center gap-6 text-sm">
+        <div><div className="text-slate-500">Last</div><div className="font-semibold">{fmtNum(last)}</div></div>
+        <div><div className="text-slate-500">Change %</div><div className={`font-semibold ${Number(changePct) > 0 ? 'text-emerald-700' : Number(changePct) < 0 ? 'text-red-700' : ''}`}>{changePct != null ? (Number(changePct).toFixed(2) + '%') : '-'}</div></div>
+        <div><div className="text-slate-500">52w Range</div><div className="font-semibold">{fmtNum(lo)} – {fmtNum(hi)}</div></div>
+      </div>
+    </div>
+  );
+}
+
+function fmtNum(n: any) {
+  if (n == null || Number.isNaN(Number(n))) return '-';
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(n));
 }
 
 function MacroView({ data }: { data: any }) {

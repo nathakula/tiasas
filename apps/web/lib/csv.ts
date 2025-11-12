@@ -20,7 +20,13 @@ export function smartSplitCsv(line: string): string[] {
 }
 
 export function parseCsv(text: string): string[][] {
-  const lines = stripBom(text).split(/\r?\n/).filter((l) => l.trim().length > 0 && !l.trim().startsWith("#"));
+  let lines = stripBom(text).split(/\r?\n/).filter((l) => l.trim().length > 0 && !l.trim().startsWith("#"));
+  // Be tolerant of whole-line quotes like "date,realized,unrealized" or "2025-01-01,123"
+  lines = lines.map((l) => {
+    const s = l.trim();
+    if (s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1);
+    return l;
+  });
   if (lines.length === 0) return [];
   const header = lines[0]!;
   const hasComma = header.includes(",");

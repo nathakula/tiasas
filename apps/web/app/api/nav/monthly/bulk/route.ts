@@ -46,40 +46,40 @@ function normalizeRows(payload: z.infer<typeof PayloadSchema>) {
   return out;
 }
 
-function parseFlexible(dateStr: string): Date | null {
+function parseParts(dateStr: string): { y: number; m: number; d?: number } | null {
   try {
-    // yyyy-mm
     if (/^\d{4}-\d{2}$/.test(dateStr)) {
       const [y, m] = dateStr.split("-").map(Number);
-      return new Date(y, m - 1, 1);
+      return { y, m };
     }
-    // yyyy-m or yyyy-m-d
     if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
-      return parseISO(dateStr);
+      const d = parseISO(dateStr);
+      return { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() };
     }
-    // mm/dd/yyyy or m/d/yyyy
     if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
       const [mm, dd, yyyy] = dateStr.split("/").map(Number);
-      return new Date(yyyy, mm - 1, dd);
+      return { y: yyyy, m: mm, d: dd };
     }
-    // yyyy/mm
     if (/^\d{4}\/\d{1,2}$/.test(dateStr)) {
       const [yyyy, mm] = dateStr.split("/").map(Number);
-      return new Date(yyyy, mm - 1, 1);
+      return { y: yyyy, m: mm };
     }
-    // yyyy.mm
     if (/^\d{4}\.\d{1,2}$/.test(dateStr)) {
       const [yyyy, mm] = dateStr.split(".").map(Number);
-      return new Date(yyyy, mm - 1, 1);
+      return { y: yyyy, m: mm };
     }
   } catch {}
   return null;
 }
 
 function toMonthEnd(dateStr: string): Date {
-  const base = parseFlexible(dateStr) ?? parseISO(dateStr);
-  if (Number.isNaN(base?.getTime?.() ?? NaN)) throw new Error("Invalid date");
-  return endOfMonth(base as Date);
+  const parts = parseParts(dateStr);
+  if (!parts) throw new Error("Invalid date");
+  const y = parts.y;
+  const m = parts.m; // 1-12
+  const lastDay = new Date(y, m, 0).getDate();
+  // Normalize to UTC midnight to avoid timezone shifts showing next/prev day
+  return new Date(Date.UTC(y, m - 1, lastDay, 0, 0, 0));
 }
 
 export async function POST(req: Request) {
@@ -105,7 +105,10 @@ export async function POST(req: Request) {
     rows.forEach((r, idx) => {
       try {
         const d = toMonthEnd(r.date);
-        normalized.push({ i: idx + 1, inputDate: r.date, date: d.toISOString().slice(0, 10), nav: r.nav });
+        const y = d.getUTCFullYear();
+        const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(d.getUTCDate()).padStart(2, '0');
+        normalized.push({ i: idx + 1, inputDate: r.date, date: `${y}-${m}-${dd}`, nav: r.nav });
       } catch (e: any) {
         results.errors.push({ i: idx + 1, error: e?.message ?? "Invalid date" });
       }
