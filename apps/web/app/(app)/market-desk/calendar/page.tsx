@@ -63,9 +63,9 @@ const getMonthlyPnlSummary = cache(async (orgId: string, start: Date, end: Date)
      ORDER BY m.month`) as unknown as Row[];
 
   const currentMonth = format(start, "yyyy-MM");
-  const item = rows.find((r) => r.month.slice(0, 7) === currentMonth);
+  const currentMonthItem = rows.find((r) => r.month.slice(0, 7) === currentMonth);
 
-  if (!item) {
+  if (!currentMonthItem) {
     return {
       month: currentMonth,
       realized: 0,
@@ -77,12 +77,49 @@ const getMonthlyPnlSummary = cache(async (orgId: string, start: Date, end: Date)
     };
   }
 
-  const realized = item.realized == null ? null : Number(item.realized);
-  const endNav = item.end_nav == null ? null : Number(item.end_nav);
-  const prevEndNav = item.prev_end_nav == null ? null : Number(item.prev_end_nav);
+  const realized = currentMonthItem.realized == null ? 0 : Number(currentMonthItem.realized);
+
+  // Handle NAV with zero-as-null logic and carry-forward
+  let endNav = currentMonthItem.end_nav != null && currentMonthItem.end_nav !== 0 ? Number(currentMonthItem.end_nav) : null;
+  let prevEndNav = currentMonthItem.prev_end_nav != null && currentMonthItem.prev_end_nav !== 0 ? Number(currentMonthItem.prev_end_nav) : null;
+
+  // If current month has no valid NAV (0 or null), find the last non-zero NAV
+  if (endNav == null || endNav === 0) {
+    // Look backwards through all months to find last non-zero NAV
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const row = rows[i];
+      const rowMonth = row.month.slice(0, 7);
+      if (rowMonth < currentMonth) {
+        const navValue = row.end_nav != null && row.end_nav !== 0 ? Number(row.end_nav) : null;
+        if (navValue != null) {
+          endNav = navValue; // Carry forward from previous month
+          break;
+        }
+      }
+    }
+  }
+
+  // If prevEndNav is null/zero, find the last valid NAV before current month
+  if (prevEndNav == null || prevEndNav === 0) {
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const row = rows[i];
+      const rowMonth = row.month.slice(0, 7);
+      if (rowMonth < currentMonth) {
+        const navValue = row.end_nav != null && row.end_nav !== 0 ? Number(row.end_nav) : null;
+        if (navValue != null) {
+          prevEndNav = navValue;
+          break;
+        }
+      }
+    }
+  }
+
+  // Calculate changes based on carried-forward values
   const navChange = endNav != null && prevEndNav != null ? endNav - prevEndNav : null;
   const returnPct = navChange != null && prevEndNav && prevEndNav !== 0 ? navChange / prevEndNav : null;
-  const unrealizedSnapshot = item.unrealized_snapshot == null ? null : Number(item.unrealized_snapshot);
+
+  // Unrealized: get from last day with data (can be 0)
+  const unrealizedSnapshot = currentMonthItem.unrealized_snapshot == null ? null : Number(currentMonthItem.unrealized_snapshot);
 
   return { month: currentMonth, realized, endNav, prevEndNav, navChange, returnPct, unrealizedSnapshot };
 });
