@@ -13,36 +13,50 @@ export default function ChartsClient({
   const [year, setYear] = useState<number>(initialYear);
   const [monthly, setMonthly] = useState<{ month: string; realized: number; navEnd: number | null }[]>(initialData);
   const [loading, setLoading] = useState(false);
+  const [hasChangedYear, setHasChangedYear] = useState(false);
 
   useEffect(() => {
-    // Only fetch if year changes from initial
-    if (year === initialYear) return;
+    // Skip initial load since we have initialData, but allow subsequent changes
+    if (!hasChangedYear && year === initialYear) {
+      return;
+    }
 
     async function load() {
       setLoading(true);
-      const res = await fetch(`/api/pnl/monthly?year=${year}`);
-      if (!res.ok) {
+      try {
+        const res = await fetch(`/api/pnl/monthly?year=${year}`);
+        if (!res.ok) {
+          setMonthly([]);
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        const months = (data.months || []).map((m: any) => ({
+          month: m.month,
+          realized: Number(m.realized ?? 0),
+          navEnd: m.endNav == null ? null : Number(m.endNav),
+        }));
+        setMonthly(months);
+      } catch (error) {
+        console.error('Failed to load monthly P&L:', error);
         setMonthly([]);
+      } finally {
         setLoading(false);
-        return;
       }
-      const data = await res.json();
-      const months = (data.months || []).map((m: any) => ({
-        month: m.month,
-        realized: Number(m.realized ?? 0),
-        navEnd: m.endNav == null ? null : Number(m.endNav),
-      }));
-      setMonthly(months);
-      setLoading(false);
     }
     load();
-  }, [year, initialYear]);
+  }, [year, initialYear, hasChangedYear]);
+
+  const handleYearChange = (newYear: number) => {
+    setHasChangedYear(true);
+    setYear(newYear);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <div className="text-sm text-slate-600">Year</div>
-        <select className="border rounded-md px-2 py-1" value={year} onChange={(e)=>setYear(Number(e.target.value))} disabled={loading}>
+        <select className="border rounded-md px-2 py-1" value={year} onChange={(e)=>handleYearChange(Number(e.target.value))} disabled={loading}>
           {Array.from({length: 11}, (_,i)=>currentYear-5+i).map((y)=> <option key={y} value={y}>{y}</option>)}
         </select>
         {loading && <span className="text-xs text-slate-500">Loading...</span>}
