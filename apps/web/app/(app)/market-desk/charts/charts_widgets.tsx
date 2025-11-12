@@ -23,12 +23,15 @@ export function NavByMonthChart({ monthly }: { monthly: { month: string; navEnd:
   let lastKnownNav: number | null = null;
 
   for (const m of monthly) {
-    if (m.navEnd != null) {
-      // Month has explicit NAV data
+    // Treat 0 as null/undefined for NAV (carry forward instead)
+    const hasValidNav = m.navEnd != null && m.navEnd !== 0;
+
+    if (hasValidNav) {
+      // Month has explicit NAV data (non-zero)
       lastKnownNav = m.navEnd;
       dataWithCarryForward.push({ month: m.month, navEnd: m.navEnd });
     } else if (lastKnownNav != null) {
-      // Carry forward last known NAV for months without data
+      // Carry forward last known NAV for months without data or with 0
       dataWithCarryForward.push({ month: m.month, navEnd: lastKnownNav });
     }
     // If no NAV data yet (first months), skip the month
@@ -58,8 +61,9 @@ export function NavByMonthChart({ monthly }: { monthly: { month: string; navEnd:
 
 export function YtdCards({ monthly }: { monthly: { month: string; realized: number; navEnd: number | null }[] }) {
   const ytdRealized = monthly.reduce((acc, m) => acc + (m.realized ?? 0), 0);
-  const lastNav = (monthly.findLast?.((m) => m.navEnd != null)?.navEnd ?? monthly.at(-1)?.navEnd) ?? 0;
-  const monthsCount = monthly.filter((m) => (m.navEnd != null) || (Math.abs(m.realized ?? 0) > 0)).length;
+  // Find last non-zero NAV (treat 0 as null/undefined)
+  const lastNav = (monthly.findLast?.((m) => m.navEnd != null && m.navEnd !== 0)?.navEnd ?? 0);
+  const monthsCount = monthly.filter((m) => (m.navEnd != null && m.navEnd !== 0) || (Math.abs(m.realized ?? 0) > 0)).length;
   return (
     <div className="grid md:grid-cols-3 gap-4">
       <div className="card p-4">
