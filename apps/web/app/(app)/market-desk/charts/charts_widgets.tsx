@@ -18,14 +18,30 @@ export function MonthlyPnlChart({ monthly }: { monthly: { month: string; realize
 }
 
 export function NavByMonthChart({ monthly }: { monthly: { month: string; navEnd: number | null }[] }) {
-  const data = monthly.filter((m) => m.navEnd != null);
-  const hasData = data.length > 0;
-  const showDots = data.length <= 2; // if only 1-2 points, show dots so it's visible
+  // Carry forward last known NAV to subsequent months without NAV data
+  const dataWithCarryForward: { month: string; navEnd: number }[] = [];
+  let lastKnownNav: number | null = null;
+
+  for (const m of monthly) {
+    if (m.navEnd != null) {
+      // Month has explicit NAV data
+      lastKnownNav = m.navEnd;
+      dataWithCarryForward.push({ month: m.month, navEnd: m.navEnd });
+    } else if (lastKnownNav != null) {
+      // Carry forward last known NAV for months without data
+      dataWithCarryForward.push({ month: m.month, navEnd: lastKnownNav });
+    }
+    // If no NAV data yet (first months), skip the month
+  }
+
+  const hasData = dataWithCarryForward.length > 0;
+  const showDots = dataWithCarryForward.length <= 2; // if only 1-2 points, show dots so it's visible
+
   return (
     <div className="h-64">
       {hasData ? (
         <ResponsiveContainer>
-          <LineChart data={data}>
+          <LineChart data={dataWithCarryForward}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
