@@ -48,22 +48,43 @@ function normalizeRows(payload: z.infer<typeof PayloadSchema>) {
 
 function parseParts(dateStr: string): { y: number; m: number; d?: number } | null {
   try {
-    if (/^\d{4}-\d{2}$/.test(dateStr)) {
+    // Try YYYY-MM format
+    if (/^\d{4}-\d{1,2}$/.test(dateStr)) {
       const [y, m] = dateStr.split("-").map(Number);
       return { y, m };
     }
+
+    // Try YYYY-MM-DD format
     if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
       const d = parseISO(dateStr);
       return { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() };
     }
+
+    // Try MM/YYYY or M/YYYY format
+    if (/^\d{1,2}\/\d{4}$/.test(dateStr)) {
+      const [mm, yyyy] = dateStr.split("/").map(Number);
+      return { y: yyyy, m: mm };
+    }
+
+    // Try MM/DD/YYYY or M/D/YYYY format (US format)
     if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
       const [mm, dd, yyyy] = dateStr.split("/").map(Number);
       return { y: yyyy, m: mm, d: dd };
     }
+
+    // Try YYYY/MM format
     if (/^\d{4}\/\d{1,2}$/.test(dateStr)) {
       const [yyyy, mm] = dateStr.split("/").map(Number);
       return { y: yyyy, m: mm };
     }
+
+    // Try YYYY/MM/DD format
+    if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(dateStr)) {
+      const [yyyy, mm, dd] = dateStr.split("/").map(Number);
+      return { y: yyyy, m: mm, d: dd };
+    }
+
+    // Try YYYY.MM format
     if (/^\d{4}\.\d{1,2}$/.test(dateStr)) {
       const [yyyy, mm] = dateStr.split(".").map(Number);
       return { y: yyyy, m: mm };
@@ -104,19 +125,29 @@ export async function POST(req: Request) {
     const normalized: { i: number; inputDate: string; date: string; nav: string }[] = [];
     rows.forEach((r, idx) => {
       try {
+        // Validate NAV is a number
+        if (isNaN(Number(r.nav))) {
+          throw new Error(`Invalid NAV value "${r.nav}". Must be a number (e.g., 265700 or 280000.50)`);
+        }
+
         const d = toMonthEnd(r.date);
         const y = d.getUTCFullYear();
         const m = String(d.getUTCMonth() + 1).padStart(2, '0');
         const dd = String(d.getUTCDate()).padStart(2, '0');
         normalized.push({ i: idx + 1, inputDate: r.date, date: `${y}-${m}-${dd}`, nav: r.nav });
       } catch (e: any) {
-        results.errors.push({ i: idx + 1, error: e?.message ?? "Invalid date" });
+        let errorMsg = e?.message ?? "Invalid date";
+        // Provide user-friendly error message
+        if (errorMsg === "Invalid date") {
+          errorMsg = `Invalid date format "${r.date}". Accepted formats: YYYY-MM, MM/YYYY, YYYY-MM-DD, or MM/DD/YYYY (e.g., 2025-01, 1/2025, or 1/31/2025)`;
+        }
+        results.errors.push({ i: idx + 1, error: errorMsg });
       }
     });
     const uniqueDates = Array.from(new Set(normalized.map((r) => r.date)));
     if (uniqueDates.length) {
-      const existing = await prisma.dailyPnl.findMany({ where: { orgId, date: { in: uniqueDates.map((d) => new Date(`${d}T00:00:00.000Z`)) } } });
-      const ex = new Map(existing.map((e) => [e.date.toISOString().slice(0, 10), e.navEnd?.toString?.() ?? null]));
+      const existing = await prisma.monthlyNavEom.findMany({ where: { orgId, date: { in: uniqueDates.map((d) => new Date(`${d}T00:00:00.000Z`)) } } });
+      const ex = new Map(existing.map((e) => [e.date.toISOString().slice(0, 10), e.nav?.toString?.() ?? null]));
       results.preview = normalized.map((r) => ({ ...r, exists: ex.has(r.date), existingNav: ex.get(r.date) }));
     }
     results.imported = normalized.length;
@@ -124,6 +155,49 @@ export async function POST(req: Request) {
   }
   const before: any[] = [];
   const after: any[] = [];
+
+  // Helper function to parse flexible date formats for month entries
+  function parseFlexibleMonthDate(dateStr: string): string {
+    // Try YYYY-MM format
+    if (/^\d{4}-\d{1,2}$/.test(dateStr)) {
+      return dateStr;
+    }
+
+    // Try YYYY-MM-DD format
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      return dateStr;
+    }
+
+    // Try MM/YYYY or M/YYYY
+    const usMonthFormat = dateStr.match(/^(\d{1,2})\/(\d{4})$/);
+    if (usMonthFormat) {
+      const [, month, year] = usMonthFormat;
+      return `${year}-${month.padStart(2, '0')}`;
+    }
+
+    // Try MM/DD/YYYY or M/D/YYYY
+    const usFormat = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (usFormat) {
+      const [, month, day, year] = usFormat;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+
+    // Try YYYY/MM format
+    const isoSlashMonth = dateStr.match(/^(\d{4})\/(\d{1,2})$/);
+    if (isoSlashMonth) {
+      const [, year, month] = isoSlashMonth;
+      return `${year}-${month.padStart(2, '0')}`;
+    }
+
+    // Try YYYY/MM/DD
+    const isoSlash = dateStr.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    if (isoSlash) {
+      const [, year, month, day] = isoSlash;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+
+    throw new Error(`Invalid date format. Accepted formats: YYYY-MM, MM/YYYY, YYYY-MM-DD, or MM/DD/YYYY (e.g., 2025-01, 1/2025, or 1/31/2025)`);
+  }
 
   const chunkSize = 200;
   for (let i = 0; i < rows.length; i += chunkSize) {
@@ -133,22 +207,43 @@ export async function POST(req: Request) {
         const row = chunk[j]!;
         const iGlobal = i + j + 1;
         try {
-          const date = toMonthEnd(row.date);
-          const existing = await tx.dailyPnl.findUnique({ where: { orgId_date: { orgId, date } } });
+          // Parse date with flexible format support
+          const normalizedDate = parseFlexibleMonthDate(row.date);
+
+          // Validate NAV is a number
+          if (isNaN(Number(row.nav))) {
+            throw new Error(`Invalid NAV value "${row.nav}". Must be a number (e.g., 265700 or 280000.50)`);
+          }
+
+          const date = toMonthEnd(normalizedDate);
+
+          // Check if converted date is valid
+          if (isNaN(date.getTime())) {
+            throw new Error(`Invalid date "${row.date}". Could not convert to valid end-of-month date.`);
+          }
+
+          const existing = await tx.monthlyNavEom.findUnique({ where: { orgId_date: { orgId, date } } });
           if (strategy === "skip" && existing) { results.skipped++; continue; }
           if (dryRun) { results.imported++; continue; }
           if (existing) before.push(existing);
-          const up = await tx.dailyPnl.upsert({
+          const up = await tx.monthlyNavEom.upsert({
             where: { orgId_date: { orgId, date } },
-            // Only update navEnd for existing rows; do not touch realized/unrealized/note
-            update: { navEnd: row.nav as any },
-            // Create a minimal row for month-end with navEnd populated
-            create: { orgId, date, realizedPnl: "0" as any, unrealizedPnl: "0" as any, navEnd: row.nav as any, note: null },
+            update: { nav: row.nav as any },
+            create: { orgId, date, nav: row.nav as any, note: null },
           });
           after.push(up);
           results.imported++;
         } catch (e: any) {
-          results.errors.push({ i: iGlobal, error: e?.message ?? "Unknown" });
+          // Extract user-friendly error message (remove Prisma/stack trace details)
+          let errorMsg = e?.message ?? "Unknown error";
+          // If it's a Prisma error with our custom message, extract just our message
+          if (errorMsg.includes("Invalid date") || errorMsg.includes("Invalid NAV")) {
+            errorMsg = errorMsg.split(/invocation:/i)[0].trim();
+          } else if (errorMsg.includes("prisma") || errorMsg.includes("invocation")) {
+            // Generic Prisma error - provide helpful message
+            errorMsg = `Data validation error. Check that date is YYYY-MM format and NAV is a valid number.`;
+          }
+          results.errors.push({ i: iGlobal, error: errorMsg });
         }
       }
     });

@@ -16,13 +16,28 @@ export default function BulkUploadPage() {
   const [imports, setImports] = useState<any[]>([]);
   const [navPreview, setNavPreview] = useState<{ i: number; inputDate: string; date: string; nav: string; exists?: boolean; existingNav?: string | null; selected?: boolean }[]>([]);
   const [detectedCols, setDetectedCols] = useState<string>("");
+  const [fileName, setFileName] = useState<string>("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [expandedImport, setExpandedImport] = useState<string | null>(null);
   // hook to update detected column hint
   useDetectColumns(text, mode, setDetectedCols);
 
+  function onDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function onDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
+    setIsDragging(false);
     const f = e.dataTransfer.files?.[0];
     if (!f) return;
+    setFileName(f.name);
     f.text().then((t) => setText(t));
   }
 
@@ -148,14 +163,35 @@ export default function BulkUploadPage() {
         </div>
         <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <div className="text-sm text-slate-600 mb-1">Paste CSV</div>
-          <textarea className="w-full h-48 border rounded-md p-2 font-mono text-xs" value={text} onChange={(e)=>setText(e.target.value)} placeholder={mode === "NAV" ? "date,nav (YYYY-MM or MM/DD/YYYY)" : mode === "PNL" ? "date,realized,unrealized,note" : "date,text,tags"} />
-          {detectedCols && <div className="mt-1 text-xs text-slate-500">Detected columns: {detectedCols}</div>}
+          <div className="text-sm text-slate-600 mb-1">Paste CSV (Ctrl+V or Cmd+V)</div>
+          <textarea
+            className="w-full h-48 border rounded-md p-2 font-mono text-xs"
+            value={text}
+            onChange={(e)=>{setText(e.target.value); setFileName("");}}
+            placeholder={mode === "NAV" ? "date,nav\n2025-05,265700\n2025-06,280000" : mode === "PNL" ? "date,realized,unrealized,note\n2025-05-31,5000,2000,Good day" : "date,text,tags\n2025-05-31,Market closed early,#trading #news"}
+          />
+          {detectedCols && <div className="mt-1 text-xs text-slate-500">✓ Detected columns: {detectedCols}</div>}
+          {fileName && <div className="mt-1 text-xs text-emerald-600">✓ File loaded: {fileName}</div>}
         </div>
           <div>
-            <div className="text-sm text-slate-600 mb-1">or Drag & Drop .csv</div>
-            <div onDrop={onDrop} onDragOver={(e)=>e.preventDefault()} className="h-48 border-dashed border rounded-md flex items-center justify-center text-slate-500">
-              Drop file here
+            <div className="text-sm text-slate-600 mb-1">or Drag & Drop .csv file</div>
+            <div
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              className={`h-48 border-2 border-dashed rounded-md flex flex-col items-center justify-center transition-colors ${
+                isDragging
+                  ? 'border-blue-400 bg-blue-50'
+                  : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+              }`}
+            >
+              <svg className="w-12 h-12 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <div className="text-slate-500 text-sm">
+                {isDragging ? 'Drop file here' : 'Drop .csv file here'}
+              </div>
+              <div className="text-slate-400 text-xs mt-1">CSV files only</div>
             </div>
           </div>
         </div>
@@ -165,8 +201,30 @@ export default function BulkUploadPage() {
           {busy && <div className="text-sm text-slate-600">Progress: {progress}%</div>}
         </div>
         {result && (
-          <div className="mt-3 text-sm">
-            <div>Imported: {result.imported ?? result.created} — Skipped: {result.skipped ?? 0} — Errors: {result.errors?.length ?? 0}</div>
+          <div className="mt-3 space-y-2">
+            <div className="text-sm">
+              <span className="text-emerald-700 font-medium">✓ Imported: {result.imported ?? result.created}</span>
+              {" — "}
+              <span className="text-slate-600">Skipped: {result.skipped ?? 0}</span>
+              {result.errors && result.errors.length > 0 && (
+                <>
+                  {" — "}
+                  <span className="text-red-700 font-medium">✗ Errors: {result.errors.length}</span>
+                </>
+              )}
+            </div>
+            {result.errors && result.errors.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <div className="font-medium text-sm text-red-900 mb-2">Error Details:</div>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {result.errors.map((err: any, idx: number) => (
+                    <div key={idx} className="text-xs text-red-800 font-mono">
+                      <span className="font-bold">Row {err.i}:</span> {err.error}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -235,16 +293,45 @@ export default function BulkUploadPage() {
               const s = imp.summary || {};
               const imported = s.imported ?? s.created ?? 0;
               const skipped = s.skipped ?? 0;
-              const errors = Array.isArray(s.errors) ? s.errors.length : 0;
+              const errorsList = Array.isArray(s.errors) ? s.errors : [];
+              const errors = errorsList.length;
               const when = imp.createdAt || imp.created_at || imp.created_at_utc || imp.created_at_local || imp.created;
+              const isExpanded = expandedImport === imp.id;
               return (
-                <tr key={imp.id} className="border-t">
-                  <td className="py-1">{new Date(when).toLocaleString()}</td>
-                  <td>{imported}</td>
-                  <td>{skipped}</td>
-                  <td>{errors}</td>
-                  <td><button className="text-blue-600" disabled={busy} onClick={() => undo(imp.id)}>Undo</button></td>
-                </tr>
+                <>
+                  <tr key={imp.id} className="border-t">
+                    <td className="py-1">{new Date(when).toLocaleString()}</td>
+                    <td>{imported}</td>
+                    <td>{skipped}</td>
+                    <td>
+                      {errors > 0 ? (
+                        <button
+                          className="text-red-600 hover:underline"
+                          onClick={() => setExpandedImport(isExpanded ? null : imp.id)}
+                        >
+                          {errors} {isExpanded ? '▼' : '▶'}
+                        </button>
+                      ) : (
+                        <span className="text-slate-400">0</span>
+                      )}
+                    </td>
+                    <td><button className="text-blue-600 hover:underline" disabled={busy} onClick={() => undo(imp.id)}>Undo</button></td>
+                  </tr>
+                  {isExpanded && errors > 0 && (
+                    <tr key={`${imp.id}-errors`} className="border-t bg-red-50">
+                      <td colSpan={5} className="py-2 px-3">
+                        <div className="text-xs text-red-900 font-medium mb-1">Error Details:</div>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                          {errorsList.map((err: any, idx: number) => (
+                            <div key={idx} className="text-xs text-red-800 font-mono">
+                              <span className="font-bold">Row {err.i}:</span> {err.error}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               );
             })}
             {imports.length === 0 && (

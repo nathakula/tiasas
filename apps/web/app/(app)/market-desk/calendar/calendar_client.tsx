@@ -8,7 +8,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
   initialMonth: string;
   days: string[];
   counts: Record<string, { e: number; t: number }>;
-  pnl: Record<string, { realized: string; unrealized: string; navEnd: string; note: string }>;
+  pnl: Record<string, { realized: string; unrealized: string; note: string }>;
   initialSummary: { month: string; realized: number | null; endNav: number | null; prevEndNav: number | null; navChange: number | null; returnPct: number | null; unrealizedSnapshot: number | null };
 }) {
   const [open, setOpen] = useState<string | null>(null);
@@ -18,9 +18,16 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
   const [summary, setSummary] = useState(initialSummary);
   const [realized, setRealized] = useState("");
   const [unrealized, setUnrealized] = useState("");
-  const [navEnd, setNavEnd] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  // Use local date in user's timezone, not UTC
+  const todayIso = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
 
   // Keep days as YYYY-MM-DD strings; avoid timezone shifts
   const dayList = useMemo(() => data.days as string[], [data.days]);
@@ -42,9 +49,8 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
     const params = (from: Date, to: Date) => `from=${from.toISOString().slice(0,10)}&to=${to.toISOString().slice(0,10)}`;
     const prevMonthStart = new Date(y, m - 2, 1);
     const prevMonthEnd = new Date(y, m - 1, 0);
-    const [entries, trades, pnlRows, monthly] = await Promise.all([
+    const [entries, pnlRows, monthly] = await Promise.all([
       fetch(`/api/journal?${params(start, end)}`).then(safeJson),
-      fetch(`/api/trades?${params(start, end)}`).then(safeJson),
       fetch(`/api/pnl/daily?${params(start, end)}`).then(safeJson),
       // Fetch one extra month before so prevEndNav is available for banner
       fetch(`/api/pnl/monthly?from=${prevMonthStart.toISOString().slice(0,10)}&to=${end.toISOString().slice(0,10)}`).then(safeJson),
@@ -53,23 +59,19 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       each.push(new Date(d).toISOString().slice(0, 10));
     }
-    const byDay = new Map<string, { e: number; t: number }>();
+    const byDay = new Map<string, { e: number }>();
     each.forEach((iso) => {
       const k = iso.slice(0,10);
-      byDay.set(k, { e: 0, t: 0 });
+      byDay.set(k, { e: 0 });
     });
     (entries || []).forEach((e: any) => {
       const k = e.date.slice(0,10);
-      byDay.set(k, { ...(byDay.get(k) ?? { e: 0, t: 0 }), e: (byDay.get(k)?.e ?? 0) + 1 });
+      byDay.set(k, { e: (byDay.get(k)?.e ?? 0) + 1 });
     });
-    (trades || []).forEach((t: any) => {
-      const k = t.date.slice(0,10);
-      byDay.set(k, { ...(byDay.get(k) ?? { e: 0, t: 0 }), t: (byDay.get(k)?.t ?? 0) + 1 });
-    });
-    const pnlMap = new Map<string, { realized: string; unrealized: string; navEnd: string; note: string }>();
+    const pnlMap = new Map<string, { realized: string; unrealized: string; note: string }>();
     (pnlRows || []).forEach((p: any) => {
       const k = p.date.slice(0,10);
-      pnlMap.set(k, { realized: p.realizedPnl, unrealized: p.unrealizedPnl, navEnd: p.navEnd, note: p.note ?? "" });
+      pnlMap.set(k, { realized: p.realizedPnl, unrealized: p.unrealizedPnl, note: p.note ?? "" });
     });
     setData({ counts: Object.fromEntries(byDay.entries()) as any, pnl: Object.fromEntries(pnlMap.entries()) as any, days: each });
     if (monthly && (monthly as any).months) {
@@ -91,7 +93,6 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
     setOpen(key);
     setRealized(ex?.realized ?? "");
     setUnrealized(ex?.unrealized ?? "");
-    setNavEnd(ex?.navEnd ?? "");
     setNote(ex?.note ?? "");
   }
 
@@ -102,13 +103,13 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
     const res = await fetch("/api/pnl/daily", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: open, realizedPnl: realized, unrealizedPnl: unrealized || undefined, navEnd: navEnd || "0", note: note || undefined }),
+      body: JSON.stringify({ date: open, realizedPnl: realized, unrealizedPnl: unrealized || undefined, note: note || undefined }),
     });
     setSaving(false);
     if (!res.ok) return alert("Failed to save");
 
     // Optimistic update: update local state instead of full reload
-    const updated = { realized, unrealized: unrealized || "0", navEnd: navEnd || "0", note: note || "" };
+    const updated = { realized, unrealized: unrealized || "0", note: note || "" };
     setData((prev) => ({
       ...prev,
       pnl: { ...prev.pnl, [open]: updated },
@@ -134,6 +135,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
           navChange={summary.navChange}
           returnPct={summary.returnPct}
           unrealizedSnapshot={summary.unrealizedSnapshot}
+          onNavUpdated={() => loadMonth(month)}
         />
       )}
       {/* Controls */}
@@ -184,7 +186,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
           return items;
         })()}
         {dayList.map((k) => {
-          const c = data.counts[k] ?? { e: 0, t: 0 };
+          const c = data.counts[k] ?? { e: 0 };
           const p = data.pnl[k];
           const hasPnl = !!p;
           const dObj = k.includes("T") ? new Date(k) : new Date(`${k}T12:00:00Z`);
@@ -193,9 +195,9 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
           const weekend = isWeekend(dObj);
           const holiday = override?.type === "HOLIDAY" ? true : isUsMarketHoliday(dObj);
           const earlyClose = override?.type === "EARLY_CLOSE";
-          const today = new Date();
-          const future = dObj > new Date(today.getFullYear(), today.getMonth(), today.getDate());
-          const disabled = weekend || holiday || future;
+          const future = key > todayIso;
+          // Only disable future dates - allow editing weekends/holidays (for options assignments, crypto, etc.)
+          const disabled = future;
           const realizedNum = hasPnl ? Number(p.realized) : 0;
           const profit = hasPnl && realizedNum > 0;
           const loss = hasPnl && realizedNum < 0;
@@ -207,10 +209,12 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
               key={k}
               className={`card p-2 min-h-[90px] text-left relative ${profit ? "ring-1 ring-emerald-400 bg-emerald-50" : ""} ${loss ? "ring-1 ring-red-400 bg-red-50" : ""} ${disabled ? "opacity-60" : "hover:shadow"}`}
               onClick={() => (!disabled ? openFor(dObj) : null)}
-              title={disabled ? (holiday ? "Market holiday" : weekend ? "Weekend" : "Future date") : "Click to add/edit P&L"}
+              title={disabled ? "Future date" : hasPnl ? "Click to edit P&L" : "Click to add P&L"}
             >
               <div className="text-xs text-slate-500">{format(dObj, "d MMM")}</div>
-              <div className="text-xs mt-2">📝 {c.e} · 🔁 {c.t}</div>
+              {c.e > 0 && (
+                <div className="text-xs mt-2">📝 {c.e}</div>
+              )}
               {hasPnl && (
                 <div className={`text-xs mt-1 ${profit ? "text-emerald-700" : loss ? "text-red-700" : "text-slate-600"}`}>P&L: {p.realized}</div>
               )}
@@ -230,8 +234,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
             <div className="font-medium mb-2">Edit Daily P&L — {open}</div>
             <div className="grid grid-cols-2 gap-2">
               <input className="border rounded-md px-2 py-1 col-span-2" placeholder="Realized (required)" value={realized} onChange={(e) => setRealized(e.target.value)} />
-              <input className="border rounded-md px-2 py-1" placeholder="Unrealized (optional)" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
-              <input className="border rounded-md px-2 py-1" placeholder="NAV end (optional)" value={navEnd} onChange={(e) => setNavEnd(e.target.value)} />
+              <input className="border rounded-md px-2 py-1 col-span-2" placeholder="Unrealized (optional)" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
               <input className="border rounded-md px-2 py-1 col-span-2" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
             </div>
             <div className="mt-3 flex gap-2 justify-end">

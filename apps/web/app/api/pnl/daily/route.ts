@@ -10,7 +10,6 @@ const upsertSchema = z.object({
   date: z.string(),
   realizedPnl: z.string(), // required
   unrealizedPnl: z.string().optional(), // optional, default 0
-  navEnd: z.string(),
   note: z.string().optional(),
 });
 
@@ -43,9 +42,27 @@ export async function POST(req: Request) {
   const dateIso = `${d.date}T00:00:00.000Z`;
   const up = await prisma.dailyPnl.upsert({
     where: { orgId_date: { orgId, date: new Date(dateIso) } },
-    update: { realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, navEnd: d.navEnd as any, note: d.note ?? null },
-    create: { orgId, date: new Date(dateIso), realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, navEnd: d.navEnd as any, note: d.note ?? null },
+    update: { realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, note: d.note ?? null },
+    create: { orgId, date: new Date(dateIso), realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, note: d.note ?? null },
   });
   await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "UPSERT", entity: "DailyPnl", entityId: up.id, before: Prisma.DbNull, after: JSON.parse(JSON.stringify(up)) } });
   return NextResponse.json(up);
+}
+
+export async function DELETE(req: Request) {
+  const auth = await requireAuthOrgMembership();
+  if ("error" in auth) return auth.error;
+  const { orgId, user } = auth as any;
+  const { searchParams } = new URL(req.url);
+  const date = searchParams.get("date");
+  if (!date) return NextResponse.json({ error: "Missing date parameter" }, { status: 400 });
+
+  const dateIso = `${date}T00:00:00.000Z`;
+  const existing = await prisma.dailyPnl.findUnique({ where: { orgId_date: { orgId, date: new Date(dateIso) } } });
+  if (!existing) return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+
+  await prisma.dailyPnl.delete({ where: { orgId_date: { orgId, date: new Date(dateIso) } } });
+  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "DELETE", entity: "DailyPnl", entityId: existing.id, before: JSON.parse(JSON.stringify(existing)), after: Prisma.DbNull } });
+
+  return NextResponse.json({ ok: true });
 }

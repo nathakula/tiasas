@@ -17,15 +17,6 @@ enum Role {
   VIEWER
 }
 
-enum TradeSide {
-  BUY
-  SELL
-  SELL_CALL
-  SELL_PUT
-  ASSIGN
-  EXPIRE
-}
-
 enum ConnectionProvider {
   PAPER
   ETRADE
@@ -52,7 +43,6 @@ model User {
 
   memberships Membership[]
   journalEntries JournalEntry[]
-  trades Trade[]
   auditLogs AuditLog[]
 
   createdAt DateTime @default(now())
@@ -100,7 +90,6 @@ model Org {
   name        String
   memberships Membership[]
   journal     JournalEntry[]
-  trades      Trade[]
   dailyPnl    DailyPnl[]
   connections Connection[]
   auditLogs   AuditLog[]
@@ -140,33 +129,12 @@ model JournalEntry {
   updatedAt DateTime @updatedAt
 }
 
-model Trade {
-  id          String    @id @default(cuid())
-  orgId       String
-  userId      String
-  date        DateTime
-  symbol      String
-  side        TradeSide
-  qty         Decimal   @db.Decimal(20, 8)
-  price       Decimal   @db.Decimal(20, 8)
-  fees        Decimal   @db.Decimal(20, 8)
-  strategyTag String
-  notes       String?
-
-  org  Org  @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model DailyPnl {
   id           String  @id @default(cuid())
   orgId        String
   date         DateTime
   realizedPnl  Decimal @db.Decimal(20, 8)
   unrealizedPnl Decimal @db.Decimal(20, 8)
-  navEnd       Decimal @db.Decimal(20, 8)
   note         String?
 
   org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
@@ -218,4 +186,17 @@ model AuditLog {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model MonthlyNavEom {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  orgId     String
+  date      DateTime @db.Date  // End-of-month date (e.g., 2025-04-30)
+  nav       Decimal  @db.Decimal(20, 8)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([orgId, date])
+  @@map("MonthlyNav_eom")
 }

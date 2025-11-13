@@ -13,6 +13,11 @@ export const authOptions: NextAuthOptions = {
       // In dev, allow linking a Google account to a pre-seeded user
       // to avoid OAuthAccountNotLinked loops.
       allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          prompt: "select_account",
+        },
+      },
     }),
   ],
   events: {

@@ -82,6 +82,44 @@ export async function POST(req: Request) {
   const after: any[] = [];
   const chunkSize = 200;
 
+  // Helper function to parse flexible date formats
+  function parseFlexibleDate(dateStr: string): Date {
+    // Try ISO format first (YYYY-MM-DD)
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const d = new Date(`${dateStr}T00:00:00.000Z`);
+      if (!isNaN(d.getTime())) return d;
+    }
+
+    // Try MM/DD/YYYY or M/D/YYYY
+    const usFormat = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (usFormat) {
+      const [, month, day, year] = usFormat;
+      const d = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00.000Z`);
+      if (!isNaN(d.getTime())) return d;
+    }
+
+    // Try DD/MM/YYYY or D/M/YYYY (assuming day is always larger or context matters)
+    const euroFormat = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (euroFormat) {
+      const [, part1, part2, year] = euroFormat;
+      // If part1 > 12, it must be day, so DD/MM/YYYY
+      if (Number(part1) > 12) {
+        const d = new Date(`${year}-${part2.padStart(2, '0')}-${part1.padStart(2, '0')}T00:00:00.000Z`);
+        if (!isNaN(d.getTime())) return d;
+      }
+    }
+
+    // Try YYYY/MM/DD
+    const isoSlash = dateStr.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    if (isoSlash) {
+      const [, year, month, day] = isoSlash;
+      const d = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00.000Z`);
+      if (!isNaN(d.getTime())) return d;
+    }
+
+    throw new Error(`Invalid date format. Accepted formats: YYYY-MM-DD, MM/DD/YYYY, or YYYY/MM/DD (e.g., 2025-01-15 or 1/15/2025)`);
+  }
+
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
     await prisma.$transaction(async (tx) => {
@@ -89,23 +127,42 @@ export async function POST(req: Request) {
         const row = chunk[j]!;
         const iGlobal = i + j + 1;
         try {
-          const dateIso = `${row.date}T00:00:00.000Z`;
-          const existing = await tx.dailyPnl.findUnique({ where: { orgId_date: { orgId, date: new Date(dateIso) } } });
+          // Parse date with flexible format support
+          const dateObj = parseFlexibleDate(row.date);
+
+          // Validate numeric fields
+          if (isNaN(Number(row.realized))) {
+            throw new Error(`Invalid realized P&L "${row.realized}". Must be a number (e.g., 5000 or -1250.50)`);
+          }
+          if (row.unrealized && isNaN(Number(row.unrealized))) {
+            throw new Error(`Invalid unrealized P&L "${row.unrealized}". Must be a number (e.g., 2000 or -500.25)`);
+          }
+
+          const existing = await tx.dailyPnl.findUnique({ where: { orgId_date: { orgId, date: dateObj } } });
           if (strategy === "skip" && existing) { results.skipped++; continue; }
           if (dryRun) { results.imported++; continue; }
           if (existing) before.push(existing);
           const updateData: any = { realizedPnl: row.realized as any, unrealizedPnl: (row.unrealized ?? "0") as any, note: row.note ?? null };
           if (typeof row.nav !== 'undefined') updateData.navEnd = row.nav as any; // preserve existing month-end NAV when nav not provided
-          const createData: any = { orgId, date: new Date(dateIso), realizedPnl: row.realized as any, unrealizedPnl: (row.unrealized ?? "0") as any, navEnd: (row.nav ?? "0") as any, note: row.note ?? null };
+          const createData: any = { orgId, date: dateObj, realizedPnl: row.realized as any, unrealizedPnl: (row.unrealized ?? "0") as any, navEnd: (row.nav ?? "0") as any, note: row.note ?? null };
           const up = await tx.dailyPnl.upsert({
-            where: { orgId_date: { orgId, date: new Date(dateIso) } },
+            where: { orgId_date: { orgId, date: dateObj } },
             update: updateData,
             create: createData,
           });
           after.push(up);
           results.imported++;
         } catch (e: any) {
-          results.errors.push({ i: iGlobal, error: e?.message ?? "Unknown" });
+          // Extract user-friendly error message (remove Prisma/stack trace details)
+          let errorMsg = e?.message ?? "Unknown error";
+          // If it's a Prisma error with our custom message, extract just our message
+          if (errorMsg.includes("Invalid date") || errorMsg.includes("Invalid realized") || errorMsg.includes("Invalid unrealized")) {
+            errorMsg = errorMsg.split(/invocation:/i)[0].trim();
+          } else if (errorMsg.includes("prisma") || errorMsg.includes("invocation")) {
+            // Generic Prisma error - provide helpful message
+            errorMsg = `Data validation error. Check that date is YYYY-MM-DD format and numeric fields contain valid numbers.`;
+          }
+          results.errors.push({ i: iGlobal, error: errorMsg });
         }
       }
     });
