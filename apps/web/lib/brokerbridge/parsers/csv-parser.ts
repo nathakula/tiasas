@@ -8,10 +8,90 @@ import type { CSVColumnMapping } from "../types";
 export type ParsedCSV = {
   headers: string[];
   rows: Array<Record<string, string>>;
+  accountSummary?: {
+    accountName?: string;
+    netAccountValue?: number;
+    totalGain?: number;
+    totalGainPercent?: number;
+  };
 };
 
 /**
+ * Detect if a line looks like a position data header
+ */
+function looksLikePositionHeader(line: string): boolean {
+  const lower = line.toLowerCase();
+  // Must contain "symbol" or "ticker" AND at least one quantity/value indicator
+  const hasSymbol = /symbol|ticker|stock|security/i.test(lower);
+  const hasQuantity = /quantity|qty|shares|position|units/i.test(lower);
+  const hasValue = /value|price|cost|basis/i.test(lower);
+  return hasSymbol && (hasQuantity || hasValue);
+}
+
+/**
+ * Detect if a line looks like metadata/summary (not position data)
+ */
+function looksLikeMetadata(line: string): boolean {
+  const lower = line.toLowerCase();
+  // Common broker metadata patterns
+  return (
+    /^account\s*(summary|info|details)/i.test(lower) ||
+    /^view\s*summary/i.test(lower) ||
+    /^filters?\s*applied/i.test(lower) ||
+    /^(generated|downloaded|exported)\s*(at|on)/i.test(lower) ||
+    /^sort\s*(by|order)/i.test(lower) ||
+    // Empty or nearly empty lines with just commas
+    /^[,\s]*$/.test(line)
+  );
+}
+
+/**
+ * Extract account summary data from multi-section broker CSVs
+ */
+function extractAccountSummary(lines: string[]): ParsedCSV["accountSummary"] {
+  // Look for "Account Summary" section followed by header and data
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
+    const line = lines[i];
+    if (/^account\s*summary/i.test(line)) {
+      // Next line should be headers
+      const headerLine = lines[i + 1];
+      const dataLine = lines[i + 2];
+      if (!headerLine || !dataLine) continue;
+
+      const headers = parseCSVLine(headerLine).map(h => h.toLowerCase());
+      const values = parseCSVLine(dataLine);
+
+      const summary: NonNullable<ParsedCSV["accountSummary"]> = {};
+
+      // Map common account summary fields
+      const accountIdx = headers.findIndex(h => h === "account");
+      const navIdx = headers.findIndex(h => /net\s*account\s*value/i.test(h));
+      const gainIdx = headers.findIndex(h => /total\s*gain\s*\$/i.test(h));
+      const gainPctIdx = headers.findIndex(h => /total\s*gain\s*%/i.test(h));
+
+      if (accountIdx >= 0) summary.accountName = values[accountIdx];
+      if (navIdx >= 0) {
+        const val = values[navIdx]?.replace(/[,$]/g, "");
+        if (val) summary.netAccountValue = parseFloat(val);
+      }
+      if (gainIdx >= 0) {
+        const val = values[gainIdx]?.replace(/[,$]/g, "");
+        if (val) summary.totalGain = parseFloat(val);
+      }
+      if (gainPctIdx >= 0) {
+        const val = values[gainPctIdx]?.replace(/[,%]/g, "");
+        if (val) summary.totalGainPercent = parseFloat(val);
+      }
+
+      return Object.keys(summary).length > 0 ? summary : undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Parse CSV content into structured data
+ * Enhanced to handle multi-section broker exports (E*TRADE, etc.)
  */
 export function parseCSVContent(content: string): ParsedCSV {
   const lines = content
@@ -23,14 +103,60 @@ export function parseCSVContent(content: string): ParsedCSV {
     return { headers: [], rows: [] };
   }
 
-  // Parse first line as headers
-  const headers = parseCSVLine(lines[0]);
+  // Extract account summary if present
+  const accountSummary = extractAccountSummary(lines);
 
-  // Parse remaining lines as data rows
+  // Find the position data section
+  let headerLineIdx = -1;
+  let dataStartIdx = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Skip known metadata lines
+    if (looksLikeMetadata(line)) continue;
+
+    // Check if this looks like a position header
+    if (looksLikePositionHeader(line)) {
+      headerLineIdx = i;
+      dataStartIdx = i + 1;
+      break;
+    }
+  }
+
+  // Fallback: if no clear position header found, assume first non-metadata line is header
+  if (headerLineIdx === -1) {
+    for (let i = 0; i < lines.length; i++) {
+      if (!looksLikeMetadata(lines[i])) {
+        headerLineIdx = i;
+        dataStartIdx = i + 1;
+        break;
+      }
+    }
+  }
+
+  if (headerLineIdx === -1 || dataStartIdx >= lines.length) {
+    return { headers: [], rows: [], accountSummary };
+  }
+
+  // Parse headers
+  const headers = parseCSVLine(lines[headerLineIdx]);
+
+  // Parse data rows
   const rows: Array<Record<string, string>> = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
+  for (let i = dataStartIdx; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Stop at common footer patterns
+    if (/^(total|margin\s*debit|generated\s*at)/i.test(line)) {
+      break;
+    }
+
+    const values = parseCSVLine(line);
     if (values.length === 0) continue;
+
+    // Skip rows that don't have enough fields
+    if (values.length < Math.max(2, headers.length / 2)) continue;
 
     // Create object mapping headers to values
     const row: Record<string, string> = {};
@@ -40,7 +166,7 @@ export function parseCSVContent(content: string): ParsedCSV {
     rows.push(row);
   }
 
-  return { headers, rows };
+  return { headers, rows, accountSummary };
 }
 
 /**
@@ -90,6 +216,7 @@ export function inferColumnMapping(headers: string[]): CSVColumnMapping | null {
     quantity: [
       /^quantity$/i,
       /^qty$/i,
+      /^qty\s*#$/i, // E*TRADE format
       /^shares$/i,
       /^amount$/i,
       /^position$/i,
@@ -99,6 +226,7 @@ export function inferColumnMapping(headers: string[]): CSVColumnMapping | null {
       /^(average|avg)[\s_-]?(price|cost)$/i,
       /^cost[\s_-]?basis[\s_-]?per[\s_-]?share$/i,
       /^price[\s_-]?paid$/i,
+      /^price[\s_-]?paid[\s_-]?\$$/i, // E*TRADE format
     ],
     costBasis: [
       /^cost[\s_-]?basis$/i,
@@ -108,6 +236,7 @@ export function inferColumnMapping(headers: string[]): CSVColumnMapping | null {
     ],
     lastPrice: [
       /^(last|current|market)[\s_-]?price$/i,
+      /^last[\s_-]?price[\s_-]?\$$/i, // E*TRADE format
       /^last[\s_-]?trade$/i,
       /^quote$/i,
       /^price$/i,
@@ -117,11 +246,13 @@ export function inferColumnMapping(headers: string[]): CSVColumnMapping | null {
       /^current[\s_-]?value$/i,
       /^total[\s_-]?value$/i,
       /^value$/i,
+      /^value[\s_-]?\$$/i, // E*TRADE format
     ],
     assetClass: [
       /^asset[\s_-]?class$/i,
       /^type$/i,
       /^security[\s_-]?type$/i,
+      /^security[\s_-]?type\(s\)$/i, // E*TRADE format
       /^instrument[\s_-]?type$/i,
     ],
     currency: [/^currency$/i, /^ccy$/i, /^curr$/i],
@@ -230,4 +361,59 @@ export function getSuggestedMappings(headers: string[]): {
   ];
 
   return { auto, manual };
+}
+
+/**
+ * Parse option symbol to extract underlying, expiry, strike, and type
+ * Handles formats like:
+ * - "AAPL Nov 14 '25 $585 Put"
+ * - "META Nov 21 '25 $650 Call"
+ */
+export function parseOptionSymbol(symbol: string): {
+  underlying: string;
+  expiry?: string; // ISO date string
+  strike?: number;
+  optionType?: "CALL" | "PUT";
+} | null {
+  // Pattern: SYMBOL Month Day 'YY $Strike Call/Put
+  const optionPattern = /^([A-Z]+)\s+([A-Za-z]+)\s+(\d{1,2})\s+'(\d{2})\s+\$(\d+(?:\.\d+)?)\s+(Call|Put)$/i;
+  const match = symbol.match(optionPattern);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, underlying, monthName, day, year, strikeStr, optionType] = match;
+
+  // Parse month name to number
+  const monthMap: Record<string, number> = {
+    jan: 1, january: 1,
+    feb: 2, february: 2,
+    mar: 3, march: 3,
+    apr: 4, april: 4,
+    may: 5,
+    jun: 6, june: 6,
+    jul: 7, july: 7,
+    aug: 8, august: 8,
+    sep: 9, september: 9,
+    oct: 10, october: 10,
+    nov: 11, november: 11,
+    dec: 12, december: 12,
+  };
+
+  const month = monthMap[monthName.toLowerCase()];
+  if (!month) return null;
+
+  // Construct full year (assume 20XX)
+  const fullYear = 2000 + parseInt(year, 10);
+
+  // Create ISO date string
+  const expiry = `${fullYear}-${month.toString().padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+  return {
+    underlying,
+    expiry,
+    strike: parseFloat(strikeStr),
+    optionType: optionType.toUpperCase() as "CALL" | "PUT",
+  };
 }

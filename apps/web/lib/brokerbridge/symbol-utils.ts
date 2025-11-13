@@ -41,6 +41,60 @@ export function parseOCCSymbol(occSymbol: string): {
 }
 
 /**
+ * Parse E*TRADE-style option symbol format
+ * Format: "UNDERLYING Month DD 'YY $STRIKE Call/Put"
+ * Example: "AAPL Nov 14 '25 $585 Put" -> AAPL option
+ */
+export function parseETradeOptionSymbol(symbol: string): {
+  underlying: string;
+  expiration: Date;
+  right: OptionRight;
+  strike: number;
+} | null {
+  // Pattern: SYMBOL Month Day 'YY $Strike Call/Put
+  const optionPattern = /^([A-Z]+)\s+([A-Za-z]+)\s+(\d{1,2})\s+'(\d{2})\s+\$(\d+(?:\.\d+)?)\s+(Call|Put)$/i;
+  const match = symbol.match(optionPattern);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, underlying, monthName, day, year, strikeStr, optionType] = match;
+
+  // Parse month name to number
+  const monthMap: Record<string, number> = {
+    jan: 0, january: 0,
+    feb: 1, february: 1,
+    mar: 2, march: 2,
+    apr: 3, april: 3,
+    may: 4,
+    jun: 5, june: 5,
+    jul: 6, july: 6,
+    aug: 7, august: 7,
+    sep: 8, september: 8,
+    oct: 9, october: 9,
+    nov: 10, november: 10,
+    dec: 11, december: 11,
+  };
+
+  const month = monthMap[monthName.toLowerCase()];
+  if (month === undefined) return null;
+
+  // Construct full year (assume 20XX)
+  const fullYear = 2000 + parseInt(year, 10);
+
+  // Create Date object
+  const expiration = new Date(fullYear, month, parseInt(day, 10));
+
+  return {
+    underlying: underlying.trim(),
+    expiration,
+    right: optionType.toUpperCase() === "CALL" ? OptionRight.CALL : OptionRight.PUT,
+    strike: parseFloat(strikeStr),
+  };
+}
+
+/**
  * Build OCC symbol from components
  */
 export function buildOCCSymbol(
@@ -97,8 +151,8 @@ export function inferAssetClass(
   symbol: string,
   metadata?: Record<string, unknown>
 ): AssetClass {
-  // Check if it's an option (OCC format or contains option keywords)
-  if (parseOCCSymbol(symbol)) {
+  // Check if it's an option (OCC format or E*TRADE format)
+  if (parseOCCSymbol(symbol) || parseETradeOptionSymbol(symbol)) {
     return AssetClass.OPTION;
   }
 
@@ -176,7 +230,12 @@ export function parseInstrument(
 
   // Handle options
   if (assetClass === AssetClass.OPTION) {
-    const optionData = parseOCCSymbol(normalizedSymbol);
+    // Try OCC format first, then E*TRADE format
+    let optionData = parseOCCSymbol(normalizedSymbol);
+    if (!optionData) {
+      optionData = parseETradeOptionSymbol(rawSymbol); // Use raw symbol for E*TRADE format
+    }
+
     if (optionData) {
       instrument.underlying = {
         symbol: optionData.underlying,
