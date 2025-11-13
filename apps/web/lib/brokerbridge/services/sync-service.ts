@@ -3,7 +3,7 @@
  * Orchestrates syncing positions from broker adapters to database
  */
 
-import { prisma } from "@tiasas/db";
+import { prisma } from "@/lib/db";
 import { BrokerProvider, BrokerConnectionStatus, AssetClass } from "@prisma/client";
 import type {
   BrokerAdapter,

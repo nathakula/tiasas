@@ -3,7 +3,7 @@
  * Manages broker connections and authentication
  */
 
-import { prisma } from "@tiasas/db";
+import { prisma } from "@/lib/db";
 import { BrokerProvider, BrokerConnectionStatus } from "@prisma/client";
 import type { BrokerAuthInput } from "../types";
 import { AdapterError } from "../types";

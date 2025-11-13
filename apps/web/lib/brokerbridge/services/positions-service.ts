@@ -3,7 +3,7 @@
  * Query and aggregate position data
  */
 
-import { prisma } from "@tiasas/db";
+import { prisma } from "@/lib/db";
 import { AssetClass, BrokerProvider } from "@prisma/client";
 
 export type PositionFilters = {
