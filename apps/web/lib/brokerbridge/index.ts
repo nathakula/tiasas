@@ -74,3 +74,30 @@ export {
 
 export type { AdapterFactory } from "./adapters";
 export type { CSVImportAuthInput } from "./adapters/csv-adapter";
+
+// Services
+export {
+  syncConnection,
+  syncAccount,
+  getSyncStatus,
+} from "./services/sync-service";
+
+export {
+  createConnection,
+  deleteConnection,
+  listConnections,
+  getConnection,
+  testConnection,
+  reconnectConnection,
+} from "./services/connection-service";
+
+export {
+  getAggregatedPositions,
+  getPositionDetails,
+  getPortfolioSummary,
+} from "./services/positions-service";
+
+export type {
+  PositionFilters,
+  AggregatedPosition,
+} from "./services/positions-service";
