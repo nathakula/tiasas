@@ -321,7 +321,7 @@ type PreviewData = {
   hasMore: boolean;
 };
 
-type BrokerOption = "ETRADE" | "FIDELITY" | "SCHWAB" | "ROBINHOOD" | "WEBULL" | "UNKNOWN";
+type BrokerOption = "ETRADE" | "FIDELITY" | "SCHWAB" | "ROBINHOOD" | "WEBULL" | "OTHER" | "UNKNOWN";
 
 function CSVImportModal({
   orgId,
@@ -335,12 +335,11 @@ function CSVImportModal({
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedBroker, setSelectedBroker] = useState<BrokerOption>("UNKNOWN");
+  const [customBrokerName, setCustomBrokerName] = useState("");
   const [accountNickname, setAccountNickname] = useState("");
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
-  const [existingConnectionName, setExistingConnectionName] = useState("");
 
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault();
@@ -409,6 +408,9 @@ function CSVImportModal({
     try {
       const fileContent = await file.text();
 
+      // Determine broker name: use custom name if OTHER is selected
+      const brokerName = selectedBroker === "OTHER" ? customBrokerName.trim() : selectedBroker;
+
       const res = await fetch("/api/brokerbridge/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -417,7 +419,7 @@ function CSVImportModal({
           fileContent,
           fileName: file.name,
           fileType: "CSV",
-          selectedBroker,
+          selectedBroker: brokerName,
           accountNickname: accountNickname || file.name.replace(/\.csv$/i, ""),
         }),
       });
@@ -443,6 +445,8 @@ function CSVImportModal({
         preview={preview}
         selectedBroker={selectedBroker}
         setSelectedBroker={setSelectedBroker}
+        customBrokerName={customBrokerName}
+        setCustomBrokerName={setCustomBrokerName}
         onBack={() => setPreview(null)}
         onConfirm={handleConfirmImport}
         uploading={uploading}
@@ -465,7 +469,12 @@ function CSVImportModal({
             </label>
             <select
               value={selectedBroker}
-              onChange={(e) => setSelectedBroker(e.target.value as BrokerOption)}
+              onChange={(e) => {
+                setSelectedBroker(e.target.value as BrokerOption);
+                if (e.target.value !== "OTHER") {
+                  setCustomBrokerName("");
+                }
+              }}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
             >
               <option value="ETRADE">E*TRADE</option>
@@ -473,12 +482,31 @@ function CSVImportModal({
               <option value="SCHWAB">Charles Schwab</option>
               <option value="ROBINHOOD">Robinhood</option>
               <option value="WEBULL">Webull</option>
-              <option value="UNKNOWN">Other / Unknown</option>
+              <option value="OTHER">Other (Custom)</option>
+              <option value="UNKNOWN">Auto-detect</option>
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              Select your broker. This will be auto-detected after preview.
+              Select your broker. Will be auto-detected if you choose "Auto-detect".
             </p>
           </div>
+
+          {selectedBroker === "OTHER" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Custom Broker Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={customBrokerName}
+                onChange={(e) => setCustomBrokerName(e.target.value)}
+                placeholder="e.g., Ally Invest, TD Ameritrade"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Enter the name of your broker
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -568,6 +596,8 @@ function PreviewModal({
   preview,
   selectedBroker,
   setSelectedBroker,
+  customBrokerName,
+  setCustomBrokerName,
   onBack,
   onConfirm,
   uploading,
@@ -575,13 +605,17 @@ function PreviewModal({
   preview: PreviewData;
   selectedBroker: BrokerOption;
   setSelectedBroker: (broker: BrokerOption) => void;
+  customBrokerName: string;
+  setCustomBrokerName: (name: string) => void;
   onBack: () => void;
   onConfirm: () => void;
   uploading: boolean;
 }) {
   // Check if broker selection is required
   const isBrokerUnknown = selectedBroker === "UNKNOWN";
-  const canImport = !isBrokerUnknown && preview.summary.validPositions > 0;
+  const isBrokerOther = selectedBroker === "OTHER";
+  const isCustomNameMissing = isBrokerOther && !customBrokerName.trim();
+  const canImport = !isBrokerUnknown && !isCustomNameMissing && preview.summary.validPositions > 0;
   const formatCurrency = (value: number | undefined) => {
     if (value === undefined) return "—";
     return new Intl.NumberFormat("en-US", {
@@ -678,10 +712,15 @@ function PreviewModal({
                   <p className="mt-1 text-sm text-red-800">
                     We couldn't automatically detect your broker. Please select it from the dropdown below to continue.
                   </p>
-                  <div className="mt-3">
+                  <div className="mt-3 space-y-3">
                     <select
                       value={selectedBroker}
-                      onChange={(e) => setSelectedBroker(e.target.value as BrokerOption)}
+                      onChange={(e) => {
+                        setSelectedBroker(e.target.value as BrokerOption);
+                        if (e.target.value !== "OTHER") {
+                          setCustomBrokerName("");
+                        }
+                      }}
                       className="w-full rounded-lg border-2 border-red-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
                     >
                       <option value="UNKNOWN" disabled>-- Select Your Broker --</option>
@@ -690,7 +729,24 @@ function PreviewModal({
                       <option value="SCHWAB">Charles Schwab</option>
                       <option value="ROBINHOOD">Robinhood</option>
                       <option value="WEBULL">Webull</option>
+                      <option value="OTHER">Other (Custom)</option>
                     </select>
+                    {selectedBroker === "OTHER" && (
+                      <div>
+                        <input
+                          type="text"
+                          value={customBrokerName}
+                          onChange={(e) => setCustomBrokerName(e.target.value)}
+                          placeholder="Enter broker name (e.g., Ally Invest)"
+                          className="w-full rounded-lg border-2 border-red-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+                        />
+                        {isCustomNameMissing && (
+                          <p className="mt-1 text-xs text-red-700 font-medium">
+                            Please enter a broker name
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -700,18 +756,42 @@ function PreviewModal({
               <label className="block text-sm font-medium text-blue-900 mb-2">
                 Confirm Broker (you can change if detection was incorrect)
               </label>
-              <select
-                value={selectedBroker}
-                onChange={(e) => setSelectedBroker(e.target.value as BrokerOption)}
-                className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              >
-                <option value="ETRADE">E*TRADE</option>
-                <option value="FIDELITY">Fidelity</option>
-                <option value="SCHWAB">Charles Schwab</option>
-                <option value="ROBINHOOD">Robinhood</option>
-                <option value="WEBULL">Webull</option>
-                <option value="UNKNOWN">Other / Unknown</option>
-              </select>
+              <div className="space-y-3">
+                <select
+                  value={selectedBroker}
+                  onChange={(e) => {
+                    setSelectedBroker(e.target.value as BrokerOption);
+                    if (e.target.value !== "OTHER") {
+                      setCustomBrokerName("");
+                    }
+                  }}
+                  className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="ETRADE">E*TRADE</option>
+                  <option value="FIDELITY">Fidelity</option>
+                  <option value="SCHWAB">Charles Schwab</option>
+                  <option value="ROBINHOOD">Robinhood</option>
+                  <option value="WEBULL">Webull</option>
+                  <option value="OTHER">Other (Custom)</option>
+                  <option value="UNKNOWN">Auto-detect</option>
+                </select>
+                {selectedBroker === "OTHER" && (
+                  <div>
+                    <input
+                      type="text"
+                      value={customBrokerName}
+                      onChange={(e) => setCustomBrokerName(e.target.value)}
+                      placeholder="Enter broker name (e.g., Ally Invest)"
+                      className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    />
+                    {isCustomNameMissing && (
+                      <p className="mt-1 text-xs text-blue-700 font-medium">
+                        Please enter a broker name
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -861,6 +941,10 @@ function PreviewModal({
               <div className="text-sm text-red-600 font-medium">
                 ⚠️ Please select a broker to continue
               </div>
+            ) : isCustomNameMissing ? (
+              <div className="text-sm text-red-600 font-medium">
+                ⚠️ Please enter a broker name
+              </div>
             ) : (
               <div className="text-sm text-gray-600">
                 Ready to import {preview.summary.validPositions} position{preview.summary.validPositions !== 1 ? 's' : ''}
@@ -870,7 +954,7 @@ function PreviewModal({
               onClick={onConfirm}
               disabled={uploading || !canImport}
               className="rounded-lg bg-green-600 px-6 py-2 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              title={isBrokerUnknown ? "Please select a broker first" : ""}
+              title={isBrokerUnknown ? "Please select a broker first" : isCustomNameMissing ? "Please enter a broker name" : ""}
             >
               {uploading ? "Importing..." : "Confirm Import"}
             </button>

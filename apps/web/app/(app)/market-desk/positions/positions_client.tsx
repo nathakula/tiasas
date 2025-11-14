@@ -252,6 +252,9 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Symbol
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Broker
+                </th>
                 <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
                   Quantity
                 </th>
@@ -331,6 +334,16 @@ function PositionRow({
       : 0;
   const isPositive = position.totalUnrealizedPL >= 0;
 
+  // Get unique broker sources for this position
+  const uniqueBrokers = Array.from(
+    new Set(position.accounts.map(acc => acc.brokerSource).filter(Boolean))
+  );
+  const brokerDisplay = uniqueBrokers.length === 1
+    ? getBrokerDisplayName(uniqueBrokers[0] as any)
+    : uniqueBrokers.length > 1
+    ? `${uniqueBrokers.length} brokers`
+    : "Unknown";
+
   return (
     <tr
       onClick={onClick}
@@ -347,6 +360,14 @@ function PositionRow({
               </span>
             )}
           </div>
+        </div>
+      </td>
+      <td className="whitespace-nowrap px-6 py-4">
+        <div className="text-sm">
+          <div className="font-medium text-gray-900">{brokerDisplay}</div>
+          {position.accounts.length > 1 && (
+            <div className="text-xs text-gray-500">{position.accounts.length} accounts</div>
+          )}
         </div>
       </td>
       <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-900">
