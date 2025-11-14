@@ -83,17 +83,14 @@ function mapCSVPositionToLot(rawPosition: unknown): NormalizedLot {
   if (finalMarketValue !== undefined && finalCostBasis !== undefined) {
     unrealizedPL = finalMarketValue - finalCostBasis;
     if (finalCostBasis !== 0) {
-      unrealizedPLPct = (unrealizedPL / finalCostBasis) * 100;
+      const rawPct = (unrealizedPL / finalCostBasis) * 100;
+      // Cap percentage to prevent database overflow (Decimal(10,6) max is ~9999)
+      unrealizedPLPct = Math.max(-9999, Math.min(9999, rawPct));
     }
   }
 
-  // For options, apply multiplier to P&L calculations
-  if (instrument.assetClass === AssetClass.OPTION && instrument.option?.multiplier) {
-    const multiplier = instrument.option.multiplier;
-    if (unrealizedPL !== undefined) {
-      unrealizedPL = unrealizedPL * multiplier;
-    }
-  }
+  // Note: For CSV imports, the unrealized P&L is already the total amount
+  // We don't multiply by option multiplier because the CSV data already contains final values
 
   return {
     instrument,

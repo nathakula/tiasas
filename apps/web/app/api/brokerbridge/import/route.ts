@@ -7,12 +7,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { BrokerProvider } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import {
   createConnection,
   syncConnection,
   AdapterError,
   type CSVImportAuthInput,
 } from "@/lib/brokerbridge";
+import { encryptCredentials, generateUserSalt } from "@/lib/brokerbridge/encryption";
 
 /**
  * POST /api/brokerbridge/import
@@ -69,17 +71,47 @@ export async function POST(request: Request) {
       asOf: asOf ? new Date(asOf) : undefined,
     };
 
-    // Create connection (which parses and validates the file)
-    const userId = session.user.id;
-    const { connectionId, accounts } = await createConnection(
-      orgId,
-      userId,
-      broker,
-      authInput
-    );
+    // Check if there's an existing CSV/OFX connection for this org
+    const existingConnection = await prisma.brokerConnection.findFirst({
+      where: {
+        orgId,
+        broker,
+      },
+      include: { accounts: true },
+    });
+
+    let connectionId: string;
+    let accounts: any[];
+
+    if (existingConnection) {
+      // Update existing connection with new file content
+      console.log(`Updating existing ${fileType} connection: ${existingConnection.id}`);
+
+      const userSalt = generateUserSalt();
+      const encryptedAuth = encryptCredentials(authInput, userSalt);
+
+      await prisma.brokerConnection.update({
+        where: { id: existingConnection.id },
+        data: {
+          encryptedAuth: { encrypted: encryptedAuth },
+        },
+      });
+
+      connectionId = existingConnection.id;
+      accounts = existingConnection.accounts;
+    } else {
+      // Create new connection (which parses and validates the file)
+      console.log(`Creating new ${fileType} connection for org: ${orgId}`);
+      const userId = session.user.id || session.user.email || "unknown";
+      const result = await createConnection(orgId, userId, broker, authInput);
+      connectionId = result.connectionId;
+      accounts = result.accounts;
+    }
 
     // Immediately sync the connection to import positions
-    const syncResult = await syncConnection(connectionId);
+    const syncResult = await syncConnection(connectionId, {
+      replaceSnapshot: true, // Replace old snapshot instead of creating new one
+    });
 
     if (!syncResult.success) {
       return NextResponse.json(

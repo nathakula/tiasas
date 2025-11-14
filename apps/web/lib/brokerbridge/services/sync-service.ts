@@ -14,7 +14,7 @@ import type {
 import { AdapterError } from "../types";
 import { getAdapter } from "../adapters";
 import { mapCSVToSnapshot, validateCSVSnapshot } from "../mappers/csv-mapper";
-import { redactSensitiveFields } from "../encryption";
+import { redactSensitiveFields, decryptCredentials } from "../encryption";
 
 /**
  * Sync positions for a broker connection
@@ -49,6 +49,19 @@ export async function syncConnection(
 
     // Get appropriate adapter
     const adapter = getAdapter(connection.broker);
+
+    // For CSV/OFX imports, we need to re-initialize the adapter with the stored file content
+    if (connection.broker === BrokerProvider.CSV_IMPORT || connection.broker === BrokerProvider.OFX_IMPORT) {
+      if (!connection.encryptedAuth) {
+        throw new Error("CSV/OFX import connection missing file content");
+      }
+      console.log("Re-initializing CSV/OFX adapter with stored file content");
+      const authData = connection.encryptedAuth as { encrypted: string };
+      const decryptedAuth = decryptCredentials(authData.encrypted);
+      console.log("Decrypted auth data:", Object.keys(decryptedAuth));
+      await adapter.connect(decryptedAuth);
+      console.log("Adapter connected successfully");
+    }
 
     // Fetch accounts if not already loaded
     let accounts = connection.accounts;
@@ -87,6 +100,14 @@ export async function syncConnection(
 
     for (const account of accounts) {
       try {
+        // If replaceSnapshot is true, delete old snapshots for this account
+        if (options.replaceSnapshot) {
+          const deletedSnapshots = await prisma.positionSnapshot.deleteMany({
+            where: { accountId: account.id },
+          });
+          console.log(`Deleted ${deletedSnapshots.count} old snapshots for account ${account.id}`);
+        }
+
         const accountResult = await syncAccount(
           account.id,
           adapter,
@@ -282,11 +303,13 @@ async function persistSnapshot(
   // Process each lot
   for (const lot of snapshot.lots) {
     // Ensure instrument exists
+    // Note: Use default exchange "US" for instruments without exchange specified
+    const exchange = lot.instrument.exchange || "US";
     let instrument = await prisma.instrument.findUnique({
       where: {
         symbol_exchange: {
           symbol: lot.instrument.symbol,
-          exchange: lot.instrument.exchange || null,
+          exchange: exchange,
         },
       },
     });
@@ -296,7 +319,7 @@ async function persistSnapshot(
       instrument = await prisma.instrument.create({
         data: {
           symbol: lot.instrument.symbol,
-          exchange: lot.instrument.exchange,
+          exchange: exchange,
           name: lot.instrument.name,
           assetClass: lot.instrument.assetClass,
           currency: lot.instrument.currency,

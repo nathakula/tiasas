@@ -167,6 +167,7 @@ export type SyncResult = {
 export type SyncOptions = {
   forceRefresh?: boolean;
   skipInstrumentCreation?: boolean;
+  replaceSnapshot?: boolean; // If true, delete old snapshots and keep only the latest
 };
 
 // ============================================

@@ -35,6 +35,7 @@ export default function ConnectionsClient({ orgId }: { orgId: string }) {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<Set<string>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBrokerModal, setShowBrokerModal] = useState(false);
 
   useEffect(() => {
     loadConnections();
@@ -124,7 +125,7 @@ export default function ConnectionsClient({ orgId }: { orgId: string }) {
           <span>Import CSV</span>
         </button>
         <button
-          onClick={() => alert("Coming soon: Connect live broker")}
+          onClick={() => setShowBrokerModal(true)}
           className="flex items-center space-x-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50"
         >
           <Plus className="h-4 w-4" />
@@ -171,6 +172,14 @@ export default function ConnectionsClient({ orgId }: { orgId: string }) {
             setShowAddModal(false);
             loadConnections();
           }}
+        />
+      )}
+
+      {/* Broker Selection Modal */}
+      {showBrokerModal && (
+        <BrokerSelectionModal
+          orgId={orgId}
+          onClose={() => setShowBrokerModal(false)}
         />
       )}
     </div>
@@ -265,6 +274,47 @@ function ConnectionCard({
   );
 }
 
+type PreviewData = {
+  success: boolean;
+  fileName: string;
+  summary: {
+    totalRows: number;
+    validPositions: number;
+    errors: number;
+    totalMarketValue: number;
+    totalCostBasis: number;
+    totalUnrealizedPL: number;
+    byAssetClass: Record<string, number>;
+    accountSummary?: {
+      accountName?: string;
+      netAccountValue?: number;
+      totalGain?: number;
+      totalGainPercent?: number;
+    };
+  };
+  columnMapping: Record<string, string>;
+  positions: Array<{
+    row: number;
+    symbol: string;
+    quantity: number;
+    averagePrice?: number;
+    lastPrice?: number;
+    marketValue?: number;
+    costBasis?: number;
+    unrealizedPL?: number;
+    assetClass: string;
+    isOption: boolean;
+    optionDetails?: {
+      underlying: string;
+      strike: number;
+      expiration: string;
+      right: string;
+    };
+  }>;
+  errors: Array<{ row: number; symbol: string; error: string }>;
+  hasMore: boolean;
+};
+
 function CSVImportModal({
   orgId,
   onClose,
@@ -277,8 +327,66 @@ function CSVImportModal({
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [accountNickname, setAccountNickname] = useState("");
+  const [preview, setPreview] = useState<PreviewData | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  async function handleUpload() {
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile && droppedFile.name.endsWith('.csv')) {
+      setFile(droppedFile);
+    } else {
+      alert('Please drop a CSV file');
+    }
+  }
+
+  async function handlePreview() {
+    if (!file) return;
+
+    setPreviewing(true);
+
+    try {
+      const fileContent = await file.text();
+
+      const res = await fetch("/api/brokerbridge/import/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileContent,
+          fileName: file.name,
+          fileType: "CSV",
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setPreview(data);
+      } else {
+        const error = await res.json();
+        alert(`Preview failed: ${error.message || error.error}\n${error.suggestion || ""}`);
+      }
+    } catch (error) {
+      console.error("Preview error:", error);
+      alert("Failed to preview file");
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
+  async function handleConfirmImport() {
     if (!file) return;
 
     setUploading(true);
@@ -312,6 +420,18 @@ function CSVImportModal({
     }
   }
 
+  // Show preview if available
+  if (preview) {
+    return (
+      <PreviewModal
+        preview={preview}
+        onBack={() => setPreview(null)}
+        onConfirm={handleConfirmImport}
+        uploading={uploading}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
@@ -335,30 +455,382 @@ function CSVImportModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">CSV File</label>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="mt-1 w-full"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-2">CSV File</label>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`
+                relative border-2 border-dashed rounded-lg p-6 text-center transition-colors
+                ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+              `}
+            >
+              <input
+                type="file"
+                accept=".csv"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <div className="pointer-events-none">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  stroke="currentColor"
+                  fill="none"
+                  viewBox="0 0 48 48"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <p className="mt-2 text-sm text-gray-600">
+                  {file ? (
+                    <span className="font-medium text-blue-600">{file.name}</span>
+                  ) : (
+                    <>
+                      <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
+                    </>
+                  )}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">CSV file only</p>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="mt-6 flex justify-end space-x-3">
           <button
             onClick={onClose}
-            disabled={uploading}
+            disabled={previewing}
             className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
-            onClick={handleUpload}
-            disabled={!file || uploading}
+            onClick={handlePreview}
+            disabled={!file || previewing}
             className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {uploading ? "Importing..." : "Import"}
+            {previewing ? "Loading Preview..." : "Preview"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewModal({
+  preview,
+  onBack,
+  onConfirm,
+  uploading,
+}: {
+  preview: PreviewData;
+  onBack: () => void;
+  onConfirm: () => void;
+  uploading: boolean;
+}) {
+  const formatCurrency = (value: number | undefined) => {
+    if (value === undefined) return "—";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(value);
+  };
+
+  const formatNumber = (value: number | undefined) => {
+    if (value === undefined) return "—";
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white shadow-xl">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+          <h2 className="text-xl font-semibold text-gray-900">Import Preview: {preview.fileName}</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Review the parsed positions before importing
+          </p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Summary Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="text-sm text-blue-600 font-medium">Valid Positions</div>
+              <div className="text-2xl font-bold text-blue-900">{preview.summary.validPositions}</div>
+              <div className="text-xs text-blue-600">of {preview.summary.totalRows} rows</div>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="text-sm text-green-600 font-medium">Market Value</div>
+              <div className="text-2xl font-bold text-green-900">{formatCurrency(preview.summary.totalMarketValue)}</div>
+              <div className="text-xs text-green-600">Total portfolio value</div>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-4">
+              <div className="text-sm text-purple-600 font-medium">Cost Basis</div>
+              <div className="text-2xl font-bold text-purple-900">{formatCurrency(preview.summary.totalCostBasis)}</div>
+              <div className="text-xs text-purple-600">Total cost</div>
+            </div>
+            <div className={`${preview.summary.totalUnrealizedPL >= 0 ? 'bg-green-50' : 'bg-red-50'} rounded-lg p-4`}>
+              <div className={`text-sm font-medium ${preview.summary.totalUnrealizedPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                Unrealized P&L
+              </div>
+              <div className={`text-2xl font-bold ${preview.summary.totalUnrealizedPL >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                {formatCurrency(preview.summary.totalUnrealizedPL)}
+              </div>
+              <div className={`text-xs ${preview.summary.totalUnrealizedPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {preview.summary.totalUnrealizedPL >= 0 ? 'Gain' : 'Loss'}
+              </div>
+            </div>
+          </div>
+
+          {/* Account Summary (if available) */}
+          {preview.summary.accountSummary && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Account Summary from CSV</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                {preview.summary.accountSummary.accountName && (
+                  <div>
+                    <span className="text-gray-500">Account:</span>
+                    <span className="ml-2 font-medium">{preview.summary.accountSummary.accountName}</span>
+                  </div>
+                )}
+                {preview.summary.accountSummary.netAccountValue && (
+                  <div>
+                    <span className="text-gray-500">Net Account Value:</span>
+                    <span className="ml-2 font-medium">{formatCurrency(preview.summary.accountSummary.netAccountValue)}</span>
+                  </div>
+                )}
+                {preview.summary.accountSummary.totalGain && (
+                  <div>
+                    <span className="text-gray-500">Total Gain:</span>
+                    <span className="ml-2 font-medium">{formatCurrency(preview.summary.accountSummary.totalGain)}</span>
+                  </div>
+                )}
+                {preview.summary.accountSummary.totalGainPercent !== undefined && (
+                  <div>
+                    <span className="text-gray-500">Total Gain %:</span>
+                    <span className="ml-2 font-medium">{preview.summary.accountSummary.totalGainPercent.toFixed(2)}%</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Asset Class Breakdown */}
+          {Object.keys(preview.summary.byAssetClass).length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">By Asset Class</h3>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(preview.summary.byAssetClass).map(([assetClass, count]) => (
+                  <span
+                    key={assetClass}
+                    className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"
+                  >
+                    {assetClass}: {count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Column Mapping */}
+          <div>
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Detected Column Mapping</h3>
+            <div className="bg-gray-50 rounded-lg p-3 text-xs font-mono">
+              {Object.entries(preview.columnMapping).map(([field, column]) => (
+                <div key={field} className="text-gray-600">
+                  <span className="text-blue-600">{field}</span> → "{column}"
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Errors (if any) */}
+          {preview.errors.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-red-800 mb-2">
+                Errors ({preview.errors.length})
+              </h3>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {preview.errors.map((error, idx) => (
+                  <div key={idx} className="text-xs text-red-700">
+                    Row {error.row}: {error.symbol} - {error.error}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Positions Table */}
+          <div>
+            <h3 className="text-sm font-medium text-gray-700 mb-2">
+              Positions Preview ({preview.positions.length}{preview.hasMore ? "+ more" : ""})
+            </h3>
+            <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Avg Price</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Last Price</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Market Value</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Cost Basis</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Unrealized P&L</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {preview.positions.map((pos, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-sm">
+                        <div className="font-medium text-gray-900">{pos.symbol}</div>
+                        {pos.isOption && pos.optionDetails && (
+                          <div className="text-xs text-gray-500">
+                            {pos.optionDetails.underlying} ${pos.optionDetails.strike} {pos.optionDetails.right} {pos.optionDetails.expiration}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-sm text-gray-600">{pos.assetClass}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono">{formatNumber(pos.quantity)}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono">{formatCurrency(pos.averagePrice)}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono">{formatCurrency(pos.lastPrice)}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono font-medium">{formatCurrency(pos.marketValue)}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono">{formatCurrency(pos.costBasis)}</td>
+                      <td className={`px-3 py-2 text-sm text-right font-mono font-medium ${
+                        pos.unrealizedPL && pos.unrealizedPL >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {formatCurrency(pos.unrealizedPL)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {preview.hasMore && (
+              <p className="mt-2 text-xs text-gray-500 italic">
+                Showing first {preview.positions.length} positions. All positions will be imported.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center">
+          <button
+            onClick={onBack}
+            disabled={uploading}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            ← Back
+          </button>
+          <div className="flex items-center space-x-3">
+            <div className="text-sm text-gray-600">
+              Ready to import {preview.summary.validPositions} position{preview.summary.validPositions !== 1 ? 's' : ''}
+            </div>
+            <button
+              onClick={onConfirm}
+              disabled={uploading || preview.summary.validPositions === 0}
+              className="rounded-lg bg-green-600 px-6 py-2 text-white hover:bg-green-700 disabled:opacity-50"
+            >
+              {uploading ? "Importing..." : "Confirm Import"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BrokerSelectionModal({
+  orgId,
+  onClose,
+}: {
+  orgId: string;
+  onClose: () => void;
+}) {
+  const [connecting, setConnecting] = useState(false);
+
+  async function handleConnectEtrade() {
+    setConnecting(true);
+    try {
+      const res = await fetch(`/api/brokerbridge/etrade/auth?orgId=${orgId}`);
+      const data = await res.json();
+
+      if (data.authorizationUrl) {
+        // Redirect to E*TRADE authorization page
+        window.location.href = data.authorizationUrl;
+      } else {
+        alert(`Failed to initiate E*TRADE connection: ${data.error || 'Unknown error'}`);
+        setConnecting(false);
+      }
+    } catch (error) {
+      console.error('E*TRADE connection error:', error);
+      alert('Failed to connect to E*TRADE');
+      setConnecting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <h2 className="text-xl font-semibold text-gray-900">Connect Broker Account</h2>
+        <p className="mt-2 text-sm text-gray-600">
+          Choose a broker to connect to your account.
+        </p>
+
+        <div className="mt-6 space-y-3">
+          {/* E*TRADE */}
+          <button
+            onClick={handleConnectEtrade}
+            disabled={connecting}
+            className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white p-4 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <div className="text-left">
+              <div className="font-medium text-gray-900">E*TRADE</div>
+              <div className="text-sm text-gray-500">Connect via OAuth</div>
+            </div>
+            <div className="text-2xl">💼</div>
+          </button>
+
+          {/* Coming Soon */}
+          <button
+            disabled
+            className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-gray-100 p-4 cursor-not-allowed opacity-50"
+          >
+            <div className="text-left">
+              <div className="font-medium text-gray-900">Robinhood</div>
+              <div className="text-sm text-gray-500">Coming soon</div>
+            </div>
+            <div className="text-2xl">🏹</div>
+          </button>
+
+          <button
+            disabled
+            className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-gray-100 p-4 cursor-not-allowed opacity-50"
+          >
+            <div className="text-left">
+              <div className="font-medium text-gray-900">Fidelity</div>
+              <div className="text-sm text-gray-500">Coming soon</div>
+            </div>
+            <div className="text-2xl">🏦</div>
+          </button>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onClose}
+            disabled={connecting}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancel
           </button>
         </div>
       </div>
