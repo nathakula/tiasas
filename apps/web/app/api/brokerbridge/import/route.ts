@@ -27,6 +27,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Get user ID from database
+    console.log(`Looking up user with email: ${session.user.email}`);
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
+
+    if (!user) {
+      console.log(`User not found with email: ${session.user.email}`);
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    console.log(`Found user with ID: ${user.id}`);
+
     const body = await request.json();
     const {
       orgId,
@@ -112,8 +126,7 @@ export async function POST(request: Request) {
     } else {
       // Create new connection (which parses and validates the file)
       console.log(`Creating new ${fileType} connection for org: ${orgId} (${selectedBroker} - ${nickname})`);
-      const userId = session.user.email || "unknown";
-      const result = await createConnection(orgId, userId, broker, authInput, selectedBroker);
+      const result = await createConnection(orgId, user.id, broker, authInput, selectedBroker);
       connectionId = result.connectionId;
       accounts = result.accounts;
     }

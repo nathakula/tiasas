@@ -95,17 +95,45 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
     }
   }
 
-  const filteredPositions = positions.filter((pos) => {
-    // Search filter
-    const matchesSearch = pos.instrument.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (pos.instrument.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredPositions = positions
+    .map((pos) => {
+      // If broker filter is active, filter accounts and recalculate totals
+      if (brokerSourceFilter !== "ALL") {
+        const filteredAccounts = pos.accounts.filter(acc => acc.brokerSource === brokerSourceFilter);
 
-    // Broker source filter
-    const matchesBroker = brokerSourceFilter === "ALL" ||
-      pos.accounts.some(acc => acc.brokerSource === brokerSourceFilter);
+        if (filteredAccounts.length === 0) return null; // Skip if no accounts match
 
-    return matchesSearch && matchesBroker;
-  });
+        // Recalculate totals based on filtered accounts
+        const totalQuantity = filteredAccounts.reduce((sum, acc) => sum + acc.quantity, 0);
+        const totalMarketValue = filteredAccounts.reduce((sum, acc) => sum + (acc.marketValue || 0), 0);
+        const totalCostBasis = filteredAccounts.reduce((sum, acc) => {
+          return sum + ((acc.averagePrice || 0) * Math.abs(acc.quantity));
+        }, 0);
+        const totalUnrealizedPL = totalMarketValue - totalCostBasis;
+        const weightedAveragePrice = totalQuantity !== 0 ? totalCostBasis / Math.abs(totalQuantity) : 0;
+
+        return {
+          ...pos,
+          accounts: filteredAccounts,
+          totalQuantity,
+          totalCostBasis,
+          totalMarketValue,
+          totalUnrealizedPL,
+          weightedAveragePrice,
+        };
+      }
+
+      return pos;
+    })
+    .filter((pos): pos is AggregatedPosition => {
+      if (!pos) return false;
+
+      // Search filter
+      const matchesSearch = pos.instrument.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (pos.instrument.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      return matchesSearch;
+    });
 
   // Get unique broker sources from positions for filter dropdown
   const uniqueBrokerSources = Array.from(

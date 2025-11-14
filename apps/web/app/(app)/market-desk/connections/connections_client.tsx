@@ -385,6 +385,10 @@ function CSVImportModal({
       if (res.ok) {
         const data = await res.json();
         setPreview(data);
+        // Auto-set broker from detection if confidence is not low
+        if (data.detectedBroker && data.detectedBroker.confidence !== 'low') {
+          setSelectedBroker(data.detectedBroker.broker as BrokerOption);
+        }
       } else {
         const error = await res.json();
         alert(`Preview failed: ${error.message || error.error}\n${error.suggestion || ""}`);
@@ -413,6 +417,7 @@ function CSVImportModal({
           fileContent,
           fileName: file.name,
           fileType: "CSV",
+          selectedBroker,
           accountNickname: accountNickname || file.name.replace(/\.csv$/i, ""),
         }),
       });
@@ -436,6 +441,8 @@ function CSVImportModal({
     return (
       <PreviewModal
         preview={preview}
+        selectedBroker={selectedBroker}
+        setSelectedBroker={setSelectedBroker}
         onBack={() => setPreview(null)}
         onConfirm={handleConfirmImport}
         uploading={uploading}
@@ -453,6 +460,27 @@ function CSVImportModal({
 
         <div className="mt-4 space-y-4">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Broker
+            </label>
+            <select
+              value={selectedBroker}
+              onChange={(e) => setSelectedBroker(e.target.value as BrokerOption)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            >
+              <option value="ETRADE">E*TRADE</option>
+              <option value="FIDELITY">Fidelity</option>
+              <option value="SCHWAB">Charles Schwab</option>
+              <option value="ROBINHOOD">Robinhood</option>
+              <option value="WEBULL">Webull</option>
+              <option value="UNKNOWN">Other / Unknown</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Select your broker. This will be auto-detected after preview.
+            </p>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700">
               Account Nickname (optional)
             </label>
@@ -460,9 +488,12 @@ function CSVImportModal({
               type="text"
               value={accountNickname}
               onChange={(e) => setAccountNickname(e.target.value)}
-              placeholder="My Portfolio"
+              placeholder="e.g., Main Trading, IRA, Roth"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Optional: Give this account a memorable name
+            </p>
           </div>
 
           <div>
@@ -535,15 +566,22 @@ function CSVImportModal({
 
 function PreviewModal({
   preview,
+  selectedBroker,
+  setSelectedBroker,
   onBack,
   onConfirm,
   uploading,
 }: {
   preview: PreviewData;
+  selectedBroker: BrokerOption;
+  setSelectedBroker: (broker: BrokerOption) => void;
   onBack: () => void;
   onConfirm: () => void;
   uploading: boolean;
 }) {
+  // Check if broker selection is required
+  const isBrokerUnknown = selectedBroker === "UNKNOWN";
+  const canImport = !isBrokerUnknown && preview.summary.validPositions > 0;
   const formatCurrency = (value: number | undefined) => {
     if (value === undefined) return "—";
     return new Intl.NumberFormat("en-US", {
@@ -600,6 +638,82 @@ function PreviewModal({
               </div>
             </div>
           </div>
+
+          {/* Detected Broker Info */}
+          {preview.detectedBroker && (
+            <div className={`rounded-lg p-4 border-2 ${
+              preview.detectedBroker.confidence === 'high' ? 'bg-green-50 border-green-200' :
+              preview.detectedBroker.confidence === 'medium' ? 'bg-yellow-50 border-yellow-200' :
+              'bg-gray-50 border-gray-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">
+                    Detected Broker: <span className="text-blue-600 font-bold">{preview.detectedBroker.displayName}</span>
+                  </h3>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Confidence: {preview.detectedBroker.confidence} • {preview.detectedBroker.detectedFrom}
+                  </p>
+                </div>
+                {preview.detectedBroker.confidence === 'high' && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    ✓ Auto-detected
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Broker Selection - Required if UNKNOWN */}
+          {isBrokerUnknown ? (
+            <div className="rounded-lg bg-red-50 border-2 border-red-300 p-4">
+              <div className="flex items-start space-x-3">
+                <svg className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-red-900">
+                    Broker Selection Required
+                  </h3>
+                  <p className="mt-1 text-sm text-red-800">
+                    We couldn't automatically detect your broker. Please select it from the dropdown below to continue.
+                  </p>
+                  <div className="mt-3">
+                    <select
+                      value={selectedBroker}
+                      onChange={(e) => setSelectedBroker(e.target.value as BrokerOption)}
+                      className="w-full rounded-lg border-2 border-red-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+                    >
+                      <option value="UNKNOWN" disabled>-- Select Your Broker --</option>
+                      <option value="ETRADE">E*TRADE</option>
+                      <option value="FIDELITY">Fidelity</option>
+                      <option value="SCHWAB">Charles Schwab</option>
+                      <option value="ROBINHOOD">Robinhood</option>
+                      <option value="WEBULL">Webull</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+              <label className="block text-sm font-medium text-blue-900 mb-2">
+                Confirm Broker (you can change if detection was incorrect)
+              </label>
+              <select
+                value={selectedBroker}
+                onChange={(e) => setSelectedBroker(e.target.value as BrokerOption)}
+                className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+                <option value="ETRADE">E*TRADE</option>
+                <option value="FIDELITY">Fidelity</option>
+                <option value="SCHWAB">Charles Schwab</option>
+                <option value="ROBINHOOD">Robinhood</option>
+                <option value="WEBULL">Webull</option>
+                <option value="UNKNOWN">Other / Unknown</option>
+              </select>
+            </div>
+          )}
 
           {/* Account Summary (if available) */}
           {preview.summary.accountSummary && (
@@ -743,13 +857,20 @@ function PreviewModal({
             ← Back
           </button>
           <div className="flex items-center space-x-3">
-            <div className="text-sm text-gray-600">
-              Ready to import {preview.summary.validPositions} position{preview.summary.validPositions !== 1 ? 's' : ''}
-            </div>
+            {isBrokerUnknown ? (
+              <div className="text-sm text-red-600 font-medium">
+                ⚠️ Please select a broker to continue
+              </div>
+            ) : (
+              <div className="text-sm text-gray-600">
+                Ready to import {preview.summary.validPositions} position{preview.summary.validPositions !== 1 ? 's' : ''}
+              </div>
+            )}
             <button
               onClick={onConfirm}
-              disabled={uploading || preview.summary.validPositions === 0}
-              className="rounded-lg bg-green-600 px-6 py-2 text-white hover:bg-green-700 disabled:opacity-50"
+              disabled={uploading || !canImport}
+              className="rounded-lg bg-green-600 px-6 py-2 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={isBrokerUnknown ? "Please select a broker first" : ""}
             >
               {uploading ? "Importing..." : "Confirm Import"}
             </button>
