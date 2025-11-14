@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       fileName,
       fileType,
       accountNickname,
+      selectedBroker,
       columnMapping,
       asOf,
     } = body;
@@ -71,11 +72,19 @@ export async function POST(request: Request) {
       asOf: asOf ? new Date(asOf) : undefined,
     };
 
-    // Check if there's an existing CSV/OFX connection for this org
+    // Check if there's an existing CSV/OFX connection for this org + broker source + nickname
+    // This allows multiple CSV imports from different brokers
+    const nickname = accountNickname || fileName.replace(/\.csv$/i, "");
     const existingConnection = await prisma.brokerConnection.findFirst({
       where: {
         orgId,
         broker,
+        brokerSource: selectedBroker || "UNKNOWN",
+        accounts: {
+          some: {
+            nickname,
+          },
+        },
       },
       include: { accounts: true },
     });
@@ -85,7 +94,7 @@ export async function POST(request: Request) {
 
     if (existingConnection) {
       // Update existing connection with new file content
-      console.log(`Updating existing ${fileType} connection: ${existingConnection.id}`);
+      console.log(`Updating existing ${fileType} connection: ${existingConnection.id} (${selectedBroker} - ${nickname})`);
 
       const userSalt = generateUserSalt();
       const encryptedAuth = encryptCredentials(authInput, userSalt);
@@ -94,6 +103,7 @@ export async function POST(request: Request) {
         where: { id: existingConnection.id },
         data: {
           encryptedAuth: { encrypted: encryptedAuth },
+          brokerSource: selectedBroker || "UNKNOWN",
         },
       });
 
@@ -101,9 +111,9 @@ export async function POST(request: Request) {
       accounts = existingConnection.accounts;
     } else {
       // Create new connection (which parses and validates the file)
-      console.log(`Creating new ${fileType} connection for org: ${orgId}`);
-      const userId = session.user.id || session.user.email || "unknown";
-      const result = await createConnection(orgId, userId, broker, authInput);
+      console.log(`Creating new ${fileType} connection for org: ${orgId} (${selectedBroker} - ${nickname})`);
+      const userId = session.user.email || "unknown";
+      const result = await createConnection(orgId, userId, broker, authInput, selectedBroker);
       connectionId = result.connectionId;
       accounts = result.accounts;
     }

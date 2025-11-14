@@ -166,6 +166,7 @@ model BrokerConnection {
   orgId         String
   userId        String
   broker        BrokerProvider
+  brokerSource  String?                // Source broker name for CSV imports (ETRADE, FIDELITY, etc.)
   status        BrokerConnectionStatus
   encryptedAuth Json?
   lastSyncedAt  DateTime?
@@ -178,6 +179,7 @@ model BrokerConnection {
 
   @@index([orgId])
   @@index([userId])
+  @@index([orgId, broker, brokerSource])
 }
 
 model BrokerAccount {

@@ -277,6 +277,12 @@ function ConnectionCard({
 type PreviewData = {
   success: boolean;
   fileName: string;
+  detectedBroker?: {
+    broker: string;
+    confidence: string;
+    displayName: string;
+    detectedFrom: string;
+  };
   summary: {
     totalRows: number;
     validPositions: number;
@@ -315,6 +321,8 @@ type PreviewData = {
   hasMore: boolean;
 };
 
+type BrokerOption = "ETRADE" | "FIDELITY" | "SCHWAB" | "ROBINHOOD" | "WEBULL" | "UNKNOWN";
+
 function CSVImportModal({
   orgId,
   onClose,
@@ -326,10 +334,13 @@ function CSVImportModal({
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [selectedBroker, setSelectedBroker] = useState<BrokerOption>("UNKNOWN");
   const [accountNickname, setAccountNickname] = useState("");
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
+  const [existingConnectionName, setExistingConnectionName] = useState("");
 
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault();

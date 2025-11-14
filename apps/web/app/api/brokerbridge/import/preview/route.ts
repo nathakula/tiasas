@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { parseCSVContent, inferColumnMapping } from "@/lib/brokerbridge/parsers/csv-parser";
 import { parseInstrument } from "@/lib/brokerbridge/symbol-utils";
+import { detectBrokerFromCSV, getBrokerDisplayName } from "@/lib/brokerbridge/parsers/broker-detector";
 
 /**
  * POST /api/brokerbridge/import/preview
@@ -46,6 +47,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Detect broker from CSV structure
+    const detectedBroker = detectBrokerFromCSV(parsed.headers, parsed.rows[0]);
 
     // Infer or use provided column mapping
     const mapping = columnMapping || inferColumnMapping(parsed.headers);
@@ -136,6 +140,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       fileName,
+      detectedBroker: {
+        broker: detectedBroker.broker,
+        confidence: detectedBroker.confidence,
+        displayName: getBrokerDisplayName(detectedBroker.broker),
+        detectedFrom: detectedBroker.detectedFrom,
+      },
       summary: {
         totalRows: parsed.rows.length,
         validPositions: positions.length,

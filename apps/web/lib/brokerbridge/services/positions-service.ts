@@ -33,6 +33,7 @@ export type AggregatedPosition = {
     accountId: string;
     accountNickname: string | null;
     broker: BrokerProvider;
+    brokerSource: string | null;
     quantity: number;
     averagePrice: number | null;
     marketValue: number | null;
@@ -224,6 +225,7 @@ export async function getAggregatedPositions(
         accountId: snapshot.account.id,
         accountNickname: snapshot.account.nickname,
         broker: snapshot.account.connection.broker,
+        brokerSource: snapshot.account.connection.brokerSource,
         quantity,
         averagePrice: lot.averagePrice ? Number(lot.averagePrice) : null,
         marketValue: lot.marketValue ? Number(lot.marketValue) : null,

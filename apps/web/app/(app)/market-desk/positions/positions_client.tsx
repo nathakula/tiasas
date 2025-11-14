@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { AssetClass, BrokerProvider } from "@prisma/client";
 import { Search, Filter, TrendingUp, TrendingDown, Info } from "lucide-react";
+import { getBrokerDisplayName } from "@/lib/brokerbridge/parsers/broker-detector";
 
 type AggregatedPosition = {
   instrument: {
@@ -21,6 +22,7 @@ type AggregatedPosition = {
     accountId: string;
     accountNickname: string | null;
     broker: BrokerProvider;
+    brokerSource: string | null;
     quantity: number;
     averagePrice: number | null;
     marketValue: number | null;
@@ -57,6 +59,7 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [assetClassFilter, setAssetClassFilter] = useState<AssetClass | "ALL">("ALL");
   const [optionsOnly, setOptionsOnly] = useState(false);
+  const [brokerSourceFilter, setBrokerSourceFilter] = useState<string>("ALL");
   const [selectedPosition, setSelectedPosition] = useState<AggregatedPosition | null>(null);
 
   useEffect(() => {
@@ -92,10 +95,26 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
     }
   }
 
-  const filteredPositions = positions.filter((pos) =>
-    pos.instrument.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (pos.instrument.name?.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredPositions = positions.filter((pos) => {
+    // Search filter
+    const matchesSearch = pos.instrument.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (pos.instrument.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Broker source filter
+    const matchesBroker = brokerSourceFilter === "ALL" ||
+      pos.accounts.some(acc => acc.brokerSource === brokerSourceFilter);
+
+    return matchesSearch && matchesBroker;
+  });
+
+  // Get unique broker sources from positions for filter dropdown
+  const uniqueBrokerSources = Array.from(
+    new Set(
+      positions.flatMap(pos =>
+        pos.accounts.map(acc => acc.brokerSource).filter(Boolean)
+      )
+    )
+  ).sort();
 
   if (loading) {
     return <div className="text-center text-gray-600">Loading positions...</div>;
@@ -153,6 +172,19 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
             {Object.values(AssetClass).map((ac) => (
               <option key={ac} value={ac}>
                 {ac}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={brokerSourceFilter}
+            onChange={(e) => setBrokerSourceFilter(e.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+          >
+            <option value="ALL">All Brokers</option>
+            {uniqueBrokerSources.map((source) => (
+              <option key={source} value={source!}>
+                {getBrokerDisplayName(source as any)}
               </option>
             ))}
           </select>
@@ -399,33 +431,43 @@ function PositionDetailsDrawer({
             <div>
               <h3 className="mb-3 font-semibold text-gray-900">Account Breakdown</h3>
               <div className="space-y-3">
-                {position.accounts.map((account, idx) => (
-                  <div key={idx} className="rounded-lg border border-gray-200 p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {account.accountNickname || account.accountId}
-                        </div>
-                        <div className="text-sm text-gray-500">{account.broker}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900">
-                          {formatNumber(account.quantity)} shares
-                        </div>
-                        {account.averagePrice && (
-                          <div className="text-sm text-gray-500">
-                            @ {formatCurrency(account.averagePrice)}
+                {position.accounts.map((account, idx) => {
+                  const brokerDisplayName = account.brokerSource
+                    ? getBrokerDisplayName(account.brokerSource as any)
+                    : account.broker;
+                  const accountLabel = account.accountNickname || account.accountId;
+                  const fullLabel = account.brokerSource && account.brokerSource !== "UNKNOWN"
+                    ? `${brokerDisplayName} - ${accountLabel}`
+                    : accountLabel;
+
+                  return (
+                    <div key={idx} className="rounded-lg border border-gray-200 p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {fullLabel}
                           </div>
-                        )}
+                          <div className="text-sm text-gray-500">{account.broker}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium text-gray-900">
+                            {formatNumber(account.quantity)} shares
+                          </div>
+                          {account.averagePrice && (
+                            <div className="text-sm text-gray-500">
+                              @ {formatCurrency(account.averagePrice)}
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      {account.marketValue && (
+                        <div className="mt-2 text-sm text-gray-600">
+                          Market Value: {formatCurrency(account.marketValue)}
+                        </div>
+                      )}
                     </div>
-                    {account.marketValue && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        Market Value: {formatCurrency(account.marketValue)}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

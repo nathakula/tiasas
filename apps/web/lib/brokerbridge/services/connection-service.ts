@@ -17,7 +17,8 @@ export async function createConnection(
   orgId: string,
   userId: string,
   broker: BrokerProvider,
-  authInput: BrokerAuthInput
+  authInput: BrokerAuthInput,
+  brokerSource?: string
 ): Promise<{
   connectionId: string;
   accounts: Array<{ id: string; nickname?: string }>;
@@ -36,12 +37,10 @@ export async function createConnection(
     // We'll generate our own DB connection ID
     const dbConnectionId = `conn_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    // Encrypt auth credentials (if not CSV import)
-    let encryptedAuth: string | undefined;
-    if (broker !== BrokerProvider.CSV_IMPORT && broker !== BrokerProvider.OFX_IMPORT) {
-      const userSalt = generateUserSalt();
-      encryptedAuth = encryptCredentials(authInput, userSalt);
-    }
+    // Encrypt auth credentials
+    // For CSV/OFX imports, we store the file content so it can be used during sync
+    const userSalt = generateUserSalt();
+    const encryptedAuth = encryptCredentials(authInput, userSalt);
 
     // Create connection in database
     const connection = await prisma.brokerConnection.create({
@@ -50,8 +49,9 @@ export async function createConnection(
         orgId,
         userId,
         broker,
+        brokerSource,
         status: BrokerConnectionStatus.ACTIVE,
-        encryptedAuth: encryptedAuth ? { encrypted: encryptedAuth } : null,
+        encryptedAuth: { encrypted: encryptedAuth },
       },
     });
 
