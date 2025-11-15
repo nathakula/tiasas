@@ -78,6 +78,7 @@ export async function POST(request: Request) {
         const symbol = row[mapping.symbol]?.trim();
         const quantityStr = row[mapping.quantity]?.trim().replace(/[,$]/g, "");
         const avgPriceStr = mapping.averagePrice ? row[mapping.averagePrice]?.trim().replace(/[,$]/g, "") : undefined;
+        const costBasisStr = mapping.costBasis ? row[mapping.costBasis]?.trim().replace(/[,$]/g, "") : undefined;
         const lastPriceStr = mapping.lastPrice ? row[mapping.lastPrice]?.trim().replace(/[,$]/g, "") : undefined;
         const marketValueStr = mapping.marketValue ? row[mapping.marketValue]?.trim().replace(/[,$]/g, "") : undefined;
 
@@ -93,12 +94,22 @@ export async function POST(request: Request) {
         }
 
         const quantity = parseFloat(quantityStr);
-        const averagePrice = avgPriceStr && !isNaN(Number(avgPriceStr)) ? parseFloat(avgPriceStr) : undefined;
+        const costBasisValue = costBasisStr && !isNaN(Number(costBasisStr)) ? parseFloat(costBasisStr) : undefined;
+        let averagePrice = avgPriceStr && !isNaN(Number(avgPriceStr)) ? parseFloat(avgPriceStr) : undefined;
+
+        // Calculate average price from cost basis if not provided (Fidelity uses costBasis instead of avgPrice)
+        if (!averagePrice && costBasisValue && quantity !== 0) {
+          averagePrice = costBasisValue / Math.abs(quantity);
+        }
+
         const lastPrice = lastPriceStr && !isNaN(Number(lastPriceStr)) ? parseFloat(lastPriceStr) : undefined;
         const marketValue = marketValueStr && !isNaN(Number(marketValueStr)) ? parseFloat(marketValueStr) : undefined;
 
         // Parse instrument info (detects options, ETFs, etc.)
         const instrument = parseInstrument(symbol, "ETRADE", row);
+
+        // Use costBasisValue if available, otherwise calculate from averagePrice * quantity
+        const calculatedCostBasis = costBasisValue || (averagePrice && quantity ? averagePrice * Math.abs(quantity) : undefined);
 
         positions.push({
           row: rowNum,
@@ -107,8 +118,8 @@ export async function POST(request: Request) {
           averagePrice,
           lastPrice,
           marketValue,
-          costBasis: averagePrice && quantity ? averagePrice * Math.abs(quantity) : undefined,
-          unrealizedPL: marketValue && averagePrice && quantity ? marketValue - (averagePrice * Math.abs(quantity)) : undefined,
+          costBasis: calculatedCostBasis,
+          unrealizedPL: marketValue && calculatedCostBasis ? marketValue - calculatedCostBasis : undefined,
           assetClass: instrument.assetClass,
           isOption: instrument.assetClass === "OPTION",
           optionDetails: instrument.option ? {

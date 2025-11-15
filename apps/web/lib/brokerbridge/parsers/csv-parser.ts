@@ -230,6 +230,8 @@ export function inferColumnMapping(headers: string[]): CSVColumnMapping | null {
     ],
     costBasis: [
       /^cost[\s_-]?basis$/i,
+      /^cost[\s_-]?basis[\s_-]?total$/i, // Fidelity format
+      /^total[\s_-]?cost[\s_-]?basis$/i,
       /^total[\s_-]?cost$/i,
       /^book[\s_-]?value$/i,
       /^basis$/i,
