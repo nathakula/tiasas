@@ -1,13 +1,20 @@
 "use client";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from "recharts";
 
+// Format month from "2025-01" to "Jan"
+function formatMonthLabel(monthStr: string) {
+  const [, month] = monthStr.split('-');
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return monthNames[parseInt(month) - 1] || monthStr;
+}
+
 export function MonthlyPnlChart({ monthly }: { monthly: { month: string; realized: number }[] }) {
   return (
     <div className="h-64">
       <ResponsiveContainer>
         <BarChart data={monthly}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" />
+          <XAxis dataKey="month" tickFormatter={formatMonthLabel} />
           <YAxis />
           <Tooltip />
           <Bar dataKey="realized" fill="#0ea5e9" radius={[6,6,0,0]} />
@@ -28,8 +35,8 @@ export function NavByMonthChart({ monthly }: { monthly: { month: string; navEnd:
 
     if (hasValidNav) {
       // Month has explicit NAV data (non-zero)
-      lastKnownNav = m.navEnd;
-      dataWithCarryForward.push({ month: m.month, navEnd: m.navEnd });
+      lastKnownNav = m.navEnd!;
+      dataWithCarryForward.push({ month: m.month, navEnd: m.navEnd! });
     } else if (lastKnownNav != null) {
       // Carry forward last known NAV for months without data or with 0
       dataWithCarryForward.push({ month: m.month, navEnd: lastKnownNav });
@@ -46,7 +53,7 @@ export function NavByMonthChart({ monthly }: { monthly: { month: string; navEnd:
         <ResponsiveContainer>
           <LineChart data={dataWithCarryForward}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
+            <XAxis dataKey="month" tickFormatter={formatMonthLabel} />
             <YAxis />
             <Tooltip />
             <Line type="monotone" dataKey="navEnd" stroke="#10b981" strokeWidth={2} dot={showDots} />
@@ -62,21 +69,21 @@ export function NavByMonthChart({ monthly }: { monthly: { month: string; navEnd:
 export function YtdCards({ monthly }: { monthly: { month: string; realized: number; navEnd: number | null }[] }) {
   const ytdRealized = monthly.reduce((acc, m) => acc + (m.realized ?? 0), 0);
   // Find last non-zero NAV (treat 0 as null/undefined)
-  const lastNav = (monthly.findLast?.((m) => m.navEnd != null && m.navEnd !== 0)?.navEnd ?? 0);
+  const lastNav = ([...monthly].reverse().find((m) => m.navEnd != null && m.navEnd !== 0)?.navEnd ?? 0);
   const monthsCount = monthly.filter((m) => (m.navEnd != null && m.navEnd !== 0) || (Math.abs(m.realized ?? 0) > 0)).length;
   return (
     <div className="grid md:grid-cols-3 gap-4">
       <div className="card p-4">
-        <div className="text-slate-500 text-sm">YTD Realized</div>
-        <div className="text-2xl font-semibold">{fmt(ytdRealized)}</div>
+        <div className="text-slate-500 dark:text-slate-400 text-sm">YTD Realized</div>
+        <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{fmt(ytdRealized)}</div>
       </div>
       <div className="card p-4">
-        <div className="text-slate-500 text-sm">NAV (last)</div>
-        <div className="text-2xl font-semibold">{fmt(lastNav)}</div>
+        <div className="text-slate-500 dark:text-slate-400 text-sm">NAV (last)</div>
+        <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{fmt(lastNav)}</div>
       </div>
       <div className="card p-4">
-        <div className="text-slate-500 text-sm">Months</div>
-        <div className="text-2xl font-semibold">{monthsCount}</div>
+        <div className="text-slate-500 dark:text-slate-400 text-sm">Months</div>
+        <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{monthsCount}</div>
       </div>
     </div>
   );

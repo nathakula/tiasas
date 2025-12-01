@@ -39,8 +39,8 @@ async function main() {
     nav += realized + unreal * 0.1;
     await prisma.dailyPnl.upsert({
       where: { orgId_date: { orgId: org.id, date: d } },
-      update: { realizedPnl: realized.toFixed(2) as any, unrealizedPnl: unreal.toFixed(2) as any, navEnd: nav.toFixed(2) as any },
-      create: { orgId: org.id, date: d, realizedPnl: realized.toFixed(2) as any, unrealizedPnl: unreal.toFixed(2) as any, navEnd: nav.toFixed(2) as any },
+      update: { realizedPnl: realized.toFixed(2) as any, unrealizedPnl: unreal.toFixed(2) as any },
+      create: { orgId: org.id, date: d, realizedPnl: realized.toFixed(2) as any, unrealizedPnl: unreal.toFixed(2) as any },
     });
   }
 
@@ -49,6 +49,7 @@ async function main() {
     const d = addDays(start, i * 2);
     await prisma.trade.create({
       data: {
+        id: `seed-trade-${i}`,
         orgId: org.id,
         userId: existingUser.id,
         date: d,
@@ -59,6 +60,7 @@ async function main() {
         fees: (Math.random() * 2).toFixed(2) as any,
         strategyTag: "discretionary",
         notes: "seed",
+        updatedAt: new Date(),
       },
     });
   }

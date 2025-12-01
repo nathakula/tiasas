@@ -8,16 +8,16 @@ export default function AIPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button className={`px-2 py-1 border rounded ${tab==='quick'?'bg-black text-white':''}`} onClick={()=>setTab('quick')}>Quick Scan</button>
-        <button className={`px-2 py-1 border rounded ${tab==='deep'?'bg-black text-white':''}`} onClick={()=>setTab('deep')}>Deep Dive</button>
-        <button className={`px-2 py-1 border rounded ${tab==='macro'?'bg-black text-white':''}`} onClick={()=>setTab('macro')}>Macro</button>
-        <button className={`px-2 py-1 border rounded ${tab==='notes'?'bg-black text-white':''}`} onClick={()=>setTab('notes')}>Notes → Actions</button>
+        <button className={`px-2 py-1 border rounded transition-colors ${tab==='quick'?'bg-gold-600 text-white border-gold-600':'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={()=>setTab('quick')}>Quick Scan</button>
+        <button className={`px-2 py-1 border rounded transition-colors ${tab==='deep'?'bg-gold-600 text-white border-gold-600':'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={()=>setTab('deep')}>Deep Dive</button>
+        <button className={`px-2 py-1 border rounded transition-colors ${tab==='macro'?'bg-gold-600 text-white border-gold-600':'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={()=>setTab('macro')}>Macro</button>
+        <button className={`px-2 py-1 border rounded transition-colors ${tab==='notes'?'bg-gold-600 text-white border-gold-600':'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={()=>setTab('notes')}>Notes → Actions</button>
       </div>
       {tab==='quick' && <QuickScan />}
       {tab==='deep' && <DeepDive />}
       {tab==='macro' && <MacroBox />}
       {tab==='notes' && <NotesActions />}
-      <div className="text-xs text-slate-500">AI outputs are informational only. Not investment advice.</div>
+      <div className="text-xs text-slate-500 dark:text-slate-400">AI outputs are informational only. Not investment advice.</div>
     </div>
   );
 }
@@ -38,14 +38,14 @@ function QuickScan() {
   return (
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <input className="border rounded px-2 py-1" placeholder="Ticker" value={ticker} onChange={(e)=>setTicker(e.target.value.toUpperCase())} />
-        <select className="border rounded px-2 py-1" value={window} onChange={(e)=>setWindow(e.target.value)}>
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Ticker" value={ticker} onChange={(e)=>setTicker(e.target.value.toUpperCase())} />
+        <select className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value={window} onChange={(e)=>setWindow(e.target.value)}>
           <option value="1m">1m</option>
           <option value="3m">3m</option>
           <option value="6m">6m</option>
           <option value="1y">1y</option>
         </select>
-        <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Scan</button>
+        <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Scan</button>
       </div>
       {snap?.snapshot && <QuoteCard data={snap.snapshot} />}
       {res && <QuickScanView data={res} />}
@@ -69,9 +69,9 @@ function DeepDive() {
   return (
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <input className="border rounded px-2 py-1" placeholder="Ticker" value={ticker} onChange={(e)=>setTicker(e.target.value.toUpperCase())} />
-        <input className="border rounded px-2 py-1" placeholder="Focus (optional)" value={focus} onChange={(e)=>setFocus(e.target.value)} />
-        <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Deep Dive</button>
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Ticker" value={ticker} onChange={(e)=>setTicker(e.target.value.toUpperCase())} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Focus (optional)" value={focus} onChange={(e)=>setFocus(e.target.value)} />
+        <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Deep Dive</button>
       </div>
       {snap?.snapshot && <QuoteCard data={snap.snapshot} />}
       {res && <DeepDiveView data={res} />}
@@ -90,8 +90,8 @@ function MacroBox() {
   return (
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <input className="border rounded px-2 py-1" placeholder="Watchlist" value={watchlist} onChange={(e)=>setWatchlist(e.target.value)} />
-        <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Generate</button>
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Watchlist" value={watchlist} onChange={(e)=>setWatchlist(e.target.value)} />
+        <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Generate</button>
       </div>
       {res && <MacroView data={res} />}
     </div>
@@ -108,8 +108,8 @@ function NotesActions() {
   return (
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <input className="border rounded px-2 py-1" placeholder="Journal entry id" value={id} onChange={(e)=>setId(e.target.value)} />
-        <button className="px-3 py-1.5 rounded bg-black text-white" onClick={run}>Convert</button>
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Journal entry id" value={id} onChange={(e)=>setId(e.target.value)} />
+        <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Convert</button>
       </div>
       {res && <TasksView items={res} />}
     </div>
@@ -119,8 +119,8 @@ function NotesActions() {
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "pos"|"neg" }) {
   return (
     <div>
-      <div className="text-xs text-slate-500">{label}</div>
-      <div className={`text-lg font-semibold ${tone==='pos'? 'text-emerald-700': tone==='neg'?'text-red-700':''}`}>{value}</div>
+      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+      <div className={`text-lg font-semibold ${tone==='pos'? 'text-emerald-700 dark:text-emerald-400': tone==='neg'?'text-red-700 dark:text-red-400':'text-slate-900 dark:text-slate-100'}`}>{value}</div>
     </div>
   );
 }
@@ -136,15 +136,15 @@ function PriceList({ title, items }: { title: string; items: any[] }) {
   }
   return (
     <div className="card p-3">
-      <div className="text-sm font-medium mb-1">{title}</div>
-      <ul className="text-sm space-y-1">
+      <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">{title}</div>
+      <ul className="text-sm space-y-1 text-slate-700 dark:text-slate-300">
         {(Array.isArray(items) ? items : items ? [items] : []).map((it, i) => {
           const p = toPrice(it);
           const priceText = (p.price != null && !Number.isNaN(p.price)) ? `$${Number(p.price).toFixed(2)}` : '-';
           const label = p.label ?? '';
           return <li key={i} className="flex justify-between"><span>{label}</span><span>{priceText}</span></li>;
         })}
-        {!items?.length && <li className="text-slate-500">-</li>}
+        {!items?.length && <li className="text-slate-500 dark:text-slate-400">-</li>}
       </ul>
     </div>
   );
@@ -175,10 +175,10 @@ function ListBox({ title, items }: { title: string; items: any }) {
   }
   return (
     <div className="card p-3">
-      <div className="text-sm font-medium mb-1">{title}</div>
-      <ul className="list-disc list-inside text-sm space-y-1">
+      <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">{title}</div>
+      <ul className="list-disc list-inside text-sm space-y-1 text-slate-700 dark:text-slate-300">
         {(Array.isArray(items) ? items : items ? [items] : []).map((t, i) => <li key={i}>{fmt(t)}</li>)}
-        {!items?.length && <li className="text-slate-500">-</li>}
+        {!items?.length && <li className="text-slate-500 dark:text-slate-400">-</li>}
       </ul>
     </div>
   );
@@ -193,17 +193,17 @@ function Table({ rows, cols }: { rows: any; cols: { key: string; label: string }
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="text-left text-slate-500">
+        <tr className="text-left text-slate-500 dark:text-slate-400">
           {cols.map((c) => <th key={c.key} className="py-1 pr-2">{c.label}</th>)}
         </tr>
       </thead>
       <tbody>
         {arr.map((r, i) => (
-          <tr key={i} className="border-t">
-            {cols.map((c) => <td key={c.key} className="py-1 pr-2">{String(r[c.key] ?? '')}</td>)}
+          <tr key={i} className="border-t dark:border-slate-700">
+            {cols.map((c) => <td key={c.key} className="py-1 pr-2 text-slate-900 dark:text-slate-100">{String(r[c.key] ?? '')}</td>)}
           </tr>
         ))}
-        {arr.length===0 && <tr><td className="py-2 text-slate-500" colSpan={cols.length}>No data</td></tr>}
+        {arr.length===0 && <tr><td className="py-2 text-slate-500 dark:text-slate-400" colSpan={cols.length}>No data</td></tr>}
       </tbody>
     </table>
   );
@@ -214,7 +214,7 @@ function QuickScanView({ data }: { data: any }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-slate-600">{data.ticker} · window {data.window}</div>
+        <div className="text-sm text-slate-600 dark:text-slate-400">{data.ticker} · window {data.window}</div>
       </div>
       <div className="grid md:grid-cols-5 gap-3 items-start">
         <Stat label="Trend" value={String(data.trend ?? '-')} tone={trendTone as any} />
@@ -232,15 +232,15 @@ function QuickScanView({ data }: { data: any }) {
         <ListBox title="Exit Ideas" items={data.exitIdeas ?? []} />
       </div>
       <div className="card p-3">
-        <div className="text-sm font-medium mb-1">Ranges</div>
+        <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">Ranges</div>
         <Table rows={data.ranges ?? []} cols={[{key:'period',label:'Period'},{key:'chgPct',label:'Chg %'},{key:'high',label:'High'},{key:'low',label:'Low'},{key:'atr',label:'ATR'}]} />
       </div>
       <div className="card p-3">
-        <div className="text-sm font-medium mb-1">Catalysts</div>
+        <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">Catalysts</div>
         <Table rows={(data.catalysts ?? []).map((c:any)=>({date:c.date,label:c.label}))} cols={[{key:'date',label:'Date'},{key:'label',label:'Label'}]} />
       </div>
-      {data.macroNote && <div className="text-sm text-slate-700">{data.macroNote}</div>}
-      <div className="text-xs text-slate-500">{data.disclaimer}</div>
+      {data.macroNote && <div className="text-sm text-slate-700 dark:text-slate-300">{data.macroNote}</div>}
+      <div className="text-xs text-slate-500 dark:text-slate-400">{data.disclaimer}</div>
     </div>
   );
 }
@@ -262,25 +262,25 @@ function DeepDiveView({ data }: { data: any }) {
   }
   return (
     <div className="space-y-3">
-      <div className="text-sm text-slate-600">{data.ticker}</div>
-      <div className="card p-3"><div className="font-medium">Overview</div><p className="text-sm mt-1 whitespace-pre-wrap">{typeof data.overview === 'string' ? data.overview : (()=>{ try { return JSON.stringify(data.overview); } catch { return String(data.overview); } })()}</p></div>
-      <div className="card p-3"><div className="font-medium">Recent Results</div>
+      <div className="text-sm text-slate-600 dark:text-slate-400">{data.ticker}</div>
+      <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Overview</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{typeof data.overview === 'string' ? data.overview : (()=>{ try { return JSON.stringify(data.overview); } catch { return String(data.overview); } })()}</p></div>
+      <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Recent Results</div>
         {Array.isArray(data.recentResults) ? (
-          <ul className="list-disc list-inside text-sm space-y-1 mt-1">{data.recentResults.map((x:any,i:number)=>(<li key={i}>{typeof x==='string'?x:JSON.stringify(x)}</li>))}</ul>
+          <ul className="list-disc list-inside text-sm space-y-1 mt-1 text-slate-700 dark:text-slate-300">{data.recentResults.map((x:any,i:number)=>(<li key={i}>{typeof x==='string'?x:JSON.stringify(x)}</li>))}</ul>
         ) : (
-          <p className="text-sm mt-1 whitespace-pre-wrap">{String(data.recentResults ?? '')}</p>
+          <p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{String(data.recentResults ?? '')}</p>
         )}
       </div>
       <div className="grid md:grid-cols-2 gap-3">
         <PriceList title="Supports" items={supports} />
         <PriceList title="Resistances" items={resistances} />
       </div>
-      {momentum && <div className="text-sm text-slate-700">{momentum}</div>}
-      <div className="card p-3"><div className="font-medium">Valuation</div><p className="text-sm mt-1 whitespace-pre-wrap">{renderValuation(data.valuationContext)}</p></div>
+      {momentum && <div className="text-sm text-slate-700 dark:text-slate-300">{momentum}</div>}
+      <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Valuation</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{renderValuation(data.valuationContext)}</p></div>
       {Array.isArray(data.comps) && data.comps.length>0 && (
         <div className="card p-3">
-          <div className="font-medium mb-1">Comps</div>
-          <div className="flex flex-wrap gap-2">{data.comps.map((c:any,i:number)=>(<span key={i} className="px-2 py-0.5 text-xs border rounded">{typeof c==='string'?c:JSON.stringify(c)}</span>))}</div>
+          <div className="font-medium mb-1 text-slate-900 dark:text-slate-100">Comps</div>
+          <div className="flex flex-wrap gap-2">{data.comps.map((c:any,i:number)=>(<span key={i} className="px-2 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300">{typeof c==='string'?c:JSON.stringify(c)}</span>))}</div>
         </div>
       )}
       <div className="grid md:grid-cols-3 gap-3">
@@ -288,7 +288,7 @@ function DeepDiveView({ data }: { data: any }) {
         <ListBox title="Alternative Cases" items={data.alternativeCases ?? []} />
         <ListBox title="Checklist" items={data.checklist ?? []} />
       </div>
-      <div className="text-xs text-slate-500">{data.disclaimer}</div>
+      <div className="text-xs text-slate-500 dark:text-slate-400">{data.disclaimer}</div>
     </div>
   );
 }
@@ -302,9 +302,9 @@ function QuoteCard({ data }: { data: any }) {
   return (
     <div className="card p-3">
       <div className="flex items-center gap-6 text-sm">
-        <div><div className="text-slate-500">Last</div><div className="font-semibold">{fmtNum(last)}</div></div>
-        <div><div className="text-slate-500">Change %</div><div className={`font-semibold ${Number(changePct) > 0 ? 'text-emerald-700' : Number(changePct) < 0 ? 'text-red-700' : ''}`}>{changePct != null ? (Number(changePct).toFixed(2) + '%') : '-'}</div></div>
-        <div><div className="text-slate-500">52w Range</div><div className="font-semibold">{fmtNum(lo)} – {fmtNum(hi)}</div></div>
+        <div><div className="text-slate-500 dark:text-slate-400">Last</div><div className="font-semibold text-slate-900 dark:text-slate-100">{fmtNum(last)}</div></div>
+        <div><div className="text-slate-500 dark:text-slate-400">Change %</div><div className={`font-semibold ${Number(changePct) > 0 ? 'text-emerald-700 dark:text-emerald-400' : Number(changePct) < 0 ? 'text-red-700 dark:text-red-400' : 'text-slate-900 dark:text-slate-100'}`}>{changePct != null ? (Number(changePct).toFixed(2) + '%') : '-'}</div></div>
+        <div><div className="text-slate-500 dark:text-slate-400">52w Range</div><div className="font-semibold text-slate-900 dark:text-slate-100">{fmtNum(lo)} – {fmtNum(hi)}</div></div>
       </div>
     </div>
   );
@@ -319,13 +319,13 @@ function MacroView({ data }: { data: any }) {
   const week = data?.weekAhead ?? [];
   return (
     <div className="space-y-3">
-      <div className="card p-3"><div className="font-medium">Summary</div><p className="text-sm mt-1 whitespace-pre-wrap">{data.summary}</p></div>
+      <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Summary</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{data.summary}</p></div>
       <div className="card p-3">
-        <div className="font-medium mb-1">Week Ahead</div>
+        <div className="font-medium mb-1 text-slate-900 dark:text-slate-100">Week Ahead</div>
         <Table rows={week} cols={[{key:'date',label:'Date'},{key:'item',label:'Item'}]} />
       </div>
       <ListBox title="Watchouts" items={data.watchouts ?? []} />
-      <div className="text-xs text-slate-500">{data.disclaimer}</div>
+      <div className="text-xs text-slate-500 dark:text-slate-400">{data.disclaimer}</div>
     </div>
   );
 }

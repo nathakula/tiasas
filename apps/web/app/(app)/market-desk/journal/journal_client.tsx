@@ -62,35 +62,35 @@ export default function JournalClient({ initialEntries, showCreate = true }: { i
       {showCreate && (
         <div className="card p-4">
           <div className="grid md:grid-cols-4 gap-2">
-            <input className="border rounded-md px-2 py-1" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            <input className="border rounded-md px-2 py-1 md:col-span-2" placeholder="Write a note" value={text} onChange={(e) => setText(e.target.value)} />
-            <input className="border rounded-md px-2 py-1" placeholder="tags,comma,separated" value={tags} onChange={(e) => setTags(e.target.value)} />
+            <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 md:col-span-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Write a note" value={text} onChange={(e) => setText(e.target.value)} />
+            <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="tags,comma,separated" value={tags} onChange={(e) => setTags(e.target.value)} />
           </div>
           <div className="mt-3">
-            <button className="px-3 py-1.5 rounded-2xl bg-black text-white" onClick={createEntry}>Add entry</button>
+            <button className="px-3 py-1.5 rounded-md bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={createEntry}>Add entry</button>
           </div>
         </div>
       )}
       <ul className="space-y-3">
         {entries.map((e) => (
           <li key={e.id} className="card p-4">
-            <div className="text-sm text-slate-500">{format(new Date(e.date), "yyyy-MM-dd")}</div>
+            <div className="text-sm text-slate-500 dark:text-slate-400">{format(new Date(e.date), "yyyy-MM-dd")}</div>
             {editingId === e.id ? (
               <>
-                <input className="border rounded-md px-2 py-1 w-full mt-2" value={editText} onChange={(ev) => setEditText(ev.target.value)} />
-                <input className="border rounded-md px-2 py-1 w-full mt-2" value={editTags} onChange={(ev) => setEditTags(ev.target.value)} />
+                <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 w-full mt-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" value={editText} onChange={(ev) => setEditText(ev.target.value)} />
+                <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 w-full mt-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" value={editTags} onChange={(ev) => setEditTags(ev.target.value)} />
                 <div className="mt-2 space-x-3">
-                  <button className="text-blue-600 text-sm" onClick={() => saveEdit(e.id)}>Save</button>
-                  <button className="text-slate-600 text-sm" onClick={() => setEditingId(null)}>Cancel</button>
+                  <button className="text-gold-600 dark:text-gold-400 text-sm hover:underline" onClick={() => saveEdit(e.id)}>Save</button>
+                  <button className="text-slate-600 dark:text-slate-400 text-sm hover:underline" onClick={() => setEditingId(null)}>Cancel</button>
                 </div>
               </>
             ) : (
               <>
-                <div className="font-medium mt-1">{e.text}</div>
-                <div className="text-xs text-slate-500 mt-1">{e.tags.join(", ")}</div>
+                <div className="font-medium mt-1 text-slate-900 dark:text-slate-100">{e.text}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{e.tags.join(", ")}</div>
                 <div className="mt-2 space-x-3">
-                  <button className="text-blue-600 text-sm" onClick={() => startEdit(e)}>Edit</button>
-                  <button className="text-red-600 text-sm" onClick={() => deleteEntry(e.id)}>Delete</button>
+                  <button className="text-gold-600 dark:text-gold-400 text-sm hover:underline" onClick={() => startEdit(e)}>Edit</button>
+                  <button className="text-red-600 dark:text-red-400 text-sm hover:underline" onClick={() => deleteEntry(e.id)}>Delete</button>
                 </div>
               </>
             )}

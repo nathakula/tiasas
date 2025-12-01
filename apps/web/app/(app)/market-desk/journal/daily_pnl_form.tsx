@@ -53,15 +53,15 @@ export function DailyPnlForm() {
 
   return (
     <div className="card p-4">
-      <div className="font-medium mb-2">Add Daily P&L</div>
+      <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Add Daily P&L</div>
       <div className="grid md:grid-cols-4 gap-2">
-        <input className="border rounded-md px-2 py-1" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input className="border rounded-md px-2 py-1" placeholder="Realized (required)" value={realized} onChange={(e) => setRealized(e.target.value)} />
-        <input className="border rounded-md px-2 py-1" placeholder="Unrealized (optional)" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
-        <input className="border rounded-md px-2 py-1" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Realized (required)" value={realized} onChange={(e) => setRealized(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Unrealized (optional)" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
       <div className="mt-3">
-        <button className="px-3 py-1.5 rounded-2xl bg-black text-white disabled:opacity-50" disabled={saving} onClick={save}>Save</button>
+        <button className="px-3 py-1.5 rounded-md bg-gold-600 hover:bg-gold-700 text-white disabled:opacity-50 transition-colors" disabled={saving} onClick={save}>Save</button>
       </div>
     </div>
   );

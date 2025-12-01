@@ -121,13 +121,13 @@ export default async function CalendarPage() {
   ]);
 
   const days = eachDayOfInterval({ start, end });
-  const byDay = new Map<string, { e: number }>();
-  for (const d of days) byDay.set(toIso(d), { e: 0 });
+  const byDay = new Map<string, { e: number; t: number }>();
+  for (const d of days) byDay.set(toIso(d), { e: 0, t: 0 });
 
   for (const e of entries) {
     const k = toIso(e.date);
-    const curr = byDay.get(k) ?? { e: 0 };
-    byDay.set(k, { e: curr.e + 1 });
+    const curr = byDay.get(k) ?? { e: 0, t: 0 };
+    byDay.set(k, { e: curr.e + 1, t: curr.t });
   }
 
   const pnlByDate = new Map(pnl.map(p => [toIso(p.date), {

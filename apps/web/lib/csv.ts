@@ -49,6 +49,7 @@ export function toDecimalString(v: string | number | null | undefined): string |
   if (typeof v === "number") return String(v);
   const cleaned = v.replace(/,/g, "").trim();
   if (cleaned === "") return undefined;
-  if (!/^[-+]?\d*(?:\.\d+)?$/.test(cleaned)) return undefined;
+  // Match: optional sign, then either (digits with optional decimal) or (decimal only)
+  if (!/^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(cleaned)) return undefined;
   return cleaned;
 }

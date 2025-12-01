@@ -84,40 +84,41 @@ export async function POST(req: Request) {
 
   // Helper function to parse flexible date formats
   function parseFlexibleDate(dateStr: string): Date {
-    // Try ISO format first (YYYY-MM-DD)
-    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
-      const d = new Date(`${dateStr}T00:00:00.000Z`);
-      if (!isNaN(d.getTime())) return d;
-    }
+    const trimmed = (dateStr || '').trim();
+    if (!trimmed) throw new Error(`Date is empty or missing`);
 
-    // Try MM/DD/YYYY or M/D/YYYY
-    const usFormat = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (usFormat) {
-      const [, month, day, year] = usFormat;
+    // Try ISO format with various separators (YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD)
+    const isoFormat = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+    if (isoFormat) {
+      const [, year, month, day] = isoFormat;
       const d = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00.000Z`);
       if (!isNaN(d.getTime())) return d;
     }
 
-    // Try DD/MM/YYYY or D/M/YYYY (assuming day is always larger or context matters)
-    const euroFormat = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (euroFormat) {
-      const [, part1, part2, year] = euroFormat;
-      // If part1 > 12, it must be day, so DD/MM/YYYY
-      if (Number(part1) > 12) {
-        const d = new Date(`${year}-${part2.padStart(2, '0')}-${part1.padStart(2, '0')}T00:00:00.000Z`);
-        if (!isNaN(d.getTime())) return d;
+    // Try MM/DD/YYYY or M/D/YYYY with various separators
+    const usFormat = trimmed.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+    if (usFormat) {
+      const [, part1, part2, year] = usFormat;
+
+      // Try as MM/DD/YYYY first
+      const d1 = new Date(`${year}-${part1.padStart(2, '0')}-${part2.padStart(2, '0')}T00:00:00.000Z`);
+      if (!isNaN(d1.getTime()) && Number(part1) <= 12 && Number(part2) <= 31) return d1;
+
+      // If part1 > 12, it must be DD/MM/YYYY
+      if (Number(part1) > 12 && Number(part2) <= 12) {
+        const d2 = new Date(`${year}-${part2.padStart(2, '0')}-${part1.padStart(2, '0')}T00:00:00.000Z`);
+        if (!isNaN(d2.getTime())) return d2;
       }
     }
 
-    // Try YYYY/MM/DD
-    const isoSlash = dateStr.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
-    if (isoSlash) {
-      const [, year, month, day] = isoSlash;
-      const d = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00.000Z`);
-      if (!isNaN(d.getTime())) return d;
+    // Try parsing with native Date parser as fallback (handles many formats)
+    const nativeDate = new Date(trimmed);
+    if (!isNaN(nativeDate.getTime())) {
+      // Convert to UTC midnight
+      return new Date(Date.UTC(nativeDate.getFullYear(), nativeDate.getMonth(), nativeDate.getDate()));
     }
 
-    throw new Error(`Invalid date format. Accepted formats: YYYY-MM-DD, MM/DD/YYYY, or YYYY/MM/DD (e.g., 2025-01-15 or 1/15/2025)`);
+    throw new Error(`Invalid date format "${trimmed}". Accepted: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY, YYYY/MM/DD (e.g., 2025-01-15, 1/15/2025, 15-01-2025)`);
   }
 
   for (let i = 0; i < rows.length; i += chunkSize) {
@@ -127,24 +128,46 @@ export async function POST(req: Request) {
         const row = chunk[j]!;
         const iGlobal = i + j + 1;
         try {
+          // Log first few rows for debugging
+          if (iGlobal <= 3) {
+            console.log(`[Bulk Import Debug] Row ${iGlobal}:`, JSON.stringify(row));
+          }
+
           // Parse date with flexible format support
           const dateObj = parseFlexibleDate(row.date);
 
           // Validate numeric fields
-          if (isNaN(Number(row.realized))) {
-            throw new Error(`Invalid realized P&L "${row.realized}". Must be a number (e.g., 5000 or -1250.50)`);
+          if (!row.realized || row.realized.trim() === '' || isNaN(Number(row.realized))) {
+            throw new Error(`Invalid realized P&L value "${row.realized}" (from date: ${row.date}). Must be a valid number (e.g., 5000 or -1250.50). Check CSV column alignment.`);
           }
-          if (row.unrealized && isNaN(Number(row.unrealized))) {
-            throw new Error(`Invalid unrealized P&L "${row.unrealized}". Must be a number (e.g., 2000 or -500.25)`);
+          if (row.unrealized && row.unrealized.trim() !== '' && isNaN(Number(row.unrealized))) {
+            throw new Error(`Invalid unrealized P&L value "${row.unrealized}" (from date: ${row.date}). Must be a valid number (e.g., 2000 or -500.25). Check CSV column alignment.`);
+          }
+
+          if (iGlobal <= 3) {
+            console.log(`[Bulk Import Debug] Row ${iGlobal} validated - date: ${dateObj.toISOString()}, realized: ${row.realized}, unrealized: ${row.unrealized}`);
           }
 
           const existing = await tx.dailyPnl.findUnique({ where: { orgId_date: { orgId, date: dateObj } } });
           if (strategy === "skip" && existing) { results.skipped++; continue; }
           if (dryRun) { results.imported++; continue; }
           if (existing) before.push(existing);
-          const updateData: any = { realizedPnl: row.realized as any, unrealizedPnl: (row.unrealized ?? "0") as any, note: row.note ?? null };
-          if (typeof row.nav !== 'undefined') updateData.navEnd = row.nav as any; // preserve existing month-end NAV when nav not provided
-          const createData: any = { orgId, date: dateObj, realizedPnl: row.realized as any, unrealizedPnl: (row.unrealized ?? "0") as any, navEnd: (row.nav ?? "0") as any, note: row.note ?? null };
+
+          // DailyPnl only has realizedPnl, unrealizedPnl, and note fields
+          // NAV is stored separately in MonthlyNav_eom table
+          const updateData: any = {
+            realizedPnl: row.realized as any,
+            unrealizedPnl: (row.unrealized ?? "0") as any,
+            note: row.note ?? null
+          };
+          const createData: any = {
+            orgId,
+            date: dateObj,
+            realizedPnl: row.realized as any,
+            unrealizedPnl: (row.unrealized ?? "0") as any,
+            note: row.note ?? null
+          };
+
           const up = await tx.dailyPnl.upsert({
             where: { orgId_date: { orgId, date: dateObj } },
             update: updateData,
@@ -155,12 +178,21 @@ export async function POST(req: Request) {
         } catch (e: any) {
           // Extract user-friendly error message (remove Prisma/stack trace details)
           let errorMsg = e?.message ?? "Unknown error";
-          // If it's a Prisma error with our custom message, extract just our message
+
+          // Log the full error for debugging
+          if (iGlobal <= 200) {
+            console.error(`[Bulk Import Error] Row ${iGlobal}:`, e);
+          }
+
+          // If it's our custom validation error, extract just our message
           if (errorMsg.includes("Invalid date") || errorMsg.includes("Invalid realized") || errorMsg.includes("Invalid unrealized")) {
             errorMsg = errorMsg.split(/invocation:/i)[0].trim();
+          } else if (errorMsg.includes("Unique constraint")) {
+            errorMsg = `Duplicate date ${row.date} - entry already exists for this date`;
           } else if (errorMsg.includes("prisma") || errorMsg.includes("invocation")) {
-            // Generic Prisma error - provide helpful message
-            errorMsg = `Data validation error. Check that date is YYYY-MM-DD format and numeric fields contain valid numbers.`;
+            // Show more of the error message for debugging
+            const firstLine = errorMsg.split('\n')[0];
+            errorMsg = `Database error: ${firstLine}`;
           }
           results.errors.push({ i: iGlobal, error: errorMsg });
         }

@@ -10,10 +10,10 @@ export default function SignIn() {
           <Logo size="md" />
         </div>
         <h1 className="text-2xl font-semibold mb-2">Sign in</h1>
-        <p className="text-slate-600 mb-6">Use your Google account</p>
+        <p className="text-slate-600 dark:text-slate-400 mb-6">Use your Google account</p>
         <button
-          className="inline-flex items-center justify-center px-4 py-2 rounded-2xl bg-black text-white hover:opacity-90"
-          onClick={() => signIn("google", { callbackUrl: "/app/market-desk" })}
+          className="inline-flex items-center justify-center px-4 py-2 rounded-2xl bg-gold-600 hover:bg-gold-700 text-white transition-colors"
+          onClick={() => signIn("google", { callbackUrl: "/market-desk" })}
         >
           Continue with Google
         </button>

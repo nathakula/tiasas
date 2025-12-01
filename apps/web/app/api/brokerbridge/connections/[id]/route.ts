@@ -23,7 +23,7 @@ export async function GET(
     }
 
     const connectionId = params.id;
-    const connection = await getConnection(connectionId, session.user.id);
+    const connection = await getConnection(connectionId, (session.user as any).id);
 
     if (!connection) {
       return NextResponse.json(
@@ -60,7 +60,7 @@ export async function DELETE(
     }
 
     const connectionId = params.id;
-    await deleteConnection(connectionId, session.user.id);
+    await deleteConnection(connectionId, (session.user as any).id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

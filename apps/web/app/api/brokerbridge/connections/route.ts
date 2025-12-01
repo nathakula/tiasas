@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     // Get user ID from session
-    const userId = session.user.id;
+    const userId = (session.user as any).id;
 
     const result = await createConnection(orgId, userId, broker, authInput);
 

@@ -39,15 +39,15 @@ const getMonthlyPnlData = cache(async (orgId: string, year: number) => {
         FROM "MonthlyNav_eom"
        WHERE "orgId" = ${orgId} AND date BETWEEN ${rangeFrom} AND ${rangeTo}
     )
-    SELECT d.month::text,
+    SELECT COALESCE(d.month, n.month)::text AS month,
            d.realized,
            n.nav,
            n.prev_nav,
            u.unrealized_snapshot
       FROM daily_agg d
-      LEFT JOIN nav_data n ON d.month = n.month
-      LEFT JOIN unrealized_last u ON d.month = u.month
-     ORDER BY d.month
+      FULL OUTER JOIN nav_data n ON d.month = n.month
+      LEFT JOIN unrealized_last u ON COALESCE(d.month, n.month) = u.month
+     ORDER BY COALESCE(d.month, n.month)
   `) as unknown as Row[];
 
   return rows.map((r) => ({

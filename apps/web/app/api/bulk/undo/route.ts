@@ -22,7 +22,7 @@ export async function POST(req: Request) {
           const date = new Date(a.date);
           const b = before.find((x) => new Date(x.date).toISOString() === date.toISOString());
           if (b) {
-            await tx.dailyPnl.update({ where: { orgId_date: { orgId, date } }, data: { realizedPnl: b.realizedPnl, unrealizedPnl: b.unrealizedPnl, navEnd: b.navEnd, note: b.note } });
+            await tx.dailyPnl.update({ where: { orgId_date: { orgId, date } }, data: { realizedPnl: b.realizedPnl, unrealizedPnl: b.unrealizedPnl, note: b.note } });
           } else {
             await tx.dailyPnl.delete({ where: { orgId_date: { orgId, date } } });
           }
@@ -32,9 +32,9 @@ export async function POST(req: Request) {
           const date = new Date(a.date);
           const b = before.find((x) => new Date(x.date).toISOString() === date.toISOString());
           if (b) {
-            await tx.dailyPnl.update({ where: { orgId_date: { orgId, date } }, data: { navEnd: b.navEnd } });
+            await tx.monthlyNavEom.update({ where: { orgId_date: { orgId, date } }, data: { nav: b.nav } });
           } else {
-            await tx.dailyPnl.delete({ where: { orgId_date: { orgId, date } } });
+            await tx.monthlyNavEom.delete({ where: { orgId_date: { orgId, date } } });
           }
         }
       } else if (type === 'JOURNAL') {

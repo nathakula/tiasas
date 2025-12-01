@@ -99,9 +99,9 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
   return (
     <div className="card p-4">
       <div className="flex items-center justify-between mb-3">
-        <div className="font-medium">All Daily P&L Entries</div>
+        <div className="font-medium text-slate-900 dark:text-slate-100">All Daily P&L Entries</div>
         <input
-          className="border rounded-md px-2 py-1 text-sm w-64"
+          className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm w-64 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
           placeholder="Search by date or note..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -111,10 +111,10 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b">
+            <tr className="border-b dark:border-slate-700">
               <th className="text-left py-2 px-2">
                 <button
-                  className="flex items-center gap-1 hover:text-slate-900"
+                  className="flex items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
                   onClick={() => toggleSort("date")}
                 >
                   Date
@@ -123,16 +123,16 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
               </th>
               <th className="text-right py-2 px-2">
                 <button
-                  className="flex items-center gap-1 hover:text-slate-900 ml-auto"
+                  className="flex items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 ml-auto"
                   onClick={() => toggleSort("realized")}
                 >
                   Realized
                   {sortField === "realized" && (sortDirection === "asc" ? " ↑" : " ↓")}
                 </button>
               </th>
-              <th className="text-right py-2 px-2">Unrealized</th>
-              <th className="text-left py-2 px-2">Note</th>
-              <th className="text-right py-2 px-2">Actions</th>
+              <th className="text-right py-2 px-2 text-slate-500 dark:text-slate-400">Unrealized</th>
+              <th className="text-left py-2 px-2 text-slate-500 dark:text-slate-400">Note</th>
+              <th className="text-right py-2 px-2 text-slate-500 dark:text-slate-400">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -143,25 +143,25 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
               const loss = realizedNum < 0;
 
               return (
-                <tr key={entry.id} className="border-b hover:bg-slate-50">
-                  <td className="py-2 px-2">{format(new Date(entry.date), "yyyy-MM-dd")}</td>
+                <tr key={entry.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                  <td className="py-2 px-2 text-slate-900 dark:text-slate-100">{format(new Date(entry.date), "yyyy-MM-dd")}</td>
                   <td className="py-2 px-2 text-right">
                     {isEditing ? (
                       <input
-                        className="border rounded px-1 py-0.5 w-24 text-right"
+                        className="border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 w-24 text-right bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                         value={editValues.realized}
                         onChange={(e) => setEditValues({ ...editValues, realized: e.target.value })}
                       />
                     ) : (
-                      <span className={profit ? "text-emerald-700" : loss ? "text-red-700" : ""}>
+                      <span className={profit ? "text-emerald-700 dark:text-emerald-400" : loss ? "text-red-700 dark:text-red-400" : "text-slate-900 dark:text-slate-100"}>
                         {entry.realizedPnl}
                       </span>
                     )}
                   </td>
-                  <td className="py-2 px-2 text-right">
+                  <td className="py-2 px-2 text-right text-slate-900 dark:text-slate-100">
                     {isEditing ? (
                       <input
-                        className="border rounded px-1 py-0.5 w-24 text-right"
+                        className="border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 w-24 text-right bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                         value={editValues.unrealized}
                         onChange={(e) => setEditValues({ ...editValues, unrealized: e.target.value })}
                       />
@@ -172,25 +172,25 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
                   <td className="py-2 px-2">
                     {isEditing ? (
                       <input
-                        className="border rounded px-1 py-0.5 w-full"
+                        className="border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                         value={editValues.note}
                         onChange={(e) => setEditValues({ ...editValues, note: e.target.value })}
                       />
                     ) : (
-                      <span className="text-slate-600">{entry.note || "—"}</span>
+                      <span className="text-slate-600 dark:text-slate-400">{entry.note || "—"}</span>
                     )}
                   </td>
                   <td className="py-2 px-2 text-right">
                     {isEditing ? (
                       <div className="flex gap-1 justify-end">
                         <button
-                          className="px-2 py-0.5 text-xs border rounded hover:bg-slate-100"
+                          className="px-2 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                           onClick={() => setEditingId(null)}
                         >
                           Cancel
                         </button>
                         <button
-                          className="px-2 py-0.5 text-xs bg-black text-white rounded hover:bg-slate-800 disabled:opacity-50"
+                          className="px-2 py-0.5 text-xs bg-gold-600 hover:bg-gold-700 text-white rounded disabled:opacity-50 transition-colors"
                           disabled={saving}
                           onClick={saveEdit}
                         >
@@ -200,13 +200,13 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
                     ) : (
                       <div className="flex gap-1 justify-end">
                         <button
-                          className="px-2 py-0.5 text-xs text-blue-600 hover:underline"
+                          className="px-2 py-0.5 text-xs text-gold-600 dark:text-gold-400 hover:underline"
                           onClick={() => startEdit(entry)}
                         >
                           Edit
                         </button>
                         <button
-                          className="px-2 py-0.5 text-xs text-red-600 hover:underline"
+                          className="px-2 py-0.5 text-xs text-red-600 dark:text-red-400 hover:underline"
                           onClick={() => deleteEntry(entry)}
                         >
                           Delete
@@ -219,7 +219,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
             })}
             {filteredEntries.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-center text-slate-500">
+                <td colSpan={5} className="py-4 text-center text-slate-500 dark:text-slate-400">
                   {searchTerm ? "No entries found" : "No P&L entries yet"}
                 </td>
               </tr>
@@ -228,7 +228,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
         </table>
       </div>
 
-      <div className="mt-2 text-xs text-slate-500">
+      <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
         Showing {filteredEntries.length} of {entries.length} entries
       </div>
     </div>

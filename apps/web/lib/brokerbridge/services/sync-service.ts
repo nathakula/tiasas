@@ -200,8 +200,19 @@ export async function syncAccount(
 ): Promise<SyncResult> {
   const startTime = new Date();
   let syncLogId: string | undefined;
+  let connectionId: string = "";
 
   try {
+    // Get account to fetch connectionId
+    const account = await prisma.brokerAccount.findUnique({
+      where: { id: accountId },
+      select: { connectionId: true },
+    });
+    if (!account) {
+      throw new Error(`Account not found: ${accountId}`);
+    }
+    connectionId = account.connectionId;
+
     // Create sync log
     const syncLog = await prisma.syncLog.create({
       data: {
@@ -245,6 +256,7 @@ export async function syncAccount(
 
     return {
       success: true,
+      connectionId,
       accountId,
       snapshotId: result.snapshotId,
       lotsImported: result.lotsImported,
@@ -267,6 +279,7 @@ export async function syncAccount(
 
     return {
       success: false,
+      connectionId: connectionId || "",
       accountId,
       error:
         error instanceof AdapterError
@@ -391,7 +404,7 @@ async function persistSnapshot(
         unrealizedPL: lot.unrealizedPL,
         unrealizedPLPct: lot.unrealizedPLPct,
         basisMethod: lot.basisMethod || "UNKNOWN",
-        metadata: lot.metadata || {},
+        metadata: lot.metadata as any,
       },
     });
   }

@@ -24,12 +24,19 @@ export default async function JournalPage() {
     }),
   ]);
 
+  // Convert Decimal to string for PnlTable
+  const pnlEntriesFormatted = pnlEntries.map(entry => ({
+    ...entry,
+    realizedPnl: entry.realizedPnl.toString(),
+    unrealizedPnl: entry.unrealizedPnl.toString(),
+  }));
+
   return (
     <div className="space-y-6">
       <DailyPnlForm />
 
       {/* Comprehensive P&L data table */}
-      <PnlTable initialEntries={pnlEntries} />
+      <PnlTable initialEntries={pnlEntriesFormatted} />
 
       {/* Showing only the list for now; creation moved to Daily P&L form */}
       <JournalClient initialEntries={entries} showCreate={false} />

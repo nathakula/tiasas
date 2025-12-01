@@ -130,7 +130,7 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
 
       // Search filter
       const matchesSearch = pos.instrument.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (pos.instrument.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+        (pos.instrument.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
 
       return matchesSearch;
     });
@@ -145,7 +145,7 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
   ).sort();
 
   if (loading) {
-    return <div className="text-center text-gray-600">Loading positions...</div>;
+    return <div className="text-center text-gray-600 dark:text-slate-400">Loading positions...</div>;
   }
 
   return (
@@ -178,23 +178,23 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
       )}
 
       {/* Filters and Search */}
-      <div className="flex flex-col space-y-4 rounded-lg border border-gray-200 bg-white p-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+      <div className="flex flex-col space-y-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div className="flex items-center space-x-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
             <input
               type="text"
               placeholder="Search symbols..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-blue-500 focus:outline-none"
+              className="w-64 rounded-lg border border-gray-300 dark:border-slate-700 py-2 pl-10 pr-4 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-gold-500 focus:outline-none"
             />
           </div>
 
           <select
             value={assetClassFilter}
             onChange={(e) => setAssetClassFilter(e.target.value as AssetClass | "ALL")}
-            className="rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="rounded-lg border border-gray-300 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:border-blue-500 dark:focus:border-gold-500 focus:outline-none"
           >
             <option value="ALL">All Asset Classes</option>
             {Object.values(AssetClass).map((ac) => (
@@ -207,7 +207,7 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
           <select
             value={brokerSourceFilter}
             onChange={(e) => setBrokerSourceFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="rounded-lg border border-gray-300 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:border-blue-500 dark:focus:border-gold-500 focus:outline-none"
           >
             <option value="ALL">All Brokers</option>
             {uniqueBrokerSources.map((source) => (
@@ -222,60 +222,60 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
               type="checkbox"
               checked={optionsOnly}
               onChange={(e) => setOptionsOnly(e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-gray-300 dark:border-slate-700"
             />
-            <span className="text-sm text-gray-700">Options only</span>
+            <span className="text-sm text-gray-700 dark:text-slate-300">Options only</span>
           </label>
         </div>
 
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-slate-400">
           {filteredPositions.length} position{filteredPositions.length !== 1 ? "s" : ""}
         </div>
       </div>
 
       {/* Positions Table */}
       {filteredPositions.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-          <Info className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">No positions found</h3>
-          <p className="mt-2 text-gray-600">
+        <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center">
+          <Info className="mx-auto h-12 w-12 text-gray-400 dark:text-slate-500" />
+          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-slate-100">No positions found</h3>
+          <p className="mt-2 text-gray-600 dark:text-slate-400">
             {positions.length === 0
               ? "Import a CSV or sync a broker connection to see your positions."
               : "Try adjusting your filters or search term."}
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+            <thead className="bg-gray-50 dark:bg-slate-900">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Symbol
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Broker
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Quantity
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Avg Price
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Market Value
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Cost Basis
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Unrealized P&L
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Accounts
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
               {filteredPositions.map((pos) => (
                 <PositionRow
                   key={pos.instrument.id}
@@ -311,12 +311,12 @@ function SummaryCard({
   isProfit?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="text-sm font-medium text-gray-500">{title}</div>
-      <div className={`mt-2 text-2xl font-semibold ${isProfit !== undefined ? (isProfit ? "text-green-600" : "text-red-600") : "text-gray-900"}`}>
+    <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+      <div className="text-sm font-medium text-gray-500 dark:text-slate-400">{title}</div>
+      <div className={`mt-2 text-2xl font-semibold ${isProfit !== undefined ? (isProfit ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400") : "text-gray-900 dark:text-slate-100"}`}>
         {value}
       </div>
-      <div className="mt-1 text-sm text-gray-600">{subtitle}</div>
+      <div className="mt-1 text-sm text-gray-600 dark:text-slate-400">{subtitle}</div>
     </div>
   );
 }
@@ -347,12 +347,12 @@ function PositionRow({
   return (
     <tr
       onClick={onClick}
-      className="cursor-pointer hover:bg-gray-50"
+      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700"
     >
       <td className="whitespace-nowrap px-6 py-4">
         <div>
-          <div className="font-medium text-gray-900">{position.instrument.symbol}</div>
-          <div className="text-sm text-gray-500">
+          <div className="font-medium text-gray-900 dark:text-slate-100">{position.instrument.symbol}</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400">
             {position.instrument.assetClass}
             {position.optionDetails && (
               <span className="ml-2">
@@ -364,32 +364,32 @@ function PositionRow({
       </td>
       <td className="whitespace-nowrap px-6 py-4">
         <div className="text-sm">
-          <div className="font-medium text-gray-900">{brokerDisplay}</div>
+          <div className="font-medium text-gray-900 dark:text-slate-100">{brokerDisplay}</div>
           {position.accounts.length > 1 && (
-            <div className="text-xs text-gray-500">{position.accounts.length} accounts</div>
+            <div className="text-xs text-gray-500 dark:text-slate-400">{position.accounts.length} accounts</div>
           )}
         </div>
       </td>
-      <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-900">
+      <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-900 dark:text-slate-100">
         {formatNumber(position.totalQuantity)}
       </td>
-      <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-900">
+      <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-900 dark:text-slate-100">
         {formatCurrency(position.weightedAveragePrice)}
       </td>
-      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium text-gray-900">
+      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-slate-100">
         {formatCurrency(position.totalMarketValue)}
       </td>
-      <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-900">
+      <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-900 dark:text-slate-100">
         {formatCurrency(position.totalCostBasis)}
       </td>
       <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-        <div className={`flex items-center justify-end space-x-1 ${isPositive ? "text-green-600" : "text-red-600"}`}>
+        <div className={`flex items-center justify-end space-x-1 ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
           {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
           <span className="font-medium">{formatCurrency(position.totalUnrealizedPL)}</span>
           <span className="text-xs">({formatPercent(plPct)})</span>
         </div>
       </td>
-      <td className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-500">
+      <td className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-500 dark:text-slate-400">
         {position.accounts.length}
       </td>
     </tr>
@@ -405,22 +405,22 @@ function PositionDetailsDrawer({
 }) {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="absolute bottom-0 right-0 top-0 w-full max-w-2xl bg-white shadow-xl">
+      <div className="absolute inset-0 bg-black bg-opacity-50 dark:bg-black/70" onClick={onClose} />
+      <div className="absolute bottom-0 right-0 top-0 w-full max-w-2xl bg-white dark:bg-slate-800 shadow-xl">
         <div className="flex h-full flex-col">
-          <div className="border-b border-gray-200 px-6 py-4">
+          <div className="border-b border-gray-200 dark:border-slate-700 px-6 py-4">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                   {position.instrument.symbol}
                 </h2>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
                   {position.instrument.name || position.instrument.assetClass}
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
               >
                 ✕
               </button>
@@ -430,22 +430,22 @@ function PositionDetailsDrawer({
           <div className="flex-1 overflow-y-auto p-6">
             {/* Option Details */}
             {position.optionDetails && (
-              <div className="mb-6 rounded-lg bg-blue-50 p-4">
-                <h3 className="font-semibold text-blue-900">Option Details</h3>
+              <div className="mb-6 rounded-lg bg-blue-50 dark:bg-blue-950/30 p-4">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-300">Option Details</h3>
                 <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-blue-700">Underlying:</span>{" "}
-                    {position.optionDetails.underlying.symbol}
+                    <span className="text-blue-700 dark:text-blue-400">Underlying:</span>{" "}
+                    <span className="text-gray-900 dark:text-slate-100">{position.optionDetails.underlying.symbol}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Strike:</span> ${position.optionDetails.strike}
+                    <span className="text-blue-700 dark:text-blue-400">Strike:</span> <span className="text-gray-900 dark:text-slate-100">${position.optionDetails.strike}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Right:</span> {position.optionDetails.right}
+                    <span className="text-blue-700 dark:text-blue-400">Right:</span> <span className="text-gray-900 dark:text-slate-100">{position.optionDetails.right}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Expiration:</span>{" "}
-                    {new Date(position.optionDetails.expiration).toLocaleDateString()}
+                    <span className="text-blue-700 dark:text-blue-400">Expiration:</span>{" "}
+                    <span className="text-gray-900 dark:text-slate-100">{new Date(position.optionDetails.expiration).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
@@ -453,7 +453,7 @@ function PositionDetailsDrawer({
 
             {/* Summary */}
             <div className="mb-6">
-              <h3 className="mb-3 font-semibold text-gray-900">Summary</h3>
+              <h3 className="mb-3 font-semibold text-gray-900 dark:text-slate-100">Summary</h3>
               <div className="grid grid-cols-2 gap-4">
                 <DataPoint label="Total Quantity" value={formatNumber(position.totalQuantity)} />
                 <DataPoint label="Avg Price" value={formatCurrency(position.weightedAveragePrice)} />
@@ -478,7 +478,7 @@ function PositionDetailsDrawer({
 
             {/* Account Breakdown */}
             <div>
-              <h3 className="mb-3 font-semibold text-gray-900">Account Breakdown</h3>
+              <h3 className="mb-3 font-semibold text-gray-900 dark:text-slate-100">Account Breakdown</h3>
               <div className="space-y-3">
                 {position.accounts.map((account, idx) => {
                   const brokerDisplayName = account.brokerSource
@@ -490,27 +490,27 @@ function PositionDetailsDrawer({
                     : accountLabel;
 
                   return (
-                    <div key={idx} className="rounded-lg border border-gray-200 p-4">
+                    <div key={idx} className="rounded-lg border border-gray-200 dark:border-slate-700 p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-gray-900 dark:text-slate-100">
                             {fullLabel}
                           </div>
-                          <div className="text-sm text-gray-500">{account.broker}</div>
+                          <div className="text-sm text-gray-500 dark:text-slate-400">{account.broker}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-gray-900 dark:text-slate-100">
                             {formatNumber(account.quantity)} shares
                           </div>
                           {account.averagePrice && (
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 dark:text-slate-400">
                               @ {formatCurrency(account.averagePrice)}
                             </div>
                           )}
                         </div>
                       </div>
                       {account.marketValue && (
-                        <div className="mt-2 text-sm text-gray-600">
+                        <div className="mt-2 text-sm text-gray-600 dark:text-slate-400">
                           Market Value: {formatCurrency(account.marketValue)}
                         </div>
                       )}
@@ -537,14 +537,14 @@ function DataPoint({
 }) {
   return (
     <div>
-      <div className="text-sm text-gray-500">{label}</div>
+      <div className="text-sm text-gray-500 dark:text-slate-400">{label}</div>
       <div
         className={`mt-1 font-medium ${
           isProfit !== undefined
             ? isProfit
-              ? "text-green-600"
-              : "text-red-600"
-            : "text-gray-900"
+              ? "text-green-600 dark:text-green-400"
+              : "text-red-600 dark:text-red-400"
+            : "text-gray-900 dark:text-slate-100"
         }`}
       >
         {value}

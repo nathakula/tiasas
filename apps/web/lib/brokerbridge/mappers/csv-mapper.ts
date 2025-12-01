@@ -57,10 +57,11 @@ function mapCSVPositionToLot(rawPosition: unknown): NormalizedLot {
   }
 
   // Parse instrument (handles options, ETFs, etc.)
+  const metadata = pos.metadata as Record<string, any> | undefined;
   const instrument = parseInstrument(symbol, "CSV_IMPORT", {
     assetType: pos.assetClass,
     currency: pos.currency,
-    name: pos.metadata?.["name"] || pos.metadata?.["Name"],
+    name: metadata?.["name"] || metadata?.["Name"],
   });
 
   // Calculate derived values if not provided

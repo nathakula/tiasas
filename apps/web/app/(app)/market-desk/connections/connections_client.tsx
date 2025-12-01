@@ -455,16 +455,16 @@ function CSVImportModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="text-xl font-semibold text-gray-900">Import CSV File</h2>
-        <p className="mt-2 text-sm text-gray-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
+      <div className="w-full max-w-md rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl border dark:border-slate-700">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Import CSV File</h2>
+        <p className="mt-2 text-sm text-gray-600 dark:text-slate-400">
           Upload a CSV file containing your positions. The file should include columns for Symbol, Quantity, and optionally Price/Value.
         </p>
 
         <div className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
               Broker
             </label>
             <select
@@ -475,7 +475,7 @@ function CSVImportModal({
                   setCustomBrokerName("");
                 }
               }}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-blue-500 dark:focus:border-gold-500 focus:outline-none"
             >
               <option value="ETRADE">E*TRADE</option>
               <option value="FIDELITY">Fidelity</option>
@@ -485,31 +485,31 @@ function CSVImportModal({
               <option value="OTHER">Other (Custom)</option>
               <option value="UNKNOWN">Auto-detect</option>
             </select>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
               Select your broker. Will be auto-detected if you choose "Auto-detect".
             </p>
           </div>
 
           {selectedBroker === "OTHER" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Custom Broker Name <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Custom Broker Name <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <input
                 type="text"
                 value={customBrokerName}
                 onChange={(e) => setCustomBrokerName(e.target.value)}
                 placeholder="e.g., Ally Invest, TD Ameritrade"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-300 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-gold-500 focus:outline-none"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
                 Enter the name of your broker
               </p>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
               Account Nickname (optional)
             </label>
             <input
@@ -517,22 +517,22 @@ function CSVImportModal({
               value={accountNickname}
               onChange={(e) => setAccountNickname(e.target.value)}
               placeholder="e.g., Main Trading, IRA, Roth"
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-gold-500 focus:outline-none"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
               Optional: Give this account a memorable name
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">CSV File</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">CSV File</label>
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               className={`
                 relative border-2 border-dashed rounded-lg p-6 text-center transition-colors
-                ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+                ${isDragging ? 'border-blue-500 dark:border-gold-500 bg-blue-50 dark:bg-gold-950/30' : 'border-gray-300 dark:border-slate-700 hover:border-gray-400 dark:hover:border-slate-600'}
               `}
             >
               <input
@@ -543,7 +543,7 @@ function CSVImportModal({
               />
               <div className="pointer-events-none">
                 <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
+                  className="mx-auto h-12 w-12 text-gray-400 dark:text-slate-500"
                   stroke="currentColor"
                   fill="none"
                   viewBox="0 0 48 48"
@@ -556,16 +556,16 @@ function CSVImportModal({
                     strokeLinejoin="round"
                   />
                 </svg>
-                <p className="mt-2 text-sm text-gray-600">
+                <p className="mt-2 text-sm text-gray-600 dark:text-slate-400">
                   {file ? (
-                    <span className="font-medium text-blue-600">{file.name}</span>
+                    <span className="font-medium text-blue-600 dark:text-gold-400">{file.name}</span>
                   ) : (
                     <>
-                      <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
+                      <span className="font-medium text-blue-600 dark:text-gold-400">Click to upload</span> or drag and drop
                     </>
                   )}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">CSV file only</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">CSV file only</p>
               </div>
             </div>
           </div>
@@ -575,14 +575,14 @@ function CSVImportModal({
           <button
             onClick={onClose}
             disabled={previewing}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handlePreview}
             disabled={!file || previewing}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-gold-600 px-4 py-2 text-white hover:bg-gold-700 disabled:opacity-50 transition-colors"
           >
             {previewing ? "Loading Preview..." : "Preview"}
           </button>
@@ -731,7 +731,7 @@ function PreviewModal({
                       <option value="WEBULL">Webull</option>
                       <option value="OTHER">Other (Custom)</option>
                     </select>
-                    {selectedBroker === "OTHER" && (
+                    {(selectedBroker as string) === "OTHER" && (
                       <div>
                         <input
                           type="text"
@@ -995,10 +995,10 @@ function BrokerSelectionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="text-xl font-semibold text-gray-900">Connect Broker Account</h2>
-        <p className="mt-2 text-sm text-gray-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
+      <div className="w-full max-w-md rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl border dark:border-slate-700">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Connect Broker Account</h2>
+        <p className="mt-2 text-sm text-gray-600 dark:text-slate-400">
           Choose a broker to connect to your account.
         </p>
 
@@ -1007,11 +1007,11 @@ function BrokerSelectionModal({
           <button
             onClick={handleConnectEtrade}
             disabled={connecting}
-            className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white p-4 hover:bg-gray-50 disabled:opacity-50"
+            className="w-full flex items-center justify-between rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50"
           >
             <div className="text-left">
-              <div className="font-medium text-gray-900">E*TRADE</div>
-              <div className="text-sm text-gray-500">Connect via OAuth</div>
+              <div className="font-medium text-gray-900 dark:text-slate-100">E*TRADE</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">Connect via OAuth</div>
             </div>
             <div className="text-2xl">💼</div>
           </button>
@@ -1019,22 +1019,22 @@ function BrokerSelectionModal({
           {/* Coming Soon */}
           <button
             disabled
-            className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-gray-100 p-4 cursor-not-allowed opacity-50"
+            className="w-full flex items-center justify-between rounded-lg border border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-900 p-4 cursor-not-allowed opacity-50"
           >
             <div className="text-left">
-              <div className="font-medium text-gray-900">Robinhood</div>
-              <div className="text-sm text-gray-500">Coming soon</div>
+              <div className="font-medium text-gray-900 dark:text-slate-100">Robinhood</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">Coming soon</div>
             </div>
             <div className="text-2xl">🏹</div>
           </button>
 
           <button
             disabled
-            className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-gray-100 p-4 cursor-not-allowed opacity-50"
+            className="w-full flex items-center justify-between rounded-lg border border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-900 p-4 cursor-not-allowed opacity-50"
           >
             <div className="text-left">
-              <div className="font-medium text-gray-900">Fidelity</div>
-              <div className="text-sm text-gray-500">Coming soon</div>
+              <div className="font-medium text-gray-900 dark:text-slate-100">Fidelity</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">Coming soon</div>
             </div>
             <div className="text-2xl">🏦</div>
           </button>
@@ -1044,7 +1044,7 @@ function BrokerSelectionModal({
           <button
             onClick={onClose}
             disabled={connecting}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50"
           >
             Cancel
           </button>

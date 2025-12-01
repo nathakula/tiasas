@@ -71,22 +71,23 @@ export async function GET(req: Request) {
        WHERE "orgId" = ${orgId} AND date >= ${navFetchFrom} AND date < ${rangeToExclusive}
     ),
     latest_nav_before AS (
-      SELECT d.month,
+      SELECT COALESCE(d.month, n.month) AS month,
              (SELECT nav FROM "MonthlyNav_eom"
-              WHERE "orgId" = ${orgId} AND date < d.month
+              WHERE "orgId" = ${orgId} AND date < COALESCE(d.month, n.month)
               ORDER BY date DESC LIMIT 1) AS latest_nav_before_month
         FROM daily_agg d
+        FULL OUTER JOIN nav_data n ON d.month = n.month
     )
-    SELECT d.month::text,
+    SELECT COALESCE(d.month, n.month)::text AS month,
            d.realized,
            COALESCE(n.nav, NULL) AS nav,
            COALESCE(n.prev_nav, lnb.latest_nav_before_month) AS prev_nav,
            u.unrealized_snapshot
       FROM daily_agg d
-      LEFT JOIN nav_data n ON d.month = n.month
-      LEFT JOIN unrealized_last u ON d.month = u.month
-      LEFT JOIN latest_nav_before lnb ON d.month = lnb.month
-     ORDER BY d.month
+      FULL OUTER JOIN nav_data n ON d.month = n.month
+      LEFT JOIN unrealized_last u ON COALESCE(d.month, n.month) = u.month
+      LEFT JOIN latest_nav_before lnb ON COALESCE(d.month, n.month) = lnb.month
+     ORDER BY COALESCE(d.month, n.month)
   `) as unknown as (Row & { prev_nav: string | number | null })[];
 
   const data = rows.map((r) => {

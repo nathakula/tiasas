@@ -140,10 +140,10 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
       )}
       {/* Controls */}
       <div className="flex items-center justify-between mb-3">
-        <div className="text-sm text-slate-600">Month</div>
+        <div className="text-sm text-slate-600 dark:text-slate-400">Month</div>
         <div className="flex items-center gap-2">
           <button
-            className="px-2 py-1 border rounded-md"
+            className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
             onClick={() => {
               const [ys, ms] = month.split("-");
               let y = Number(ys); let m = Number(ms) - 1;
@@ -152,14 +152,14 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
               setMonth(next); loadMonth(next);
             }}
           >Prev</button>
-          <select className="border rounded-md px-2 py-1" value={month.split("-")[1]} onChange={(e)=>{ const next = `${month.split("-")[0]}-${e.target.value}`; setMonth(next); loadMonth(next); }}>
+          <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300" value={month.split("-")[1]} onChange={(e)=>{ const next = `${month.split("-")[0]}-${e.target.value}`; setMonth(next); loadMonth(next); }}>
             {Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0")).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-          <select className="border rounded-md px-2 py-1" value={month.split("-")[0]} onChange={(e)=>{ const next = `${e.target.value}-${month.split("-")[1]}`; setMonth(next); loadMonth(next); }}>
+          <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300" value={month.split("-")[0]} onChange={(e)=>{ const next = `${e.target.value}-${month.split("-")[1]}`; setMonth(next); loadMonth(next); }}>
             {Array.from({length:11},(_,i)=> (new Date().getFullYear()-5+i)).map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <button
-            className="px-2 py-1 border rounded-md"
+            className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
             onClick={() => {
               const [ys, ms] = month.split("-");
               let y = Number(ys); let m = Number(ms) + 1;
@@ -171,7 +171,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
         </div>
       </div>
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-2 mb-1 text-xs text-slate-500">
+      <div className="grid grid-cols-7 gap-2 mb-1 text-xs text-slate-500 dark:text-slate-400">
         {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d)=>(<div key={d} className="px-2">{d}</div>))}
       </div>
       <div className="grid grid-cols-7 gap-2">
@@ -199,6 +199,8 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
           // Only disable future dates - allow editing weekends/holidays (for options assignments, crypto, etc.)
           const disabled = future;
           const realizedNum = hasPnl ? Number(p.realized) : 0;
+          const unrealizedNum = hasPnl ? Number(p.unrealized) : 0;
+          const hasNote = hasPnl && p.note && p.note.trim().length > 0;
           const profit = hasPnl && realizedNum > 0;
           const loss = hasPnl && realizedNum < 0;
           const hName = holiday ? (override?.name ?? holidayName(dObj)) : null;
@@ -207,19 +209,35 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
           return (
             <button
               key={k}
-              className={`card p-2 min-h-[90px] text-left relative ${profit ? "ring-1 ring-emerald-400 bg-emerald-50" : ""} ${loss ? "ring-1 ring-red-400 bg-red-50" : ""} ${disabled ? "opacity-60" : "hover:shadow"}`}
+              className={`card p-2 min-h-[100px] text-left relative ${profit ? "ring-1 ring-emerald-400 dark:ring-emerald-600 bg-emerald-50 dark:bg-emerald-950/30" : ""} ${loss ? "ring-1 ring-red-400 dark:ring-red-600 bg-red-50 dark:bg-red-950/30" : ""} ${disabled ? "opacity-60" : "hover:shadow"}`}
               onClick={() => (!disabled ? openFor(dObj) : null)}
               title={disabled ? "Future date" : hasPnl ? "Click to edit P&L" : "Click to add P&L"}
             >
-              <div className="text-xs text-slate-500">{format(dObj, "d MMM")}</div>
-              {c.e > 0 && (
-                <div className="text-xs mt-2">📝 {c.e}</div>
-              )}
+              <div className="flex items-start justify-between">
+                <div className="text-xs text-slate-500 dark:text-slate-400">{format(dObj, "d MMM")}</div>
+                <div className="flex gap-0.5">
+                  {c.e > 0 && (
+                    <span className="text-xs" title={`${c.e} journal ${c.e === 1 ? 'entry' : 'entries'}`}>📝</span>
+                  )}
+                  {hasNote && (
+                    <span className="text-xs" title="Has note">💬</span>
+                  )}
+                </div>
+              </div>
               {hasPnl && (
-                <div className={`text-xs mt-1 ${profit ? "text-emerald-700" : loss ? "text-red-700" : "text-slate-600"}`}>P&L: {p.realized}</div>
+                <>
+                  <div className={`text-xs font-medium mt-1 ${profit ? "text-emerald-700 dark:text-emerald-400" : loss ? "text-red-700 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}`}>
+                    P&L: {p.realized}
+                  </div>
+                  {unrealizedNum !== 0 && (
+                    <div className={`text-[10px] mt-0.5 ${unrealizedNum > 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}`}>
+                      U: {unrealizedNum > 0 ? '+' : ''}{p.unrealized}
+                    </div>
+                  )}
+                </>
               )}
               {badge && (
-                <span className={`absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded-full border ${holiday ? "bg-amber-50 border-amber-300" : earlyClose ? "bg-amber-50 border-amber-300" : weekend ? "bg-slate-100" : "bg-white"}`} title={badgeTitle}>
+                <span className={`absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded-full border ${holiday ? "bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700" : earlyClose ? "bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700" : weekend ? "bg-slate-100 dark:bg-slate-800" : "bg-white dark:bg-slate-800"}`} title={badgeTitle}>
                   {(holiday && hName) ? hName : badge}
                 </span>
               )}
@@ -230,16 +248,16 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
 
       {open && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setOpen(null)}>
-          <div className="bg-white rounded-2xl shadow-soft p-4 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="font-medium mb-2">Edit Daily P&L — {open}</div>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-soft p-4 w-full max-w-md border dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
+            <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Edit Daily P&L — {open}</div>
             <div className="grid grid-cols-2 gap-2">
-              <input className="border rounded-md px-2 py-1 col-span-2" placeholder="Realized (required)" value={realized} onChange={(e) => setRealized(e.target.value)} />
-              <input className="border rounded-md px-2 py-1 col-span-2" placeholder="Unrealized (optional)" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
-              <input className="border rounded-md px-2 py-1 col-span-2" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+              <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 col-span-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" placeholder="Realized (required)" value={realized} onChange={(e) => setRealized(e.target.value)} />
+              <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 col-span-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" placeholder="Unrealized (optional)" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
+              <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 col-span-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
             </div>
             <div className="mt-3 flex gap-2 justify-end">
-              <button className="px-3 py-1.5 rounded-md border" onClick={() => setOpen(null)}>Cancel</button>
-              <button className="px-3 py-1.5 rounded-md bg-black text-white disabled:opacity-50" disabled={saving} onClick={save}>Save</button>
+              <button className="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors" onClick={() => setOpen(null)}>Cancel</button>
+              <button className="px-3 py-1.5 rounded-md bg-gold-600 hover:bg-gold-700 text-white disabled:opacity-50 transition-colors" disabled={saving} onClick={save}>Save</button>
             </div>
           </div>
         </div>

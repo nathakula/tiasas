@@ -21,7 +21,7 @@ export function OrgSelector({ memberships, activeOrg }: { memberships: { orgId: 
 
   return (
     <select
-      className="border rounded-md px-2 py-1 text-sm"
+      className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300"
       defaultValue={activeOrg ?? memberships[0]?.orgId}
       onChange={async (e) => {
         await fetch("/api/me", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ activeOrg: e.target.value }) });

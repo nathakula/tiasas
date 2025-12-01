@@ -13,7 +13,7 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="card p-4">
-        <div className="font-medium mb-3">Profile</div>
+        <div className="font-medium mb-3 text-slate-900 dark:text-slate-100">Profile</div>
         <div className="flex items-center gap-4">
           {user?.image ? (
             // Use img to avoid remote image domain config requirements
@@ -22,31 +22,31 @@ export default async function SettingsPage() {
               alt={user?.name ?? "Avatar"}
               width={48}
               height={48}
-              className="w-12 h-12 rounded-full border object-cover"
+              className="w-12 h-12 rounded-full border border-slate-200 dark:border-slate-700 object-cover"
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full border bg-slate-100 flex items-center justify-center text-slate-500">
+            <div className="w-12 h-12 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
               {(user?.name ?? user?.email ?? "?").slice(0, 1).toUpperCase()}
             </div>
           )}
           <div>
-            <div className="text-base font-medium">{user?.name ?? "—"}</div>
-            <div className="text-sm text-slate-600">{user?.email ?? "—"}</div>
+            <div className="text-base font-medium text-slate-900 dark:text-slate-100">{user?.name ?? "—"}</div>
+            <div className="text-sm text-slate-600 dark:text-slate-400">{user?.email ?? "—"}</div>
           </div>
         </div>
       </div>
       <div className="card p-4">
-        <div className="font-medium mb-2">Organizations</div>
-        <ul className="text-sm">
+        <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Organizations</div>
+        <ul className="text-sm text-slate-700 dark:text-slate-300">
           {memberships.map((m) => (
             <li key={m.id}>{m.org.name} — {m.role}</li>
           ))}
         </ul>
       </div>
       <div className="card p-4">
-        <div className="font-medium mb-1">Connections</div>
-        <div className="text-sm text-slate-600">Placeholder connections UI for v0.1</div>
+        <div className="font-medium mb-1 text-slate-900 dark:text-slate-100">Connections</div>
+        <div className="text-sm text-slate-600 dark:text-slate-400">Placeholder connections UI for v0.1</div>
       </div>
     </div>
   );

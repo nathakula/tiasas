@@ -55,19 +55,19 @@ export default function ChartsClient({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <div className="text-sm text-slate-600">Year</div>
-        <select className="border rounded-md px-2 py-1" value={year} onChange={(e)=>handleYearChange(Number(e.target.value))} disabled={loading}>
+        <div className="text-sm text-slate-600 dark:text-slate-400">Year</div>
+        <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value={year} onChange={(e)=>handleYearChange(Number(e.target.value))} disabled={loading}>
           {Array.from({length: 11}, (_,i)=>currentYear-5+i).map((y)=> <option key={y} value={y}>{y}</option>)}
         </select>
-        {loading && <span className="text-xs text-slate-500">Loading...</span>}
+        {loading && <span className="text-xs text-slate-500 dark:text-slate-400">Loading...</span>}
       </div>
       <YtdCards monthly={monthly} />
       <div className="card p-4">
-        <div className="font-medium mb-2">Monthly Realized P&L</div>
+        <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Monthly Realized P&L</div>
         <MonthlyPnlChart monthly={monthly} />
       </div>
       <div className="card p-4">
-        <div className="font-medium mb-2">NAV by Month</div>
+        <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">NAV by Month</div>
         <NavByMonthChart monthly={monthly} />
       </div>
     </div>

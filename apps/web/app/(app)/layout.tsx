@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { OrgSelector } from "@/components/org-selector";
 import { Logo } from "@/components/logo";
 import { UserMenu } from "@/components/user-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -26,7 +27,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen grid grid-cols-[240px_1fr]">
-      <aside className="bg-white border-r">
+      <aside className="bg-white dark:bg-slate-900 border-r dark:border-slate-700">
         <div className="p-4">
           <Logo size="sm" withText href="/market-desk" />
         </div>
@@ -48,26 +49,30 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </nav>
       </aside>
       <main>
-        <header className="flex items-center justify-between p-4 border-b bg-white gap-3">
-          <div className="text-sm text-slate-600">Active org</div>
+        <header className="flex items-center justify-between p-4 border-b dark:border-slate-700 bg-white dark:bg-slate-900 gap-3">
+          <div className="text-sm text-slate-600 dark:text-slate-400">Active org</div>
           <OrgSelector memberships={memberships} activeOrg={activeOrg} />
+          <ThemeToggle />
           <div className="ml-auto">
             <UserMenu name={session.user?.name ?? session.user?.email} />
           </div>
         </header>
-        <div className="p-6">{children}</div>
+        <div className="p-6 bg-slate-50 dark:bg-slate-950">{children}</div>
       </main>
     </div>
   );
 }
 
 function Section({ label }: { label: string }) {
-  return <div className="mt-4 px-2 text-xs uppercase text-slate-500">{label}</div>;
+  return <div className="mt-4 px-2 text-xs uppercase text-slate-500 dark:text-slate-400">{label}</div>;
 }
 
 function NavLink({ href, children }: { href: Route; children: ReactNode }) {
   return (
-    <Link className="block px-3 py-2 rounded-md hover:bg-slate-100" href={href}>
+    <Link
+      className="block px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-gold-600 dark:hover:text-gold-400 hover:border-l-2 hover:border-gold-500 transition-all"
+      href={href}
+    >
       {children}
     </Link>
   );
