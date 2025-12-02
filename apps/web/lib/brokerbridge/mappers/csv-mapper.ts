@@ -112,6 +112,12 @@ function mapCSVPositionToLot(rawPosition: unknown): NormalizedLot {
   // Note: For CSV imports, the unrealized P&L is already the total amount
   // We don't multiply by option multiplier because the CSV data already contains final values
 
+  // Ensure accountNickname is included in metadata if it exists
+  const enhancedMetadata = {
+    ...(pos.metadata as Record<string, unknown> || {}),
+    ...(accountNickname && { accountNickname }),
+  };
+
   return {
     instrument,
     quantity,
@@ -122,7 +128,7 @@ function mapCSVPositionToLot(rawPosition: unknown): NormalizedLot {
     unrealizedPL,
     unrealizedPLPct,
     basisMethod: BasisMethod.UNKNOWN, // CSV imports don't specify basis method
-    metadata: pos.metadata as Record<string, unknown> | undefined,
+    metadata: enhancedMetadata,
   };
 }
 
