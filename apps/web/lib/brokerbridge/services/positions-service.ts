@@ -220,10 +220,15 @@ export async function getAggregatedPositions(
       aggPos.totalMarketValue += marketValue;
       aggPos.totalUnrealizedPL += unrealizedPL;
 
+      // Extract account nickname from lot metadata if available (for multi-account CSV imports)
+      // Otherwise fall back to the broker account nickname
+      const lotMetadata = lot.metadata as Record<string, any> | null;
+      const accountNickname = lotMetadata?.accountNickname || snapshot.account.nickname;
+
       // Add account detail
       aggPos.accounts.push({
         accountId: snapshot.account.id,
-        accountNickname: snapshot.account.nickname,
+        accountNickname,
         broker: snapshot.account.connection.broker,
         brokerSource: snapshot.account.connection.brokerSource,
         quantity,
@@ -344,22 +349,28 @@ export async function getPositionDetails(
             : null,
         }
       : null,
-    lots: filteredLots.map((lot) => ({
-      account: {
-        id: lot.snapshot.account.id,
-        nickname: lot.snapshot.account.nickname,
-        broker: lot.snapshot.account.connection.broker,
-      },
-      snapshotDate: lot.snapshot.asOf,
-      quantity: Number(lot.quantity),
-      averagePrice: lot.averagePrice ? Number(lot.averagePrice) : null,
-      costBasis: lot.costBasis ? Number(lot.costBasis) : null,
-      marketPrice: lot.marketPrice ? Number(lot.marketPrice) : null,
-      marketValue: lot.marketValue ? Number(lot.marketValue) : null,
-      unrealizedPL: lot.unrealizedPL ? Number(lot.unrealizedPL) : null,
-      unrealizedPLPct: lot.unrealizedPLPct ? Number(lot.unrealizedPLPct) : null,
-      basisMethod: lot.basisMethod,
-    })),
+    lots: filteredLots.map((lot) => {
+      // Extract account nickname from lot metadata if available (for multi-account CSV imports)
+      const lotMetadata = lot.metadata as Record<string, any> | null;
+      const accountNickname = lotMetadata?.accountNickname || lot.snapshot.account.nickname;
+
+      return {
+        account: {
+          id: lot.snapshot.account.id,
+          nickname: accountNickname,
+          broker: lot.snapshot.account.connection.broker,
+        },
+        snapshotDate: lot.snapshot.asOf,
+        quantity: Number(lot.quantity),
+        averagePrice: lot.averagePrice ? Number(lot.averagePrice) : null,
+        costBasis: lot.costBasis ? Number(lot.costBasis) : null,
+        marketPrice: lot.marketPrice ? Number(lot.marketPrice) : null,
+        marketValue: lot.marketValue ? Number(lot.marketValue) : null,
+        unrealizedPL: lot.unrealizedPL ? Number(lot.unrealizedPL) : null,
+        unrealizedPLPct: lot.unrealizedPLPct ? Number(lot.unrealizedPLPct) : null,
+        basisMethod: lot.basisMethod,
+      };
+    }),
   };
 }
 

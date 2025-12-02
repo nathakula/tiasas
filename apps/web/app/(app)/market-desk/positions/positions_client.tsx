@@ -60,6 +60,7 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
   const [assetClassFilter, setAssetClassFilter] = useState<AssetClass | "ALL">("ALL");
   const [optionsOnly, setOptionsOnly] = useState(false);
   const [brokerSourceFilter, setBrokerSourceFilter] = useState<string>("ALL");
+  const [accountNicknameFilter, setAccountNicknameFilter] = useState<string>("ALL");
   const [selectedPosition, setSelectedPosition] = useState<AggregatedPosition | null>(null);
 
   useEffect(() => {
@@ -97,9 +98,19 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
 
   const filteredPositions = positions
     .map((pos) => {
-      // If broker filter is active, filter accounts and recalculate totals
-      if (brokerSourceFilter !== "ALL") {
-        const filteredAccounts = pos.accounts.filter(acc => acc.brokerSource === brokerSourceFilter);
+      // If broker or account filter is active, filter accounts and recalculate totals
+      if (brokerSourceFilter !== "ALL" || accountNicknameFilter !== "ALL") {
+        let filteredAccounts = pos.accounts;
+
+        // Apply broker filter
+        if (brokerSourceFilter !== "ALL") {
+          filteredAccounts = filteredAccounts.filter(acc => acc.brokerSource === brokerSourceFilter);
+        }
+
+        // Apply account nickname filter
+        if (accountNicknameFilter !== "ALL") {
+          filteredAccounts = filteredAccounts.filter(acc => acc.accountNickname === accountNicknameFilter);
+        }
 
         if (filteredAccounts.length === 0) return null; // Skip if no accounts match
 
@@ -140,6 +151,15 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
     new Set(
       positions.flatMap(pos =>
         pos.accounts.map(acc => acc.brokerSource).filter(Boolean)
+      )
+    )
+  ).sort();
+
+  // Get unique account nicknames from positions for filter dropdown
+  const uniqueAccountNicknames = Array.from(
+    new Set(
+      positions.flatMap(pos =>
+        pos.accounts.map(acc => acc.accountNickname).filter(Boolean)
       )
     )
   ).sort();
@@ -213,6 +233,19 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
             {uniqueBrokerSources.map((source) => (
               <option key={source} value={source!}>
                 {getBrokerDisplayName(source as any)}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={accountNicknameFilter}
+            onChange={(e) => setAccountNicknameFilter(e.target.value)}
+            className="rounded-lg border border-gray-300 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:border-blue-500 dark:focus:border-gold-500 focus:outline-none"
+          >
+            <option value="ALL">All Accounts</option>
+            {uniqueAccountNicknames.map((nickname) => (
+              <option key={nickname} value={nickname!}>
+                {nickname}
               </option>
             ))}
           </select>
