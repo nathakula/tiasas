@@ -110,7 +110,7 @@ export default function ConnectionsClient({ orgId }: { orgId: string }) {
   }
 
   if (loading) {
-    return <div className="text-center text-gray-600">Loading connections...</div>;
+    return <div className="text-center text-gray-600 dark:text-slate-400">Loading connections...</div>;
   }
 
   return (
@@ -119,14 +119,14 @@ export default function ConnectionsClient({ orgId }: { orgId: string }) {
       <div className="flex justify-end space-x-3">
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          className="flex items-center space-x-2 rounded-lg bg-gold-600 px-4 py-2 text-white hover:bg-gold-700 transition-colors"
         >
           <Upload className="h-4 w-4" />
           <span>Import CSV</span>
         </button>
         <button
           onClick={() => setShowBrokerModal(true)}
-          className="flex items-center space-x-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50"
+          className="flex items-center space-x-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
         >
           <Plus className="h-4 w-4" />
           <span>Add Connection</span>
@@ -135,15 +135,15 @@ export default function ConnectionsClient({ orgId }: { orgId: string }) {
 
       {/* Connections List */}
       {connections.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-          <Upload className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">No connections yet</h3>
-          <p className="mt-2 text-gray-600">
+        <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center">
+          <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-slate-500" />
+          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-slate-100">No connections yet</h3>
+          <p className="mt-2 text-gray-600 dark:text-slate-400">
             Import a CSV file or connect your brokerage account to get started.
           </p>
           <button
             onClick={() => setShowAddModal(true)}
-            className="mt-4 inline-flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="mt-4 inline-flex items-center space-x-2 rounded-lg bg-gold-600 px-4 py-2 text-white hover:bg-gold-700 transition-colors"
           >
             <Upload className="h-4 w-4" />
             <span>Import CSV</span>
@@ -205,24 +205,24 @@ function ConnectionCard({
   }[connection.status];
 
   const statusColor = {
-    [BrokerConnectionStatus.ACTIVE]: "text-green-700 bg-green-50",
-    [BrokerConnectionStatus.ERROR]: "text-red-700 bg-red-50",
-    [BrokerConnectionStatus.EXPIRED]: "text-yellow-700 bg-yellow-50",
-    [BrokerConnectionStatus.DISCONNECTED]: "text-gray-700 bg-gray-50",
+    [BrokerConnectionStatus.ACTIVE]: "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30",
+    [BrokerConnectionStatus.ERROR]: "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30",
+    [BrokerConnectionStatus.EXPIRED]: "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30",
+    [BrokerConnectionStatus.DISCONNECTED]: "text-gray-700 dark:text-gray-400 bg-gray-50 dark:bg-gray-800",
   }[connection.status];
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-            <span className="text-lg font-semibold text-blue-700">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gold-100 dark:bg-gold-950/50">
+            <span className="text-lg font-semibold text-gold-700 dark:text-gold-400">
               {connection.broker.substring(0, 2)}
             </span>
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
                 {connection.broker.replace(/_/g, " ")}
               </h3>
               <span className={`flex items-center space-x-1 rounded px-2 py-1 text-xs font-medium ${statusColor}`}>
@@ -230,7 +230,7 @@ function ConnectionCard({
                 <span>{connection.status}</span>
               </span>
             </div>
-            <div className="mt-1 text-sm text-gray-500">
+            <div className="mt-1 text-sm text-gray-500 dark:text-slate-400">
               {connection.accounts.length} account{connection.accounts.length !== 1 ? "s" : ""}
               {connection.lastSyncedAt && (
                 <span className="ml-2">
@@ -239,7 +239,7 @@ function ConnectionCard({
               )}
             </div>
             {connection.accounts.map((account) => (
-              <div key={account.id} className="mt-2 text-sm text-gray-600">
+              <div key={account.id} className="mt-2 text-sm text-gray-600 dark:text-slate-400">
                 {account.nickname || account.id}
                 {account.maskedNumber && ` (${account.maskedNumber})`}
               </div>
@@ -251,14 +251,14 @@ function ConnectionCard({
           <button
             onClick={() => onSync(connection.id)}
             disabled={isSyncing}
-            className="flex items-center space-x-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center space-x-1 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
             <span>{isSyncing ? "Syncing..." : "Sync"}</span>
           </button>
           <button
             onClick={() => onDelete(connection.id)}
-            className="rounded-lg border border-red-300 bg-white p-2 text-red-600 hover:bg-red-50"
+            className="rounded-lg border border-red-300 dark:border-red-700 bg-white dark:bg-slate-900 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -266,7 +266,7 @@ function ConnectionCard({
       </div>
 
       {connection.lastSync && connection.lastSync.message && (
-        <div className="mt-4 rounded bg-gray-50 p-3 text-sm text-gray-600">
+        <div className="mt-4 rounded bg-gray-50 dark:bg-slate-900 p-3 text-sm text-gray-600 dark:text-slate-400">
           {connection.lastSync.message}
         </div>
       )}
@@ -633,11 +633,11 @@ function PreviewModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white shadow-xl">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-semibold text-gray-900">Import Preview: {preview.fileName}</h2>
-          <p className="mt-1 text-sm text-gray-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4">
+      <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 shadow-xl border dark:border-slate-700">
+        <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Import Preview: {preview.fileName}</h2>
+          <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
             Review the parsed positions before importing
           </p>
         </div>
@@ -645,29 +645,29 @@ function PreviewModal({
         <div className="p-6 space-y-6">
           {/* Summary Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="text-sm text-blue-600 font-medium">Valid Positions</div>
-              <div className="text-2xl font-bold text-blue-900">{preview.summary.validPositions}</div>
-              <div className="text-xs text-blue-600">of {preview.summary.totalRows} rows</div>
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-900">
+              <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Valid Positions</div>
+              <div className="text-2xl font-bold text-blue-900 dark:text-blue-300">{preview.summary.validPositions}</div>
+              <div className="text-xs text-blue-600 dark:text-blue-400">of {preview.summary.totalRows} rows</div>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="text-sm text-green-600 font-medium">Market Value</div>
-              <div className="text-2xl font-bold text-green-900">{formatCurrency(preview.summary.totalMarketValue)}</div>
-              <div className="text-xs text-green-600">Total portfolio value</div>
+            <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-4 border border-green-200 dark:border-green-900">
+              <div className="text-sm text-green-600 dark:text-green-400 font-medium">Market Value</div>
+              <div className="text-2xl font-bold text-green-900 dark:text-green-300">{formatCurrency(preview.summary.totalMarketValue)}</div>
+              <div className="text-xs text-green-600 dark:text-green-400">Total portfolio value</div>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <div className="text-sm text-purple-600 font-medium">Cost Basis</div>
-              <div className="text-2xl font-bold text-purple-900">{formatCurrency(preview.summary.totalCostBasis)}</div>
-              <div className="text-xs text-purple-600">Total cost</div>
+            <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-4 border border-purple-200 dark:border-purple-900">
+              <div className="text-sm text-purple-600 dark:text-purple-400 font-medium">Cost Basis</div>
+              <div className="text-2xl font-bold text-purple-900 dark:text-purple-300">{formatCurrency(preview.summary.totalCostBasis)}</div>
+              <div className="text-xs text-purple-600 dark:text-purple-400">Total cost</div>
             </div>
-            <div className={`${preview.summary.totalUnrealizedPL >= 0 ? 'bg-green-50' : 'bg-red-50'} rounded-lg p-4`}>
-              <div className={`text-sm font-medium ${preview.summary.totalUnrealizedPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`${preview.summary.totalUnrealizedPL >= 0 ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900' : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900'} rounded-lg p-4 border`}>
+              <div className={`text-sm font-medium ${preview.summary.totalUnrealizedPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 Unrealized P&L
               </div>
-              <div className={`text-2xl font-bold ${preview.summary.totalUnrealizedPL >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+              <div className={`text-2xl font-bold ${preview.summary.totalUnrealizedPL >= 0 ? 'text-green-900 dark:text-green-300' : 'text-red-900 dark:text-red-300'}`}>
                 {formatCurrency(preview.summary.totalUnrealizedPL)}
               </div>
-              <div className={`text-xs ${preview.summary.totalUnrealizedPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`text-xs ${preview.summary.totalUnrealizedPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {preview.summary.totalUnrealizedPL >= 0 ? 'Gain' : 'Loss'}
               </div>
             </div>
@@ -676,21 +676,21 @@ function PreviewModal({
           {/* Detected Broker Info */}
           {preview.detectedBroker && (
             <div className={`rounded-lg p-4 border-2 ${
-              preview.detectedBroker.confidence === 'high' ? 'bg-green-50 border-green-200' :
-              preview.detectedBroker.confidence === 'medium' ? 'bg-yellow-50 border-yellow-200' :
-              'bg-gray-50 border-gray-200'
+              preview.detectedBroker.confidence === 'high' ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900' :
+              preview.detectedBroker.confidence === 'medium' ? 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-900' :
+              'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700'
             }`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900">
-                    Detected Broker: <span className="text-blue-600 font-bold">{preview.detectedBroker.displayName}</span>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-slate-100">
+                    Detected Broker: <span className="text-blue-600 dark:text-gold-400 font-bold">{preview.detectedBroker.displayName}</span>
                   </h3>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">
                     Confidence: {preview.detectedBroker.confidence} • {preview.detectedBroker.detectedFrom}
                   </p>
                 </div>
                 {preview.detectedBroker.confidence === 'high' && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300">
                     ✓ Auto-detected
                   </span>
                 )}
@@ -700,16 +700,16 @@ function PreviewModal({
 
           {/* Broker Selection - Required if UNKNOWN */}
           {isBrokerUnknown ? (
-            <div className="rounded-lg bg-red-50 border-2 border-red-300 p-4">
+            <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-700 p-4">
               <div className="flex items-start space-x-3">
-                <svg className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-red-900">
+                  <h3 className="text-sm font-semibold text-red-900 dark:text-red-300">
                     Broker Selection Required
                   </h3>
-                  <p className="mt-1 text-sm text-red-800">
+                  <p className="mt-1 text-sm text-red-800 dark:text-red-400">
                     We couldn't automatically detect your broker. Please select it from the dropdown below to continue.
                   </p>
                   <div className="mt-3 space-y-3">
@@ -721,7 +721,7 @@ function PreviewModal({
                           setCustomBrokerName("");
                         }
                       }}
-                      className="w-full rounded-lg border-2 border-red-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+                      className="w-full rounded-lg border-2 border-red-300 dark:border-red-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-gray-900 dark:text-slate-100 focus:border-red-500 dark:focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900"
                     >
                       <option value="UNKNOWN" disabled>-- Select Your Broker --</option>
                       <option value="ETRADE">E*TRADE</option>
@@ -738,10 +738,10 @@ function PreviewModal({
                           value={customBrokerName}
                           onChange={(e) => setCustomBrokerName(e.target.value)}
                           placeholder="Enter broker name (e.g., Ally Invest)"
-                          className="w-full rounded-lg border-2 border-red-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+                          className="w-full rounded-lg border-2 border-red-300 dark:border-red-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-gray-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-red-500 dark:focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900"
                         />
                         {isCustomNameMissing && (
-                          <p className="mt-1 text-xs text-red-700 font-medium">
+                          <p className="mt-1 text-xs text-red-700 dark:text-red-400 font-medium">
                             Please enter a broker name
                           </p>
                         )}
@@ -752,8 +752,8 @@ function PreviewModal({
               </div>
             </div>
           ) : (
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
-              <label className="block text-sm font-medium text-blue-900 mb-2">
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-4">
+              <label className="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
                 Confirm Broker (you can change if detection was incorrect)
               </label>
               <div className="space-y-3">
@@ -765,7 +765,7 @@ function PreviewModal({
                       setCustomBrokerName("");
                     }
                   }}
-                  className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-gray-900 dark:text-slate-100 focus:border-blue-500 dark:focus:border-blue-500 focus:outline-none"
                 >
                   <option value="ETRADE">E*TRADE</option>
                   <option value="FIDELITY">Fidelity</option>
@@ -782,10 +782,10 @@ function PreviewModal({
                       value={customBrokerName}
                       onChange={(e) => setCustomBrokerName(e.target.value)}
                       placeholder="Enter broker name (e.g., Ally Invest)"
-                      className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-gray-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-blue-500 focus:outline-none"
                     />
                     {isCustomNameMissing && (
-                      <p className="mt-1 text-xs text-blue-700 font-medium">
+                      <p className="mt-1 text-xs text-blue-700 dark:text-blue-400 font-medium">
                         Please enter a broker name
                       </p>
                     )}
@@ -797,31 +797,31 @@ function PreviewModal({
 
           {/* Account Summary (if available) */}
           {preview.summary.accountSummary && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Account Summary from CSV</h3>
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Account Summary from CSV</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 {preview.summary.accountSummary.accountName && (
                   <div>
-                    <span className="text-gray-500">Account:</span>
-                    <span className="ml-2 font-medium">{preview.summary.accountSummary.accountName}</span>
+                    <span className="text-gray-500 dark:text-slate-400">Account:</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-slate-100">{preview.summary.accountSummary.accountName}</span>
                   </div>
                 )}
                 {preview.summary.accountSummary.netAccountValue && (
                   <div>
-                    <span className="text-gray-500">Net Account Value:</span>
-                    <span className="ml-2 font-medium">{formatCurrency(preview.summary.accountSummary.netAccountValue)}</span>
+                    <span className="text-gray-500 dark:text-slate-400">Net Account Value:</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-slate-100">{formatCurrency(preview.summary.accountSummary.netAccountValue)}</span>
                   </div>
                 )}
                 {preview.summary.accountSummary.totalGain && (
                   <div>
-                    <span className="text-gray-500">Total Gain:</span>
-                    <span className="ml-2 font-medium">{formatCurrency(preview.summary.accountSummary.totalGain)}</span>
+                    <span className="text-gray-500 dark:text-slate-400">Total Gain:</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-slate-100">{formatCurrency(preview.summary.accountSummary.totalGain)}</span>
                   </div>
                 )}
                 {preview.summary.accountSummary.totalGainPercent !== undefined && (
                   <div>
-                    <span className="text-gray-500">Total Gain %:</span>
-                    <span className="ml-2 font-medium">{preview.summary.accountSummary.totalGainPercent.toFixed(2)}%</span>
+                    <span className="text-gray-500 dark:text-slate-400">Total Gain %:</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-slate-100">{preview.summary.accountSummary.totalGainPercent.toFixed(2)}%</span>
                   </div>
                 )}
               </div>
@@ -831,12 +831,12 @@ function PreviewModal({
           {/* Asset Class Breakdown */}
           {Object.keys(preview.summary.byAssetClass).length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">By Asset Class</h3>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">By Asset Class</h3>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(preview.summary.byAssetClass).map(([assetClass, count]) => (
                   <span
                     key={assetClass}
-                    className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"
+                    className="inline-flex items-center rounded-full bg-gray-100 dark:bg-slate-800 px-3 py-1 text-sm font-medium text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700"
                   >
                     {assetClass}: {count}
                   </span>
@@ -847,11 +847,11 @@ function PreviewModal({
 
           {/* Column Mapping */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Detected Column Mapping</h3>
-            <div className="bg-gray-50 rounded-lg p-3 text-xs font-mono">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Detected Column Mapping</h3>
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3 text-xs font-mono border border-gray-200 dark:border-slate-700">
               {Object.entries(preview.columnMapping).map(([field, column]) => (
-                <div key={field} className="text-gray-600">
-                  <span className="text-blue-600">{field}</span> → "{column}"
+                <div key={field} className="text-gray-600 dark:text-slate-400">
+                  <span className="text-blue-600 dark:text-gold-400">{field}</span> → "{column}"
                 </div>
               ))}
             </div>
@@ -859,13 +859,13 @@ function PreviewModal({
 
           {/* Errors (if any) */}
           {preview.errors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-red-800 mb-2">
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-700 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
                 Errors ({preview.errors.length})
               </h3>
               <div className="space-y-1 max-h-32 overflow-y-auto">
                 {preview.errors.map((error, idx) => (
-                  <div key={idx} className="text-xs text-red-700">
+                  <div key={idx} className="text-xs text-red-700 dark:text-red-400">
                     Row {error.row}: {error.symbol} - {error.error}
                   </div>
                 ))}
@@ -875,42 +875,42 @@ function PreviewModal({
 
           {/* Positions Table */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-2">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
               Positions Preview ({preview.positions.length}{preview.hasMore ? "+ more" : ""})
             </h3>
-            <div className="overflow-x-auto border border-gray-200 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="overflow-x-auto border border-gray-200 dark:border-slate-700 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                <thead className="bg-gray-50 dark:bg-slate-900">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Avg Price</th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Last Price</th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Market Value</th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Cost Basis</th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Unrealized P&L</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Symbol</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Type</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Qty</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Avg Price</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Last Price</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Market Value</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Cost Basis</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Unrealized P&L</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                   {preview.positions.map((pos, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
+                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-slate-700">
                       <td className="px-3 py-2 text-sm">
-                        <div className="font-medium text-gray-900">{pos.symbol}</div>
+                        <div className="font-medium text-gray-900 dark:text-slate-100">{pos.symbol}</div>
                         {pos.isOption && pos.optionDetails && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 dark:text-slate-400">
                             {pos.optionDetails.underlying} ${pos.optionDetails.strike} {pos.optionDetails.right} {pos.optionDetails.expiration}
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-sm text-gray-600">{pos.assetClass}</td>
-                      <td className="px-3 py-2 text-sm text-right font-mono">{formatNumber(pos.quantity)}</td>
-                      <td className="px-3 py-2 text-sm text-right font-mono">{formatCurrency(pos.averagePrice)}</td>
-                      <td className="px-3 py-2 text-sm text-right font-mono">{formatCurrency(pos.lastPrice)}</td>
-                      <td className="px-3 py-2 text-sm text-right font-mono font-medium">{formatCurrency(pos.marketValue)}</td>
-                      <td className="px-3 py-2 text-sm text-right font-mono">{formatCurrency(pos.costBasis)}</td>
+                      <td className="px-3 py-2 text-sm text-gray-600 dark:text-slate-400">{pos.assetClass}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono text-gray-900 dark:text-slate-100">{formatNumber(pos.quantity)}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono text-gray-900 dark:text-slate-100">{formatCurrency(pos.averagePrice)}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono text-gray-900 dark:text-slate-100">{formatCurrency(pos.lastPrice)}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono font-medium text-gray-900 dark:text-slate-100">{formatCurrency(pos.marketValue)}</td>
+                      <td className="px-3 py-2 text-sm text-right font-mono text-gray-900 dark:text-slate-100">{formatCurrency(pos.costBasis)}</td>
                       <td className={`px-3 py-2 text-sm text-right font-mono font-medium ${
-                        pos.unrealizedPL && pos.unrealizedPL >= 0 ? 'text-green-600' : 'text-red-600'
+                        pos.unrealizedPL && pos.unrealizedPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                       }`}>
                         {formatCurrency(pos.unrealizedPL)}
                       </td>
@@ -920,7 +920,7 @@ function PreviewModal({
               </table>
             </div>
             {preview.hasMore && (
-              <p className="mt-2 text-xs text-gray-500 italic">
+              <p className="mt-2 text-xs text-gray-500 dark:text-slate-400 italic">
                 Showing first {preview.positions.length} positions. All positions will be imported.
               </p>
             )}
@@ -928,32 +928,32 @@ function PreviewModal({
         </div>
 
         {/* Actions */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center">
+        <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-6 py-4 flex justify-between items-center">
           <button
             onClick={onBack}
             disabled={uploading}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
           >
             ← Back
           </button>
           <div className="flex items-center space-x-3">
             {isBrokerUnknown ? (
-              <div className="text-sm text-red-600 font-medium">
+              <div className="text-sm text-red-600 dark:text-red-400 font-medium">
                 ⚠️ Please select a broker to continue
               </div>
             ) : isCustomNameMissing ? (
-              <div className="text-sm text-red-600 font-medium">
+              <div className="text-sm text-red-600 dark:text-red-400 font-medium">
                 ⚠️ Please enter a broker name
               </div>
             ) : (
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 dark:text-slate-400">
                 Ready to import {preview.summary.validPositions} position{preview.summary.validPositions !== 1 ? 's' : ''}
               </div>
             )}
             <button
               onClick={onConfirm}
               disabled={uploading || !canImport}
-              className="rounded-lg bg-green-600 px-6 py-2 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg bg-green-600 dark:bg-green-700 px-6 py-2 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title={isBrokerUnknown ? "Please select a broker first" : isCustomNameMissing ? "Please enter a broker name" : ""}
             >
               {uploading ? "Importing..." : "Confirm Import"}
