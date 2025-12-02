@@ -24,3 +24,105 @@ body {
 .card {
   @apply rounded-2xl shadow-soft bg-white dark:bg-slate-800 dark:border dark:border-slate-700;
 }
+
+/* Parallax and Animation Styles */
+
+/* Chart line drawing animation */
+.chart-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+}
+
+.chart-line.animate-draw-line {
+  animation: draw-line 2s ease-out forwards;
+}
+
+@keyframes draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Area fill fade-in with delay */
+.animate-fade-in-delayed {
+  animation: fade-in 1s ease-out 1.5s forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.3;
+  }
+}
+
+/* Principle cards reveal animation */
+.principle-card.reveal {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Toast notification animations */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out forwards;
+}
+
+/* Counter animation */
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-count-up {
+  animation: count-up 0.5s ease-out forwards;
+}
+
+/* Button micro-interactions */
+.btn-primary {
+  @apply bg-gold-600 hover:bg-gold-700 text-white px-4 py-2 rounded-md font-medium transition-all duration-200 hover:shadow-md hover:scale-105 active:scale-95;
+}
+
+.btn-secondary {
+  @apply border border-slate-300 dark:border-slate-600 hover:border-gold-500 dark:hover:border-gold-600 px-4 py-2 rounded-md font-medium transition-all duration-200 hover:shadow-sm hover:scale-105 active:scale-95 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition-all duration-200 hover:shadow-md hover:scale-105 active:scale-95;
+}
+
+/* Form input focus enhancements */
+.input-enhanced {
+  @apply border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-all duration-200 focus:ring-2 focus:ring-gold-500 dark:focus:ring-gold-600 focus:border-transparent;
+}
+
+/* Icon animation on hover */
+@keyframes icon-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-icon-bounce:hover {
+  animation: icon-bounce 0.4s ease-in-out;
+}

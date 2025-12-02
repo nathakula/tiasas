@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { format } from "date-fns";
+import { useToast } from "@/components/toast";
 
 type PnlEntry = {
   id: string;
@@ -18,6 +19,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<"date" | "realized">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const { showToast } = useToast();
 
   const filteredEntries = entries
     .filter((entry) => {
@@ -62,7 +64,10 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
     });
 
     setSaving(false);
-    if (!res.ok) return alert("Failed to save");
+    if (!res.ok) {
+      showToast("error", "Failed to save P&L entry");
+      return;
+    }
 
     // Update local state
     setEntries((prev) =>
@@ -73,6 +78,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
       )
     );
     setEditingId(null);
+    showToast("success", "P&L entry updated successfully");
   }
 
   async function deleteEntry(entry: PnlEntry) {
@@ -82,9 +88,13 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
       method: "DELETE",
     });
 
-    if (!res.ok) return alert("Failed to delete");
+    if (!res.ok) {
+      showToast("error", "Failed to delete P&L entry");
+      return;
+    }
 
     setEntries((prev) => prev.filter((e) => e.id !== entry.id));
+    showToast("success", "P&L entry deleted");
   }
 
   function toggleSort(field: "date" | "realized") {
@@ -143,7 +153,10 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
               const loss = realizedNum < 0;
 
               return (
-                <tr key={entry.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <tr
+                  key={entry.id}
+                  className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150 cursor-pointer group"
+                >
                   <td className="py-2 px-2 text-slate-900 dark:text-slate-100">{format(new Date(entry.date), "yyyy-MM-dd")}</td>
                   <td className="py-2 px-2 text-right">
                     {isEditing ? (

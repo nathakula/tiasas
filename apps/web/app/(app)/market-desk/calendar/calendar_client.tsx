@@ -20,6 +20,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
   const [unrealized, setUnrealized] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+
   // Use local date in user's timezone, not UTC
   const todayIso = useMemo(() => {
     const now = new Date();
@@ -188,7 +189,24 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
         {dayList.map((k) => {
           const c = data.counts[k] ?? { e: 0 };
           const p = data.pnl[k];
-          const hasPnl = !!p;
+
+          // Debug logging for December 1st
+          if (k === '2025-12-01') {
+            console.log('[Calendar Tile Debug] Dec 1st:', {
+              k,
+              p,
+              pnlKeys: Object.keys(data.pnl),
+              pnlDirect: data.pnl['2025-12-01'],
+              dataState: data,
+              propsP: pnl
+            });
+          }
+
+          // Consider it has P&L if either realized or unrealized is present
+          const hasPnl = !!p && (
+            (p.realized !== undefined && p.realized !== null && p.realized !== "") ||
+            (p.unrealized !== undefined && p.unrealized !== null && p.unrealized !== "" && p.unrealized !== "0")
+          );
           const dObj = k.includes("T") ? new Date(k) : new Date(`${k}T12:00:00Z`);
           const key = k.includes("T") ? k.slice(0, 10) : k;
           const override = calMap[key];
@@ -198,8 +216,8 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
           const future = key > todayIso;
           // Only disable future dates - allow editing weekends/holidays (for options assignments, crypto, etc.)
           const disabled = future;
-          const realizedNum = hasPnl ? Number(p.realized) : 0;
-          const unrealizedNum = hasPnl ? Number(p.unrealized) : 0;
+          const realizedNum = p && p.realized ? Number(p.realized) : 0;
+          const unrealizedNum = p && p.unrealized ? Number(p.unrealized) : 0;
           const hasNote = hasPnl && p.note && p.note.trim().length > 0;
           const profit = hasPnl && realizedNum > 0;
           const loss = hasPnl && realizedNum < 0;
@@ -226,11 +244,13 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
               </div>
               {hasPnl && (
                 <>
-                  <div className={`text-xs font-medium mt-1 ${profit ? "text-emerald-700 dark:text-emerald-400" : loss ? "text-red-700 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}`}>
-                    P&L: {p.realized}
-                  </div>
-                  {unrealizedNum !== 0 && (
-                    <div className={`text-[10px] mt-0.5 ${unrealizedNum > 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}`}>
+                  {p && p.realized !== undefined && p.realized !== null && p.realized !== "" && (
+                    <div className={`text-xs font-medium mt-1 ${profit ? "text-emerald-700 dark:text-emerald-400" : loss ? "text-red-700 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}`}>
+                      P&L: {p.realized}
+                    </div>
+                  )}
+                  {p && p.unrealized && p.unrealized !== "0" && (
+                    <div className={`text-[10px] mt-0.5 ${unrealizedNum > 0 ? 'text-emerald-600 dark:text-emerald-500' : unrealizedNum < 0 ? 'text-red-600 dark:text-red-500' : 'text-slate-600 dark:text-slate-400'}`}>
                       U: {unrealizedNum > 0 ? '+' : ''}{p.unrealized}
                     </div>
                   )}

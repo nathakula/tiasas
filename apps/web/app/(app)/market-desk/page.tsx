@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getActiveOrgId } from "@/lib/org";
 import { startOfMonth, startOfYear, format, parseISO } from "date-fns";
 import Link from "next/link";
+import { AnimatedStatCard } from "@/components/animated-stat-card";
 
 function fmtUSD(n: number | null | undefined) {
   if (n == null) return "—";
@@ -86,26 +87,33 @@ export default async function MarketDeskOverview() {
       <div>
         <h2 className="text-xl font-bold mb-3 text-slate-900 dark:text-slate-100">Current Month Performance</h2>
         <div className="grid md:grid-cols-4 gap-4">
-          <StatCard
+          <AnimatedStatCard
             label="MTD Realized P&L"
             value={fmtUSD(mtdRealized)}
+            rawValue={mtdRealized}
+            isCurrency={true}
             tone={profit ? "pos" : loss ? "neg" : undefined}
             subtitle="Total realized profit/loss this month"
           />
-          <StatCard
+          <AnimatedStatCard
             label="Current Unrealized P&L"
             value={fmtUSD(currentUnrealized)}
+            rawValue={currentUnrealized}
+            isCurrency={true}
             subtitle={unrealizedDate ? `as of ${unrealizedDate}` : undefined}
             tone={currentUnrealized > 0 ? "pos" : currentUnrealized < 0 ? "neg" : undefined}
           />
-          <StatCard
+          <AnimatedStatCard
             label="Days Traded"
             value={daysTraded.toString()}
+            rawValue={daysTraded}
             subtitle="Days with realized P&L this month"
           />
-          <StatCard
+          <AnimatedStatCard
             label="Win Rate"
             value={winRate != null ? fmtPct(winRate) : "—"}
+            rawValue={winRate ?? undefined}
+            isPercentage={true}
             tone={winRate != null && winRate >= 0.5 ? "pos" : winRate != null ? "neg" : undefined}
             subtitle="Winning days / total days traded"
           />
@@ -116,19 +124,24 @@ export default async function MarketDeskOverview() {
       <div>
         <h2 className="text-xl font-bold mb-3 text-slate-900 dark:text-slate-100">Portfolio Overview</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <StatCard
+          <AnimatedStatCard
             label="YTD Realized P&L"
             value={fmtUSD(ytdRealized)}
+            rawValue={ytdRealized}
+            isCurrency={true}
             tone={ytdRealized > 0 ? "pos" : ytdRealized < 0 ? "neg" : undefined}
           />
-          <StatCard
+          <AnimatedStatCard
             label="Latest NAV"
             value={navValue != null ? fmtUSD(navValue) : "—"}
+            rawValue={navValue ?? undefined}
+            isCurrency={true}
             subtitle={navDate ? `as of ${navDate}` : undefined}
           />
-          <StatCard
+          <AnimatedStatCard
             label="Total Journal Entries"
             value={entriesCount.toString()}
+            rawValue={entriesCount}
           />
         </div>
       </div>
@@ -189,35 +202,13 @@ export default async function MarketDeskOverview() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  subtitle,
-  tone
-}: {
-  label: string;
-  value: string;
-  subtitle?: string;
-  tone?: "pos" | "neg";
-}) {
-  return (
-    <div className="card p-4">
-      <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</div>
-      <div className={`text-2xl font-bold mt-1 ${tone === "pos" ? "text-emerald-700 dark:text-emerald-400" : tone === "neg" ? "text-red-700 dark:text-red-400" : "text-slate-900 dark:text-slate-100"}`}>
-        {value}
-      </div>
-      {subtitle && <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{subtitle}</div>}
-    </div>
-  );
-}
-
 function QuickLink({ href, label, icon }: { href: any; label: string; icon: string }) {
   return (
     <Link
       href={href}
-      className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3 hover:border-gold-500 dark:hover:border-gold-600"
+      className="card p-4 hover:shadow-lg transition-all duration-200 flex items-center gap-3 hover:border-gold-500 dark:hover:border-gold-600 hover:scale-105 transform group"
     >
-      <span className="text-2xl">{icon}</span>
+      <span className="text-2xl transition-transform duration-200 group-hover:scale-110">{icon}</span>
       <span className="font-medium text-slate-900 dark:text-slate-100">{label}</span>
     </Link>
   );

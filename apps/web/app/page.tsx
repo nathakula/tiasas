@@ -1,12 +1,78 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Page() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const previewCardRef = useRef<HTMLDivElement>(null);
+  const chartPathRef = useRef<SVGPathElement>(null);
+  const areaPathRef = useRef<SVGPathElement>(null);
+  const principleCardsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Chart drawing animation on scroll
+  useEffect(() => {
+    if (!chartPathRef.current || !areaPathRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            chartPathRef.current?.classList.add('animate-draw-line');
+            areaPathRef.current?.classList.add('animate-fade-in-delayed');
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (previewCardRef.current) {
+      observer.observe(previewCardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Principle cards staggered reveal
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const cards = entry.target.querySelectorAll('.principle-card');
+            cards.forEach((card, index) => {
+              setTimeout(() => {
+                card.classList.add('reveal');
+              }, index * 150);
+            });
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    if (principleCardsRef.current) {
+      observer.observe(principleCardsRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Calculate parallax offset for preview card
+  const previewCardOffset = Math.min(scrollY * 0.15, 50);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,6 +95,7 @@ export default function Page() {
             <a className="hover:text-gold-600 dark:hover:text-gold-400 transition-colors" href="#faq">FAQ</a>
           </nav>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <a href="#signup" className="hidden sm:inline-block text-sm font-medium px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">Join waitlist</a>
             <Link href="/signin" className="text-sm font-medium px-4 py-2 rounded-xl bg-gold-600 hover:bg-gold-700 text-white transition-colors">Sign in</Link>
           </div>
@@ -47,13 +114,56 @@ export default function Page() {
             </div>
           </div>
           <div className="lg:pl-8">
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-800">
+            <div
+              ref={previewCardRef}
+              className="rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-800 transition-transform duration-300 ease-out"
+              style={{ transform: `translateY(-${previewCardOffset}px)` }}
+            >
               <div className="bg-gray-50 dark:bg-slate-900 p-3 text-sm text-gray-600 dark:text-slate-400">Preview</div>
               <div className="p-6">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                     <div className="text-sm font-medium">Monthly Performance</div>
-                    <div className="mt-3 h-32 w-full rounded-lg bg-gradient-to-r from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-600" aria-hidden="true" />
+                    <div className="mt-3 h-32 w-full">
+                      <svg viewBox="0 0 300 100" className="w-full h-full" aria-hidden="true">
+                        {/* Grid lines */}
+                        <line x1="0" y1="25" x2="300" y2="25" stroke="currentColor" strokeWidth="0.5" className="text-gray-200 dark:text-slate-700" />
+                        <line x1="0" y1="50" x2="300" y2="50" stroke="currentColor" strokeWidth="0.5" className="text-gray-200 dark:text-slate-700" />
+                        <line x1="0" y1="75" x2="300" y2="75" stroke="currentColor" strokeWidth="0.5" className="text-gray-200 dark:text-slate-700" />
+
+                        {/* Area fill */}
+                        <path
+                          ref={areaPathRef}
+                          d="M 0 80 L 30 70 L 60 75 L 90 55 L 120 60 L 150 45 L 180 50 L 210 35 L 240 40 L 270 25 L 300 30 L 300 100 L 0 100 Z"
+                          fill="url(#gradient)"
+                          className="opacity-0"
+                        />
+
+                        {/* Line chart */}
+                        <path
+                          ref={chartPathRef}
+                          d="M 0 80 L 30 70 L 60 75 L 90 55 L 120 60 L 150 45 L 180 50 L 210 35 L 240 40 L 270 25 L 300 30"
+                          fill="none"
+                          stroke="url(#lineGradient)"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="chart-line"
+                        />
+
+                        {/* Gradients */}
+                        <defs>
+                          <linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" className="text-gold-400" stopColor="currentColor" />
+                            <stop offset="100%" className="text-gold-600" stopColor="currentColor" />
+                          </linearGradient>
+                          <linearGradient id="lineGradient" x1="0" x2="1" y1="0" y2="0">
+                            <stop offset="0%" className="text-gold-500" stopColor="currentColor" />
+                            <stop offset="100%" className="text-gold-600" stopColor="currentColor" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
                   </div>
                   <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                     <div className="text-sm font-medium">Positions</div>
@@ -78,16 +188,16 @@ export default function Page() {
       <section id="vision" className="border-t dark:border-slate-700">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
           <h2 className="text-2xl font-semibold">Principles</h2>
-          <div className="mt-6 grid md:grid-cols-3 gap-6">
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-white dark:bg-slate-800">
+          <div ref={principleCardsRef} className="mt-6 grid md:grid-cols-3 gap-6">
+            <div className="principle-card rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-white dark:bg-slate-800 opacity-0 translate-y-8 transition-all duration-700 ease-out">
               <div className="text-lg font-medium">Clarity over noise</div>
               <p className="mt-2 text-gray-600 dark:text-slate-300">Keep records clean. Let charts speak. Decisions follow from evidence.</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-white dark:bg-slate-800">
+            <div className="principle-card rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-white dark:bg-slate-800 opacity-0 translate-y-8 transition-all duration-700 ease-out">
               <div className="text-lg font-medium">Privacy first</div>
               <p className="mt-2 text-gray-600 dark:text-slate-300">Read-only aggregation and careful data handling as a default posture.</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-white dark:bg-slate-800">
+            <div className="principle-card rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-white dark:bg-slate-800 opacity-0 translate-y-8 transition-all duration-700 ease-out">
               <div className="text-lg font-medium">Steady craft</div>
               <p className="mt-2 text-gray-600 dark:text-slate-300">Daily notes. Monthly reviews. Yearly perspective. A quiet routine that compounds.</p>
             </div>

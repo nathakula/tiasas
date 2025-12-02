@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { format } from "date-fns";
+import { useToast } from "@/components/toast";
 
 type Entry = {
   id: string;
@@ -19,6 +20,7 @@ export default function JournalClient({ initialEntries, showCreate = true }: { i
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>("");
   const [editTags, setEditTags] = useState<string>("");
+  const { showToast } = useToast();
 
   async function createEntry() {
     const res = await fetch("/api/journal", {
@@ -26,17 +28,25 @@ export default function JournalClient({ initialEntries, showCreate = true }: { i
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date, text, tags: tags.split(",").map((t) => t.trim()).filter(Boolean) }),
     });
-    if (!res.ok) return alert("Failed to create entry");
+    if (!res.ok) {
+      showToast("error", "Failed to create journal entry");
+      return;
+    }
     const created = await res.json();
     setEntries((prev) => [created, ...prev]);
     setText("");
     setTags("");
+    showToast("success", "Journal entry created successfully");
   }
 
   async function deleteEntry(id: string) {
     const res = await fetch(`/api/journal/${id}`, { method: "DELETE" });
-    if (!res.ok) return alert("Failed to delete");
+    if (!res.ok) {
+      showToast("error", "Failed to delete entry");
+      return;
+    }
     setEntries((prev) => prev.filter((e) => e.id !== id));
+    showToast("success", "Journal entry deleted");
   }
 
   async function startEdit(e: Entry) {

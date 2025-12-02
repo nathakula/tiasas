@@ -347,7 +347,7 @@ function PositionRow({
   return (
     <tr
       onClick={onClick}
-      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700"
+      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150 group"
     >
       <td className="whitespace-nowrap px-6 py-4">
         <div>

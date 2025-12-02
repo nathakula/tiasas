@@ -8,6 +8,27 @@ function formatMonthLabel(monthStr: string) {
   return monthNames[parseInt(month) - 1] || monthStr;
 }
 
+// Custom tooltip with dark mode support
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload || !payload.length) return null;
+
+  return (
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-3">
+      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">
+        {formatMonthLabel(label)}
+      </p>
+      {payload.map((entry: any, index: number) => (
+        <p key={index} className="text-sm text-slate-600 dark:text-slate-400">
+          {entry.name === 'realized' ? 'Realized P&L' : entry.name === 'navEnd' ? 'NAV' : entry.name}:{' '}
+          <span className="font-medium text-slate-900 dark:text-slate-100">
+            {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(entry.value)}
+          </span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export function MonthlyPnlChart({ monthly }: { monthly: { month: string; realized: number }[] }) {
   return (
     <div className="h-64">
@@ -16,7 +37,7 @@ export function MonthlyPnlChart({ monthly }: { monthly: { month: string; realize
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="month" tickFormatter={formatMonthLabel} />
           <YAxis />
-          <Tooltip />
+          <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="realized" fill="#0ea5e9" radius={[6,6,0,0]} />
         </BarChart>
       </ResponsiveContainer>
@@ -55,12 +76,12 @@ export function NavByMonthChart({ monthly }: { monthly: { month: string; navEnd:
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" tickFormatter={formatMonthLabel} />
             <YAxis />
-            <Tooltip />
+            <Tooltip content={<CustomTooltip />} />
             <Line type="monotone" dataKey="navEnd" stroke="#10b981" strokeWidth={2} dot={showDots} />
           </LineChart>
         </ResponsiveContainer>
       ) : (
-        <div className="flex items-center justify-center h-full text-slate-500 text-sm">No month-end NAV data</div>
+        <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400 text-sm">No month-end NAV data</div>
       )}
     </div>
   );

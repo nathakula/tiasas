@@ -7,18 +7,39 @@ import { Suspense } from "react";
 
 // Cached data fetchers with React.cache for request deduplication
 const getMonthData = cache(async (orgId: string, start: Date, end: Date) => {
-  // Use half-open [start, nextMonthStart) to include every calendar day
-  const nextMonthStart = new Date(start.getFullYear(), start.getMonth() + 1, 1);
-  return await Promise.all([
+  // Create UTC dates to ensure consistent timezone handling
+  // Database stores dates as "timestamp without timezone" so we need to match that
+  const startUtc = new Date(Date.UTC(start.getFullYear(), start.getMonth(), 1, 0, 0, 0, 0));
+  const nextMonthStartUtc = new Date(Date.UTC(start.getFullYear(), start.getMonth() + 1, 1, 0, 0, 0, 0));
+
+  console.log('[getMonthData] Query params:', {
+    orgId,
+    originalStart: start,
+    originalStartIso: start.toISOString(),
+    startUtc,
+    startUtcIso: startUtc.toISOString(),
+    nextMonthStartUtc,
+    nextMonthStartUtcIso: nextMonthStartUtc.toISOString()
+  });
+
+  const results = await Promise.all([
     prisma.journalEntry.findMany({
-      where: { orgId, date: { gte: start, lt: nextMonthStart } },
+      where: { orgId, date: { gte: startUtc, lt: nextMonthStartUtc } },
       select: { date: true } // Only select what we need
     }),
     prisma.dailyPnl.findMany({
-      where: { orgId, date: { gte: start, lt: nextMonthStart } },
+      where: { orgId, date: { gte: startUtc, lt: nextMonthStartUtc } },
       select: { date: true, realizedPnl: true, unrealizedPnl: true, note: true }
     }),
   ]);
+
+  console.log('[getMonthData] Results:', {
+    entriesCount: results[0].length,
+    pnlCount: results[1].length,
+    pnlDates: results[1].map(p => ({ raw: p.date, iso: p.date.toISOString() }))
+  });
+
+  return results;
 });
 
 const getMonthlyPnlSummary = cache(async (orgId: string, start: Date, end: Date) => {
@@ -30,10 +51,11 @@ const getMonthlyPnlSummary = cache(async (orgId: string, start: Date, end: Date)
     unrealized_snapshot: string | number | null;
   };
 
-  const prevMonthStart = new Date(start.getFullYear(), start.getMonth() - 1, 1);
-  const nextMonthStart = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+  // Use UTC dates for consistency
+  const prevMonthStart = new Date(Date.UTC(start.getFullYear(), start.getMonth() - 1, 1, 0, 0, 0, 0));
+  const nextMonthStart = new Date(Date.UTC(start.getFullYear(), start.getMonth() + 1, 1, 0, 0, 0, 0));
   // For NAV LAG calculation, we need to fetch one extra month before prevMonthStart
-  const navFetchStart = new Date(start.getFullYear(), start.getMonth() - 2, 1);
+  const navFetchStart = new Date(Date.UTC(start.getFullYear(), start.getMonth() - 2, 1, 0, 0, 0, 0));
 
   const rows = (await prisma.$queryRaw`
     WITH daily_agg AS (
@@ -114,6 +136,18 @@ export default async function CalendarPage() {
   const end = endOfMonth(today);
   const toIso = (d: Date) => d.toISOString().slice(0, 10);
 
+  // Debug: Log the date objects being passed to Prisma
+  console.log('[Calendar Debug] Date objects:', {
+    today,
+    start,
+    end,
+    todayIso: toIso(today),
+    startIso: toIso(start),
+    endIso: toIso(end),
+    todayTimestamp: today.getTime(),
+    startTimestamp: start.getTime()
+  });
+
   // Fetch data in parallel with caching
   const [[entries, pnl], summary] = await Promise.all([
     getMonthData(orgId, start, end),
@@ -135,6 +169,16 @@ export default async function CalendarPage() {
     unrealized: p.unrealizedPnl.toString(),
     note: p.note ?? ""
   }]));
+
+  console.log('[Calendar Page Server] PnL data:', {
+    pnlCount: pnl.length,
+    pnlDates: pnl.map(p => toIso(p.date)),
+    pnlRawDates: pnl.map(p => ({ date: p.date, iso: toIso(p.date) })),
+    dec1Data: pnl.find(p => toIso(p.date) === '2025-12-01'),
+    today: toIso(today),
+    start: toIso(start),
+    end: toIso(end)
+  });
 
   return (
     <CalendarClient
