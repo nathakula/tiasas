@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AssetClass, BrokerProvider } from "@prisma/client";
 import { Search, Filter, TrendingUp, TrendingDown, Info } from "lucide-react";
 import { getBrokerDisplayName } from "@/lib/brokerbridge/parsers/broker-detector";
@@ -146,6 +146,35 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
       return matchesSearch;
     });
 
+  // Calculate summary from filtered positions
+  const filteredSummary = useMemo(() => {
+    const totalMarketValue = filteredPositions.reduce((sum, pos) => sum + pos.totalMarketValue, 0);
+    const totalCostBasis = filteredPositions.reduce((sum, pos) => sum + pos.totalCostBasis, 0);
+    const totalUnrealizedPL = filteredPositions.reduce((sum, pos) => sum + pos.totalUnrealizedPL, 0);
+
+    // Calculate position count
+    const positionCount = filteredPositions.length;
+
+    // Cash is not filterable, so we keep it from the original summary
+    // In the future, we might want to filter cash by account as well
+    const totalCash = summary?.totalCash || 0;
+
+    return {
+      totalMarketValue,
+      totalCostBasis,
+      totalUnrealizedPL,
+      totalCash,
+      positionCount,
+    };
+  }, [filteredPositions, summary]);
+
+  // Check if any filters are active
+  const hasActiveFilters =
+    brokerSourceFilter !== "ALL" ||
+    accountNicknameFilter !== "ALL" ||
+    searchTerm !== "" ||
+    optionsOnly;
+
   // Get unique broker sources from positions for filter dropdown
   const uniqueBrokerSources = Array.from(
     new Set(
@@ -172,28 +201,51 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
     <div className="space-y-6">
       {/* Portfolio Summary */}
       {summary && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <SummaryCard
-            title="Total Value"
-            value={formatCurrency(summary.totalMarketValue + summary.totalCash)}
-            subtitle={`${summary.positionCount} positions`}
-          />
-          <SummaryCard
-            title="Cost Basis"
-            value={formatCurrency(summary.totalCostBasis)}
-            subtitle="Total investment"
-          />
-          <SummaryCard
-            title="Unrealized P&L"
-            value={formatCurrency(summary.totalUnrealizedPL)}
-            subtitle={formatPercent(summary.totalUnrealizedPL / summary.totalCostBasis)}
-            isProfit={summary.totalUnrealizedPL >= 0}
-          />
-          <SummaryCard
-            title="Cash"
-            value={formatCurrency(summary.totalCash)}
-            subtitle="Available"
-          />
+        <div className="space-y-3">
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 px-4 py-2">
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                  Showing filtered results
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setBrokerSourceFilter("ALL");
+                  setAccountNicknameFilter("ALL");
+                  setSearchTerm("");
+                  setOptionsOnly(false);
+                }}
+                className="text-xs text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 font-medium"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <SummaryCard
+              title="Total Value"
+              value={formatCurrency(filteredSummary.totalMarketValue + filteredSummary.totalCash)}
+              subtitle={`${filteredSummary.positionCount} positions`}
+            />
+            <SummaryCard
+              title="Cost Basis"
+              value={formatCurrency(filteredSummary.totalCostBasis)}
+              subtitle="Total investment"
+            />
+            <SummaryCard
+              title="Unrealized P&L"
+              value={formatCurrency(filteredSummary.totalUnrealizedPL)}
+              subtitle={filteredSummary.totalCostBasis > 0 ? formatPercent(filteredSummary.totalUnrealizedPL / filteredSummary.totalCostBasis) : "N/A"}
+              isProfit={filteredSummary.totalUnrealizedPL >= 0}
+            />
+            <SummaryCard
+              title="Cash"
+              value={formatCurrency(filteredSummary.totalCash)}
+              subtitle="Available"
+            />
+          </div>
         </div>
       )}
 
