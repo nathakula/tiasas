@@ -205,6 +205,8 @@ export class CSVAdapter implements BrokerAdapter {
       costBasis: getNumber(mapping.costBasis),
       lastPrice: getNumber(mapping.lastPrice),
       marketValue: getNumber(mapping.marketValue),
+      unrealizedPL: getNumber(mapping.unrealizedPL),
+      accountNickname: getField(mapping.accountNickname),
       assetClass: getField(mapping.assetClass),
       currency: getField(mapping.currency) || "USD",
       // Pass through all other fields as metadata

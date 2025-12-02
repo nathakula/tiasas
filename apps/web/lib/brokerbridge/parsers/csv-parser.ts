@@ -224,13 +224,14 @@ export function inferColumnMapping(headers: string[]): CSVColumnMapping | null {
     ],
     averagePrice: [
       /^(average|avg)[\s_-]?(price|cost)$/i,
+      /^average[\s_-]?cost[\s_-]?basis$/i, // Fidelity format: "Average Cost Basis"
       /^cost[\s_-]?basis[\s_-]?per[\s_-]?share$/i,
       /^price[\s_-]?paid$/i,
       /^price[\s_-]?paid[\s_-]?\$$/i, // E*TRADE format
     ],
     costBasis: [
       /^cost[\s_-]?basis$/i,
-      /^cost[\s_-]?basis[\s_-]?total$/i, // Fidelity format
+      /^cost[\s_-]?basis[\s_-]?total$/i, // Fidelity format: "Cost Basis Total"
       /^total[\s_-]?cost[\s_-]?basis$/i,
       /^total[\s_-]?cost$/i,
       /^book[\s_-]?value$/i,
@@ -249,6 +250,22 @@ export function inferColumnMapping(headers: string[]): CSVColumnMapping | null {
       /^total[\s_-]?value$/i,
       /^value$/i,
       /^value[\s_-]?\$$/i, // E*TRADE format
+    ],
+    unrealizedPL: [
+      /^unrealized[\s_-]?(p[\s_-]?l|gain|loss|pnl)$/i,
+      /^total[\s_-]?gain[\s_-]?\$$/i, // E*TRADE format: "Total Gain $"
+      /^total[\s_-]?gain[\s/]?loss[\s_-]?(dollar|\$)$/i, // Fidelity format: "Total Gain/Loss Dollar"
+      /^total[\s_-]?gain$/i,
+      /^gain[\s_-]?loss[\s_-]?\$$/i,
+      /^p[\s_-]?l$/i,
+      /^pnl$/i,
+    ],
+    accountNickname: [
+      /^account[\s_-]?name$/i, // Fidelity format: "Account Name"
+      /^account[\s_-]?nickname$/i,
+      /^account[\s_-]?number$/i,
+      /^account$/i,
+      /^sub[\s_-]?account$/i,
     ],
     assetClass: [
       /^asset[\s_-]?class$/i,
@@ -358,6 +375,8 @@ export function getSuggestedMappings(headers: string[]): {
     { field: "costBasis", label: "Cost Basis", required: false },
     { field: "lastPrice", label: "Last Price", required: false },
     { field: "marketValue", label: "Market Value", required: false },
+    { field: "unrealizedPL", label: "Unrealized P&L / Total Gain", required: false },
+    { field: "accountNickname", label: "Account Name/Nickname", required: false },
     { field: "assetClass", label: "Asset Class", required: false },
     { field: "currency", label: "Currency", required: false },
   ];

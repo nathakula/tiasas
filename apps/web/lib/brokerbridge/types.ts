@@ -181,6 +181,8 @@ export type CSVColumnMapping = {
   costBasis?: string;
   lastPrice?: string;
   marketValue?: string;
+  unrealizedPL?: string;
+  accountNickname?: string;
   assetClass?: string;
   currency?: string;
 };

@@ -51,6 +51,8 @@ function mapCSVPositionToLot(rawPosition: unknown): NormalizedLot {
   const costBasis = pos.costBasis as number | undefined;
   const lastPrice = pos.lastPrice as number | undefined;
   const marketValue = pos.marketValue as number | undefined;
+  const unrealizedPLFromCSV = pos.unrealizedPL as number | undefined;
+  const accountNickname = pos.accountNickname as string | undefined;
 
   if (!symbol || quantity === undefined) {
     throw new Error("Symbol and quantity are required");
@@ -80,12 +82,29 @@ function mapCSVPositionToLot(rawPosition: unknown): NormalizedLot {
     finalMarketValue = lastPrice * Math.abs(quantity);
   }
 
-  // Calculate unrealized P&L
-  if (finalMarketValue !== undefined && finalCostBasis !== undefined) {
-    unrealizedPL = finalMarketValue - finalCostBasis;
-    if (finalCostBasis !== 0) {
+  // Use unrealized P&L from CSV if provided, otherwise calculate it
+  if (unrealizedPLFromCSV !== undefined) {
+    // CSV already provides the correct unrealized P&L (e.g., E*TRADE "Total Gain $")
+    // This accounts for short/long positions correctly
+    unrealizedPL = unrealizedPLFromCSV;
+    if (finalCostBasis !== undefined && finalCostBasis !== 0) {
       const rawPct = (unrealizedPL / finalCostBasis) * 100;
       // Cap percentage to prevent database overflow (Decimal(10,6) max is ~9999)
+      unrealizedPLPct = Math.max(-9999, Math.min(9999, rawPct));
+    }
+  } else if (finalMarketValue !== undefined && finalCostBasis !== undefined) {
+    // Fallback: Calculate unrealized P&L if not provided in CSV
+    // For long positions: unrealizedPL = marketValue - costBasis
+    // For short positions: unrealizedPL = costBasis - marketValue
+    if (quantity < 0) {
+      // Short position
+      unrealizedPL = finalCostBasis - finalMarketValue;
+    } else {
+      // Long position
+      unrealizedPL = finalMarketValue - finalCostBasis;
+    }
+    if (finalCostBasis !== 0) {
+      const rawPct = (unrealizedPL / finalCostBasis) * 100;
       unrealizedPLPct = Math.max(-9999, Math.min(9999, rawPct));
     }
   }
