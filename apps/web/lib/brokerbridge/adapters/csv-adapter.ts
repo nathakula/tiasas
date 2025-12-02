@@ -107,6 +107,9 @@ export class CSVAdapter implements BrokerAdapter {
     const positions: unknown[] = [];
     const errors: Array<{ row: number; message: string }> = [];
 
+    // Extract account name from summary if available (E*TRADE format)
+    const accountNameFromSummary = parsed.accountSummary?.accountName;
+
     // Transform each CSV row into a position object
     for (let i = 0; i < parsed.rows.length; i++) {
       const row = parsed.rows[i];
@@ -121,7 +124,7 @@ export class CSVAdapter implements BrokerAdapter {
         }
 
         // Map CSV row to position object
-        const position = this.mapRowToPosition(row, this.columnMapping);
+        const position = this.mapRowToPosition(row, this.columnMapping, accountNameFromSummary);
         positions.push(position);
       } catch (error) {
         errors.push({
@@ -175,7 +178,11 @@ export class CSVAdapter implements BrokerAdapter {
   /**
    * Map a single CSV row to a position object
    */
-  private mapRowToPosition(row: Record<string, string>, mapping: CSVColumnMapping): unknown {
+  private mapRowToPosition(
+    row: Record<string, string>,
+    mapping: CSVColumnMapping,
+    accountNameFallback?: string
+  ): unknown {
     const getField = (field: string | undefined): string | undefined => {
       if (!field) return undefined;
       return row[field]?.trim() || undefined;
@@ -198,6 +205,10 @@ export class CSVAdapter implements BrokerAdapter {
       throw new Error("Quantity is required");
     }
 
+    // Use account nickname from column if available, otherwise fall back to account summary
+    // (E*TRADE puts account name in row 3, Fidelity has it in a column)
+    const accountNickname = getField(mapping.accountNickname) || accountNameFallback;
+
     return {
       symbol,
       quantity,
@@ -206,7 +217,7 @@ export class CSVAdapter implements BrokerAdapter {
       lastPrice: getNumber(mapping.lastPrice),
       marketValue: getNumber(mapping.marketValue),
       unrealizedPL: getNumber(mapping.unrealizedPL),
-      accountNickname: getField(mapping.accountNickname),
+      accountNickname,
       assetClass: getField(mapping.assetClass),
       currency: getField(mapping.currency) || "USD",
       // Pass through all other fields as metadata

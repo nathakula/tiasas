@@ -261,11 +261,12 @@ export function inferColumnMapping(headers: string[]): CSVColumnMapping | null {
       /^pnl$/i,
     ],
     accountNickname: [
-      /^account[\s_-]?name$/i, // Fidelity format: "Account Name"
+      /^account[\s_-]?name$/i, // Fidelity format: "Account Name" - prioritized first
       /^account[\s_-]?nickname$/i,
-      /^account[\s_-]?number$/i,
-      /^account$/i,
       /^sub[\s_-]?account$/i,
+      /^account$/i,
+      // NOTE: "Account Number" intentionally excluded to prioritize friendly names
+      // Account numbers will be stored separately in broker account metadata
     ],
     assetClass: [
       /^asset[\s_-]?class$/i,
