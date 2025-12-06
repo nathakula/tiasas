@@ -13,7 +13,8 @@
       "Bash(exit 0)",
       "Bash(dir:*)",
       "Bash(git add:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
