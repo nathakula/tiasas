@@ -6,7 +6,7 @@
   - One month of sample trades and daily P&L
   - Benchmarks SPY & QQQ
 */
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { addDays, eachDayOfInterval, endOfMonth, startOfMonth } from "date-fns";
 
 async function main() {

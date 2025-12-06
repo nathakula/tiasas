@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { usMarketHolidayMap } from "@/lib/market-calendar";
+import { usMarketHolidayMap } from "@tiasas/core/src/market/market-calendar";
 import fs from "node:fs";
 import path from "node:path";
 

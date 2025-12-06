@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import PositionsClient from "./positions_client";
 
 export const metadata = {
@@ -52,7 +52,7 @@ export default async function PositionsPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Positions</h1>
         <p className="mt-2 text-gray-600 dark:text-slate-400">
-          Aggregated view of all positions across your connected broker accounts.
+          Aggregated view of all positions across your connected broker accounts. (v1.0.1)
         </p>
       </div>
 

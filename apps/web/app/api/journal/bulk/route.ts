@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { parseCsv } from "@/lib/csv";
-import { rateLimit } from "@/lib/ratelimit";
+import { rateLimit } from "@tiasas/core/src/ratelimit";
 
 const RowSchema = z.object({ date: z.string(), text: z.string(), tags: z.string().optional() });
 const PayloadSchema = z.object({ text: z.string().optional(), rows: z.array(RowSchema).optional(), dryRun: z.boolean().optional() });
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
       );
       const id = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`).toString();
       await prisma.$executeRaw`INSERT INTO "BulkImport" (id, "orgId", "userId", type, summary, before, after) VALUES (${id}, ${orgId}, ${user?.id ?? null}, 'JOURNAL', ${JSON.stringify(results)}::jsonb, '[]'::jsonb, ${JSON.stringify(created)}::jsonb)`;
-    } catch {}
+    } catch { }
   }
 
   return NextResponse.json({ ok: true, ...results });

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";

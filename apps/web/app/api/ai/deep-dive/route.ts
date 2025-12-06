@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
-import type { DeepDiveResult } from "@/lib/ai/types";
-import { chatJson } from "@/lib/ai/provider";
-import { deepDivePrompt, systemGuard } from "@/lib/ai/prompts";
-import { getSnapshot } from "@/lib/market/yahoo";
-import { rateLimit } from "@/lib/ratelimit";
+import type { DeepDiveResult } from "@tiasas/core/src/ai/types";
+import { chatJson } from "@tiasas/core/src/ai/provider";
+import { deepDivePrompt, systemGuard } from "@tiasas/core/src/ai/prompts";
+import { getSnapshot } from "@tiasas/core/src/market/yahoo";
+import { rateLimit } from "@tiasas/core/src/ratelimit";
 
 const Schema = z.object({ ticker: z.string().min(1), focus: z.string().optional() });
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   const { session } = auth as any;
 
   // Rate limit AI requests: 10 requests per minute
-  const rl = rateLimit(`ai:deep-dive:${session.user.email}`, 10, 60000);
+  const rl = rateLimit(`ai: deep - dive:${session.user.email} `, 10, 60000);
   if (!rl.ok) return NextResponse.json({ error: "Rate limited. Please try again in a minute." }, { status: 429 });
 
   const parsed = Schema.safeParse(await req.json().catch(() => ({})));
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
               resistances: { type: "array", items: { type: "object", properties: { price: { type: "number" }, note: { type: "string" } }, required: ["price"], additionalProperties: true } },
               momentumNote: { type: "string" }
             },
-            required: ["supports","resistances"],
+            required: ["supports", "resistances"],
           },
           valuationContext: { type: "string" },
           comps: { type: "array", items: { type: "string" } },
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
           sources: { type: "array", items: { type: "string" } },
           disclaimer: { type: "string" },
         },
-        required: ["ticker","overview","technicalZones","valuationContext","risks","alternativeCases","checklist","disclaimer"],
+        required: ["ticker", "overview", "technicalZones", "valuationContext", "risks", "alternativeCases", "checklist", "disclaimer"],
         additionalProperties: true,
       },
     } as const;
@@ -61,23 +61,23 @@ export async function POST(req: Request) {
     const lo = Number(q.fiftyTwoWeekLow ?? 0) || (last ? last * 0.7 : 0);
     const hi = Number(q.fiftyTwoWeekHigh ?? 0) || (last ? last * 1.3 : 0);
     out.technicalZones ||= { supports: [], resistances: [] } as any;
-    if (!Array.isArray(out.technicalZones.supports) || out.technicalZones.supports.length === 0) out.technicalZones.supports = [lo, last && last*0.95].filter(Boolean).map((p)=>({ price: Number(p) }));
-    if (!Array.isArray(out.technicalZones.resistances) || out.technicalZones.resistances.length === 0) out.technicalZones.resistances = [last && last*1.05, hi].filter(Boolean).map((p)=>({ price: Number(p) }));
+    if (!Array.isArray(out.technicalZones.supports) || out.technicalZones.supports.length === 0) out.technicalZones.supports = [lo, last && last * 0.95].filter(Boolean).map((p) => ({ price: Number(p) }));
+    if (!Array.isArray(out.technicalZones.resistances) || out.technicalZones.resistances.length === 0) out.technicalZones.resistances = [last && last * 1.05, hi].filter(Boolean).map((p) => ({ price: Number(p) }));
     if (!out.disclaimer) out.disclaimer = 'For research only. Not investment advice.';
     // Ensure valuation is printable
     if (out && typeof (out as any).valuationContext === 'object') (out as any).valuationContext = JSON.stringify((out as any).valuationContext);
     return NextResponse.json(out);
   } catch (e: any) {
     const q: any = (dataJson as any).quote || {};
-    const overview = `${ticker} deep dive (fallback). Last ${q.last ?? q.regularMarketPrice ?? '-'} ${q.currency ?? ''}. PE ${q.trailingPE ?? q.pe ?? '-'}.`;
-    const supports = [q.fiftyTwoWeekLow, (q.regularMarketPrice ?? 0)*0.95].filter(Boolean).map((p:number)=>({ price: Number(p) }));
-    const resistances = [(q.regularMarketPrice ?? 0)*1.05, q.fiftyTwoWeekHigh].filter(Boolean).map((p:number)=>({ price: Number(p) }));
+    const overview = `${ticker} deep dive(fallback).Last ${q.last ?? q.regularMarketPrice ?? '-'} ${q.currency ?? ''}. PE ${q.trailingPE ?? q.pe ?? '-'}.`;
+    const supports = [q.fiftyTwoWeekLow, (q.regularMarketPrice ?? 0) * 0.95].filter(Boolean).map((p: number) => ({ price: Number(p) }));
+    const resistances = [(q.regularMarketPrice ?? 0) * 1.05, q.fiftyTwoWeekHigh].filter(Boolean).map((p: number) => ({ price: Number(p) }));
     const out: DeepDiveResult = {
       ticker,
       overview,
       recentResults: `Fallback summary. 52w range ${q.fiftyTwoWeekLow ?? '-'} - ${q.fiftyTwoWeekHigh ?? '-'}.`,
       technicalZones: { supports, resistances, momentumNote: undefined },
-      valuationContext: `Trailing PE: ${q.trailingPE ?? q.pe ?? '-'}`,
+      valuationContext: `Trailing PE: ${q.trailingPE ?? q.pe ?? '-'} `,
       comps: [],
       risks: ["Macro sensitivity", "Execution"],
       alternativeCases: ["Upside: demand strength", "Downside: multiple compression"],

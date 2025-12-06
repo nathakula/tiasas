@@ -3,7 +3,7 @@
  * Handles mapping raw broker symbols to canonical instrument format
  */
 
-import { AssetClass, OptionRight } from "@prisma/client";
+import { AssetClass, OptionRight } from "@tiasas/database";
 import { NormalizedInstrument } from "./types";
 
 /**

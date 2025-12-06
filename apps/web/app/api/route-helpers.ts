@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 
 export async function requireAuthAndOrg() {
   const session = await getServerSession(authOptions);

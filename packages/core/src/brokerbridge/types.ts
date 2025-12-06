@@ -3,7 +3,7 @@
  * Canonical types for normalized brokerage position data
  */
 
-import { AssetClass, BasisMethod, OptionRight, BrokerProvider } from "@prisma/client";
+import { AssetClass, BasisMethod, OptionRight, BrokerProvider } from "@tiasas/database";
 
 // ============================================
 // Normalized Position Types

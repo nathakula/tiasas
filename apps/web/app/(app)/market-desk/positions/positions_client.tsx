@@ -1,9 +1,14 @@
+/**
+ * Positions Client Component
+ * Manages the client-side state and interaction for the positions view.
+ * Updated to force cache refresh.
+ */
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { AssetClass, BrokerProvider } from "@prisma/client";
 import { Search, Filter, TrendingUp, TrendingDown, Info } from "lucide-react";
-import { getBrokerDisplayName } from "@/lib/brokerbridge/parsers/broker-detector";
+import { getBrokerDisplayName } from "@tiasas/core/src/brokerbridge/parsers/broker-detector";
 
 type AggregatedPosition = {
   instrument: {
@@ -426,8 +431,8 @@ function PositionRow({
   const brokerDisplay = uniqueBrokers.length === 1
     ? getBrokerDisplayName(uniqueBrokers[0] as any)
     : uniqueBrokers.length > 1
-    ? `${uniqueBrokers.length} brokers`
-    : "Unknown";
+      ? `${uniqueBrokers.length} brokers`
+      : "Unknown";
 
   return (
     <tr
@@ -624,13 +629,12 @@ function DataPoint({
     <div>
       <div className="text-sm text-gray-500 dark:text-slate-400">{label}</div>
       <div
-        className={`mt-1 font-medium ${
-          isProfit !== undefined
-            ? isProfit
-              ? "text-green-600 dark:text-green-400"
-              : "text-red-600 dark:text-red-400"
-            : "text-gray-900 dark:text-slate-100"
-        }`}
+        className={`mt-1 font-medium ${isProfit !== undefined
+          ? isProfit
+            ? "text-green-600 dark:text-green-400"
+            : "text-red-600 dark:text-red-400"
+          : "text-gray-900 dark:text-slate-100"
+          }`}
       >
         {value}
       </div>

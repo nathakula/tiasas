@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(node check_nav.js:*)",
+      "Bash(node test_monthly_api.js:*)",
+      "Bash(node check_november.js:*)",
+      "Bash(node test_calendar_query.js:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(taskkill:*)",
+      "Bash(nul)",
+      "Bash(exit 0)",
+      "Bash(dir:*)",
+      "Bash(git add:*)",
+      "Bash(pnpm build:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

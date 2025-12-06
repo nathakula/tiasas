@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 
 export async function GET(req: Request) {
   const auth = await requireAuthOrgMembership();

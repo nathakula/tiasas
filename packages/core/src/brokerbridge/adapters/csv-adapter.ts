@@ -3,7 +3,7 @@
  * Handles importing positions from CSV files
  */
 
-import { BrokerProvider } from "@prisma/client";
+import { BrokerProvider } from "@tiasas/database";
 import type {
   BrokerAdapter,
   BrokerAuthInput,

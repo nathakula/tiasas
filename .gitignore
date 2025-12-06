@@ -12,6 +12,12 @@ dist/
 apps/web/.env
 apps/web/.env.*
 
+# Additional Logs
+logs/
+*.log
+nul
+=
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

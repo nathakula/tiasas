@@ -6,7 +6,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getConnection, deleteConnection } from "@/lib/brokerbridge";
+import { getConnection, deleteConnection } from "@tiasas/core/src/brokerbridge";
 
 /**
  * GET /api/brokerbridge/connections/[id]

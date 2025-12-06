@@ -6,7 +6,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getPositionDetails } from "@/lib/brokerbridge";
+import { getPositionDetails } from "@tiasas/core/src/brokerbridge";
 
 /**
  * GET /api/brokerbridge/positions/[instrumentId]

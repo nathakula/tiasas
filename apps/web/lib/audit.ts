@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 
 export async function logAudit(params: {

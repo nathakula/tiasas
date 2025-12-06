@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { getActiveOrgId } from "@/lib/org";
 import ChartsClient from "./charts_client";
 

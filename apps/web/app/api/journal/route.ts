@@ -1,9 +1,9 @@
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/ratelimit";
+import { rateLimit } from "@tiasas/core/src/ratelimit";
 import { cookies } from "next/headers";
 
 const createSchema = z.object({

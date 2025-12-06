@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import ConnectionsClient from "./connections_client";
 
 export const metadata = {

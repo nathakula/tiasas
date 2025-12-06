@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
-import type { MacroResult } from "@/lib/ai/types";
-import { chatJson } from "@/lib/ai/provider";
-import { macroPrompt, systemGuard } from "@/lib/ai/prompts";
-import { rateLimit } from "@/lib/ratelimit";
+import type { MacroResult } from "@tiasas/core/src/ai/types";
+import { chatJson } from "@tiasas/core/src/ai/provider";
+import { rateLimit } from "@tiasas/core/src/ratelimit";
+import { macroPrompt, systemGuard } from "@tiasas/core/src/ai/prompts";
+import { getSnapshot } from "@tiasas/core/src/market/yahoo";
 
 const Schema = z.object({ watchlist: z.array(z.string()).optional(), note: z.string().optional() });
 
@@ -14,23 +15,23 @@ export async function POST(req: Request) {
   const { session } = auth as any;
 
   // Rate limit AI requests: 10 requests per minute
-  const rl = rateLimit(`ai:macro:${session.user.email}`, 10, 60000);
+  const rl = rateLimit(`ai: macro:${session.user.email} `, 10, 60000);
   if (!rl.ok) return NextResponse.json({ error: "Rate limited. Please try again in a minute." }, { status: 429 });
 
   const parsed = Schema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const now = new Date();
-  const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay()+6)%7));
-  const days = Array.from({length:5}, (_,i)=>{ const d = new Date(monday); d.setDate(monday.getDate()+i); return { date: d.toISOString().slice(0,10) };});
-  const calendarJson = { days, known: ["CPI","FOMC","Jobs","PPI","OPEX"] };
+  const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const days = Array.from({ length: 5 }, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return { date: d.toISOString().slice(0, 10) }; });
+  const calendarJson = { days, known: ["CPI", "FOMC", "Jobs", "PPI", "OPEX"] };
   try {
     const prompt = macroPrompt({ watchlist: parsed.data.watchlist ?? [], calendarJson });
     const out = await chatJson<MacroResult>({ system: systemGuard, user: prompt });
     return NextResponse.json(out);
   } catch (e: any) {
     // Fallback summary
-    const wk = days.map((d, i) => ({ date: d.date, item: calendarJson.known[i%calendarJson.known.length] }));
+    const wk = days.map((d, i) => ({ date: d.date, item: calendarJson.known[i % calendarJson.known.length] }));
     return NextResponse.json({
       summary: "This is a fallback macro summary. Watch rates and liquidity; review event calendar.",
       weekAhead: wk,

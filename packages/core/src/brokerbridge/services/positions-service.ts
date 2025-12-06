@@ -3,8 +3,8 @@
  * Query and aggregate position data
  */
 
-import { prisma } from "@/lib/db";
-import { AssetClass, BrokerProvider } from "@prisma/client";
+import { db as prisma } from "@tiasas/database";
+import { AssetClass, BrokerProvider } from "@tiasas/database";
 
 export type PositionFilters = {
   orgId: string;
@@ -195,14 +195,14 @@ export async function getAggregatedPositions(
           optionDetails:
             instrument.assetClass === AssetClass.OPTION && instrument.optionDetail
               ? {
-                  right: instrument.optionDetail.right,
-                  strike: Number(instrument.optionDetail.strike),
-                  expiration: instrument.optionDetail.expiration,
-                  multiplier: Number(instrument.optionDetail.multiplier),
-                  underlying: {
-                    symbol: instrument.underlyingInstrument?.symbol || "UNKNOWN",
-                  },
-                }
+                right: instrument.optionDetail.right,
+                strike: Number(instrument.optionDetail.strike),
+                expiration: instrument.optionDetail.expiration,
+                multiplier: Number(instrument.optionDetail.multiplier),
+                underlying: {
+                  symbol: instrument.underlyingInstrument?.symbol || "UNKNOWN",
+                },
+              }
               : undefined,
         });
       }
@@ -337,17 +337,17 @@ export async function getPositionDetails(
     },
     optionDetails: instrument.optionDetail
       ? {
-          right: instrument.optionDetail.right,
-          strike: Number(instrument.optionDetail.strike),
-          expiration: instrument.optionDetail.expiration,
-          multiplier: Number(instrument.optionDetail.multiplier),
-          underlying: instrument.underlyingInstrument
-            ? {
-                symbol: instrument.underlyingInstrument.symbol,
-                name: instrument.underlyingInstrument.name,
-              }
-            : null,
-        }
+        right: instrument.optionDetail.right,
+        strike: Number(instrument.optionDetail.strike),
+        expiration: instrument.optionDetail.expiration,
+        multiplier: Number(instrument.optionDetail.multiplier),
+        underlying: instrument.underlyingInstrument
+          ? {
+            symbol: instrument.underlyingInstrument.symbol,
+            name: instrument.underlyingInstrument.name,
+          }
+          : null,
+      }
       : null,
     lots: filteredLots.map((lot) => {
       // Extract account nickname from lot metadata if available (for multi-account CSV imports)

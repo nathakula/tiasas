@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { getActiveOrgId } from "@/lib/org";
 import { startOfMonth, endOfMonth, eachDayOfInterval, format } from "date-fns";
 import { cache } from "react";
@@ -183,7 +183,7 @@ export default async function CalendarPage() {
   return (
     <CalendarClient
       initialMonth={format(today, "yyyy-MM")}
-      days={days.map(d=>d.toISOString().slice(0,10))}
+      days={days.map(d => d.toISOString().slice(0, 10))}
       counts={Object.fromEntries(Array.from(byDay.entries()))}
       pnl={Object.fromEntries(pnlByDate.entries())}
       initialSummary={summary}

@@ -24,9 +24,9 @@ Write-Host ""
 Write-Host "[2/3] Creating TiasasWeb task..." -ForegroundColor Yellow
 
 $action1 = New-ScheduledTaskAction `
-    -Execute "node.exe" `
-    -Argument "d:\GenAi\Projects\Tiasas\node_modules\.bin\next start -p 13000" `
-    -WorkingDirectory "d:\GenAi\Projects\Tiasas\apps\web"
+    -Execute "cmd.exe" `
+    -Argument "/c d:\GenAi\Projects\Tiasas\ops-scripts\start-web-app.bat" `
+    -WorkingDirectory "d:\GenAi\Projects\Tiasas"
 
 $trigger1 = New-ScheduledTaskTrigger -AtStartup
 

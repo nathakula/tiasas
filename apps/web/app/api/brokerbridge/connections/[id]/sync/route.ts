@@ -6,7 +6,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { syncConnection, AdapterError } from "@/lib/brokerbridge";
+import { syncConnection, AdapterError } from "@tiasas/core/src/brokerbridge";
 
 /**
  * POST /api/brokerbridge/connections/[id]/sync

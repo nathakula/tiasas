@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { getActiveOrgId } from "@/lib/org";
 import { startOfMonth, startOfYear, format, parseISO } from "date-fns";
 import Link from "next/link";

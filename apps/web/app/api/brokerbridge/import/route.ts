@@ -7,14 +7,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { BrokerProvider } from "@prisma/client";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import {
   createConnection,
   syncConnection,
   AdapterError,
   type CSVImportAuthInput,
-} from "@/lib/brokerbridge";
-import { encryptCredentials, generateUserSalt } from "@/lib/brokerbridge/encryption";
+} from "@tiasas/core/src/brokerbridge";
+import { encryptCredentials, generateUserSalt } from "@tiasas/core/src/brokerbridge/encryption";
 
 /**
  * POST /api/brokerbridge/import
@@ -67,8 +67,8 @@ export async function POST(request: Request) {
       fileType === "CSV"
         ? BrokerProvider.CSV_IMPORT
         : fileType === "OFX"
-        ? BrokerProvider.OFX_IMPORT
-        : null;
+          ? BrokerProvider.OFX_IMPORT
+          : null;
 
     if (!broker) {
       return NextResponse.json(

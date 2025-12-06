@@ -11,7 +11,7 @@ import {
   listConnections,
   createConnection,
   AdapterError,
-} from "@/lib/brokerbridge";
+} from "@tiasas/core/src/brokerbridge";
 
 /**
  * GET /api/brokerbridge/connections

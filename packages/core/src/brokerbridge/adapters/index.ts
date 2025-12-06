@@ -3,7 +3,7 @@
  * Central registry for all broker adapters
  */
 
-import { BrokerProvider } from "@prisma/client";
+import { BrokerProvider } from "@tiasas/database";
 import type { BrokerAdapter } from "../types";
 import { CSVAdapter, createCSVAdapter } from "./csv-adapter";
 

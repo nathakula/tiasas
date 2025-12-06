@@ -6,9 +6,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { parseCSVContent, inferColumnMapping } from "@/lib/brokerbridge/parsers/csv-parser";
-import { parseInstrument } from "@/lib/brokerbridge/symbol-utils";
-import { detectBrokerFromCSV, getBrokerDisplayName } from "@/lib/brokerbridge/parsers/broker-detector";
+import { parseCSVContent, inferColumnMapping } from "@tiasas/core/src/brokerbridge/parsers/csv-parser";
+import { parseInstrument } from "@tiasas/core/src/brokerbridge/symbol-utils";
+import { detectBrokerFromCSV, getBrokerDisplayName } from "@tiasas/core/src/brokerbridge/parsers/broker-detector";
 
 /**
  * POST /api/brokerbridge/import/preview

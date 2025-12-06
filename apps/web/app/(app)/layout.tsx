@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import type { Route } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { OrgSelector } from "@/components/org-selector";

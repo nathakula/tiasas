@@ -1,7 +1,7 @@
 "use client";
 import { format } from "date-fns";
 import { useMemo, useState, useEffect } from "react";
-import { isWeekend, isUsMarketHoliday, holidayName } from "@/lib/market-calendar";
+import { isWeekend, isUsMarketHoliday, holidayName } from "@tiasas/core/src/market/market-calendar";
 import { MonthBanner } from "@/components/month-banner";
 
 export default function CalendarClient({ initialMonth, days, counts, pnl, initialSummary }: {
@@ -47,14 +47,14 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
     const [y, m] = yyyyMM.split("-").map(Number);
     const start = new Date(y, m - 1, 1);
     const end = new Date(y, m, 0);
-    const params = (from: Date, to: Date) => `from=${from.toISOString().slice(0,10)}&to=${to.toISOString().slice(0,10)}`;
+    const params = (from: Date, to: Date) => `from=${from.toISOString().slice(0, 10)}&to=${to.toISOString().slice(0, 10)}`;
     const prevMonthStart = new Date(y, m - 2, 1);
     const prevMonthEnd = new Date(y, m - 1, 0);
     const [entries, pnlRows, monthly] = await Promise.all([
       fetch(`/api/journal?${params(start, end)}`).then(safeJson),
       fetch(`/api/pnl/daily?${params(start, end)}`).then(safeJson),
       // Fetch one extra month before so prevEndNav is available for banner
-      fetch(`/api/pnl/monthly?from=${prevMonthStart.toISOString().slice(0,10)}&to=${end.toISOString().slice(0,10)}`).then(safeJson),
+      fetch(`/api/pnl/monthly?from=${prevMonthStart.toISOString().slice(0, 10)}&to=${end.toISOString().slice(0, 10)}`).then(safeJson),
     ]);
     const each: string[] = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -62,16 +62,16 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
     }
     const byDay = new Map<string, { e: number }>();
     each.forEach((iso) => {
-      const k = iso.slice(0,10);
+      const k = iso.slice(0, 10);
       byDay.set(k, { e: 0 });
     });
     (entries || []).forEach((e: any) => {
-      const k = e.date.slice(0,10);
+      const k = e.date.slice(0, 10);
       byDay.set(k, { e: (byDay.get(k)?.e ?? 0) + 1 });
     });
     const pnlMap = new Map<string, { realized: string; unrealized: string; note: string }>();
     (pnlRows || []).forEach((p: any) => {
-      const k = p.date.slice(0,10);
+      const k = p.date.slice(0, 10);
       pnlMap.set(k, { realized: p.realizedPnl, unrealized: p.unrealizedPnl, note: p.note ?? "" });
     });
     setData({ counts: Object.fromEntries(byDay.entries()) as any, pnl: Object.fromEntries(pnlMap.entries()) as any, days: each });
@@ -153,11 +153,11 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
               setMonth(next); loadMonth(next);
             }}
           >Prev</button>
-          <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300" value={month.split("-")[1]} onChange={(e)=>{ const next = `${month.split("-")[0]}-${e.target.value}`; setMonth(next); loadMonth(next); }}>
-            {Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0")).map(m => <option key={m} value={m}>{m}</option>)}
+          <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300" value={month.split("-")[1]} onChange={(e) => { const next = `${month.split("-")[0]}-${e.target.value}`; setMonth(next); loadMonth(next); }}>
+            {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-          <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300" value={month.split("-")[0]} onChange={(e)=>{ const next = `${e.target.value}-${month.split("-")[1]}`; setMonth(next); loadMonth(next); }}>
-            {Array.from({length:11},(_,i)=> (new Date().getFullYear()-5+i)).map(y => <option key={y} value={y}>{y}</option>)}
+          <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300" value={month.split("-")[0]} onChange={(e) => { const next = `${e.target.value}-${month.split("-")[1]}`; setMonth(next); loadMonth(next); }}>
+            {Array.from({ length: 11 }, (_, i) => (new Date().getFullYear() - 5 + i)).map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <button
             className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
@@ -173,7 +173,7 @@ export default function CalendarClient({ initialMonth, days, counts, pnl, initia
       </div>
       {/* Weekday headers */}
       <div className="grid grid-cols-7 gap-2 mb-1 text-xs text-slate-500 dark:text-slate-400">
-        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d)=>(<div key={d} className="px-2">{d}</div>))}
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (<div key={d} className="px-2">{d}</div>))}
       </div>
       <div className="grid grid-cols-7 gap-2">
         {(() => {

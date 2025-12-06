@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { getActiveOrgId } from "@/lib/org";
 import JournalClient from "./journal_client";
 import { DailyPnlForm } from "./daily_pnl_form";

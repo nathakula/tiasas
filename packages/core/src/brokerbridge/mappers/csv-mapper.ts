@@ -3,7 +3,7 @@
  * Transforms CSV position data into canonical NormalizedLot format
  */
 
-import { AssetClass, BasisMethod } from "@prisma/client";
+import { AssetClass, BasisMethod } from "@tiasas/database";
 import type { NormalizedLot, NormalizedSnapshot, RawPositionPayload } from "../types";
 import { parseInstrument } from "../symbol-utils";
 

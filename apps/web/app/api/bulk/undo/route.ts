@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 
 export async function POST(req: Request) {

@@ -11,7 +11,7 @@ import {
   getAggregatedPositions,
   getPortfolioSummary,
   type PositionFilters,
-} from "@/lib/brokerbridge";
+} from "@tiasas/core/src/brokerbridge";
 
 /**
  * GET /api/brokerbridge/positions

@@ -1,12 +1,12 @@
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/ratelimit";
+import { rateLimit } from "@tiasas/core/src/ratelimit";
 import { z } from "zod";
 import { cookies } from "next/headers";
 
-const createSchema = z.object({ provider: z.enum(["PAPER","ETRADE","ROBINHOOD","FIDELITY","SCHWAB"]) });
+const createSchema = z.object({ provider: z.enum(["PAPER", "ETRADE", "ROBINHOOD", "FIDELITY", "SCHWAB"]) });
 
 export async function GET() {
   const auth = await requireAuthOrgMembership();

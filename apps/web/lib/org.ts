@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/db";
+import { db as prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
