@@ -1,26 +1,167 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 
-type Tab = "quick"|"deep"|"macro"|"notes";
+type Tab = "chat" | "quick" | "deep" | "macro" | "notes";
+
+type Message = { role: "user" | "assistant"; content: string };
 
 export default function AIPage() {
-  const [tab, setTab] = useState<Tab>("quick");
+  const [tab, setTab] = useState<Tab>("chat");
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <button className={`px-2 py-1 border rounded transition-colors ${tab==='quick'?'bg-gold-600 text-white border-gold-600':'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={()=>setTab('quick')}>Quick Scan</button>
-        <button className={`px-2 py-1 border rounded transition-colors ${tab==='deep'?'bg-gold-600 text-white border-gold-600':'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={()=>setTab('deep')}>Deep Dive</button>
-        <button className={`px-2 py-1 border rounded transition-colors ${tab==='macro'?'bg-gold-600 text-white border-gold-600':'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={()=>setTab('macro')}>Macro</button>
-        <button className={`px-2 py-1 border rounded transition-colors ${tab==='notes'?'bg-gold-600 text-white border-gold-600':'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={()=>setTab('notes')}>Notes → Actions</button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <button className={`px-2 py-1 border rounded transition-colors ${tab === 'chat' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('chat')}>💬 Chat</button>
+        <button className={`px-2 py-1 border rounded transition-colors ${tab === 'quick' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('quick')}>Quick Scan</button>
+        <button className={`px-2 py-1 border rounded transition-colors ${tab === 'deep' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('deep')}>Deep Dive</button>
+        <button className={`px-2 py-1 border rounded transition-colors ${tab === 'macro' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('macro')}>Macro</button>
+        <button className={`px-2 py-1 border rounded transition-colors ${tab === 'notes' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('notes')}>Notes → Actions</button>
       </div>
-      {tab==='quick' && <QuickScan />}
-      {tab==='deep' && <DeepDive />}
-      {tab==='macro' && <MacroBox />}
-      {tab==='notes' && <NotesActions />}
+      {tab === 'chat' && <ChatInterface />}
+      {tab === 'quick' && <QuickScan />}
+      {tab === 'deep' && <DeepDive />}
+      {tab === 'macro' && <MacroBox />}
+      {tab === 'notes' && <NotesActions />}
       <div className="text-xs text-slate-500 dark:text-slate-400">AI outputs are informational only. Not investment advice.</div>
     </div>
   );
 }
+
+function ChatInterface() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [ticker, setTicker] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || loading) return;
+
+    const userMessage: Message = { role: "user", content: input.trim() };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+          ticker: ticker || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${data.error}` }]);
+      } else {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
+      }
+    } catch (e: any) {
+      setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${e.message}` }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearChat = () => {
+    setMessages([]);
+  };
+
+  return (
+    <div className="card flex flex-col h-[600px]">
+      {/* Header */}
+      <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-2">
+          <input
+            type="text"
+            className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 w-24"
+            placeholder="Ticker"
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value.toUpperCase())}
+          />
+          <span className="text-xs text-slate-500 dark:text-slate-400">Optional: adds live quote data to context</span>
+        </div>
+        <button
+          onClick={clearChat}
+          className="text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
+        >
+          Clear Chat
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && (
+          <div className="text-center text-slate-500 dark:text-slate-400 py-12">
+            <div className="text-4xl mb-3">🤖</div>
+            <div className="font-medium text-slate-900 dark:text-slate-100 mb-2">Market Analysis Chat</div>
+            <div className="text-sm max-w-md mx-auto">
+              Ask about any ticker, strategy, or market analysis. Examples:
+              <ul className="mt-2 space-y-1 text-left inline-block">
+                <li>• "Analyze NVDA for entry points"</li>
+                <li>• "What's the risk/reward on AAPL at $190?"</li>
+                <li>• "Compare AMD vs INTC valuation"</li>
+                <li>• "What-if: sell covered call at $500 strike"</li>
+              </ul>
+            </div>
+          </div>
+        )}
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-[80%] rounded-lg px-4 py-2 ${msg.role === "user"
+                  ? "bg-gold-600 text-white"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                }`}
+            >
+              <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg px-4 py-2 text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2">
+                <div className="animate-pulse">●</div>
+                <div className="animate-pulse" style={{ animationDelay: "0.2s" }}>●</div>
+                <div className="animate-pulse" style={{ animationDelay: "0.4s" }}>●</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <form onSubmit={handleSubmit} className="p-3 border-t border-slate-200 dark:border-slate-700">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            className="flex-1 border border-slate-200 dark:border-slate-700 rounded px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            placeholder="Ask about any ticker or strategy..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={loading}
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || loading}
+            className="px-4 py-2 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors disabled:opacity-50"
+          >
+            Send
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 
 function QuickScan() {
   const [ticker, setTicker] = useState("");
@@ -29,7 +170,7 @@ function QuickScan() {
   const [snap, setSnap] = useState<any | null>(null);
   async function run() {
     const [r, s] = await Promise.all([
-      fetch('/api/ai/quick-scan', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ticker, window })}),
+      fetch('/api/ai/quick-scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticker, window }) }),
       fetch(`/api/market/snapshot?t=${encodeURIComponent(ticker)}`)
     ]);
     setRes(await r.json());
@@ -38,8 +179,8 @@ function QuickScan() {
   return (
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Ticker" value={ticker} onChange={(e)=>setTicker(e.target.value.toUpperCase())} />
-        <select className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value={window} onChange={(e)=>setWindow(e.target.value)}>
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Ticker" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} />
+        <select className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value={window} onChange={(e) => setWindow(e.target.value)}>
           <option value="1m">1m</option>
           <option value="3m">3m</option>
           <option value="6m">6m</option>
@@ -60,7 +201,7 @@ function DeepDive() {
   const [snap, setSnap] = useState<any | null>(null);
   async function run() {
     const [r, s] = await Promise.all([
-      fetch('/api/ai/deep-dive', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ticker, focus: focus || undefined })}),
+      fetch('/api/ai/deep-dive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticker, focus: focus || undefined }) }),
       fetch(`/api/market/snapshot?t=${encodeURIComponent(ticker)}`)
     ]);
     setRes(await r.json());
@@ -69,8 +210,8 @@ function DeepDive() {
   return (
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Ticker" value={ticker} onChange={(e)=>setTicker(e.target.value.toUpperCase())} />
-        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Focus (optional)" value={focus} onChange={(e)=>setFocus(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Ticker" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Focus (optional)" value={focus} onChange={(e) => setFocus(e.target.value)} />
         <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Deep Dive</button>
       </div>
       {snap?.snapshot && <QuoteCard data={snap.snapshot} />}
@@ -83,14 +224,14 @@ function MacroBox() {
   const [watchlist, setWatchlist] = useState("SPY,QQQ");
   const [res, setRes] = useState<any | null>(null);
   async function run() {
-    const wl = watchlist.split(',').map(s=>s.trim()).filter(Boolean);
-    const r = await fetch('/api/ai/macro', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ watchlist: wl })});
+    const wl = watchlist.split(',').map(s => s.trim()).filter(Boolean);
+    const r = await fetch('/api/ai/macro', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ watchlist: wl }) });
     setRes(await r.json());
   }
   return (
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Watchlist" value={watchlist} onChange={(e)=>setWatchlist(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Watchlist" value={watchlist} onChange={(e) => setWatchlist(e.target.value)} />
         <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Generate</button>
       </div>
       {res && <MacroView data={res} />}
@@ -102,13 +243,13 @@ function NotesActions() {
   const [id, setId] = useState("");
   const [res, setRes] = useState<any | null>(null);
   async function run() {
-    const r = await fetch('/api/ai/notes-to-actions', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ journalEntryId: id })});
+    const r = await fetch('/api/ai/notes-to-actions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ journalEntryId: id }) });
     setRes(await r.json());
   }
   return (
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Journal entry id" value={id} onChange={(e)=>setId(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Journal entry id" value={id} onChange={(e) => setId(e.target.value)} />
         <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Convert</button>
       </div>
       {res && <TasksView items={res} />}
@@ -116,11 +257,11 @@ function NotesActions() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "pos"|"neg" }) {
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "pos" | "neg" }) {
   return (
     <div>
       <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
-      <div className={`text-lg font-semibold ${tone==='pos'? 'text-emerald-700 dark:text-emerald-400': tone==='neg'?'text-red-700 dark:text-red-400':'text-slate-900 dark:text-slate-100'}`}>{value}</div>
+      <div className={`text-lg font-semibold ${tone === 'pos' ? 'text-emerald-700 dark:text-emerald-400' : tone === 'neg' ? 'text-red-700 dark:text-red-400' : 'text-slate-900 dark:text-slate-100'}`}>{value}</div>
     </div>
   );
 }
@@ -203,7 +344,7 @@ function Table({ rows, cols }: { rows: any; cols: { key: string; label: string }
             {cols.map((c) => <td key={c.key} className="py-1 pr-2 text-slate-900 dark:text-slate-100">{String(r[c.key] ?? '')}</td>)}
           </tr>
         ))}
-        {arr.length===0 && <tr><td className="py-2 text-slate-500 dark:text-slate-400" colSpan={cols.length}>No data</td></tr>}
+        {arr.length === 0 && <tr><td className="py-2 text-slate-500 dark:text-slate-400" colSpan={cols.length}>No data</td></tr>}
       </tbody>
     </table>
   );
@@ -220,7 +361,7 @@ function QuickScanView({ data }: { data: any }) {
         <Stat label="Trend" value={String(data.trend ?? '-')} tone={trendTone as any} />
         <Stat label="Supports" value={String(data.supports?.length ?? 0)} />
         <Stat label="Resistances" value={String(data.resistances?.length ?? 0)} />
-        <Stat label="Ideas" value={`${(data.entryIdeas?.length ?? 0)+(data.exitIdeas?.length ?? 0)}`} />
+        <Stat label="Ideas" value={`${(data.entryIdeas?.length ?? 0) + (data.exitIdeas?.length ?? 0)}`} />
         <Stat label="Catalysts" value={String(data.catalysts?.length ?? 0)} />
       </div>
       <div className="grid md:grid-cols-2 gap-3">
@@ -233,11 +374,11 @@ function QuickScanView({ data }: { data: any }) {
       </div>
       <div className="card p-3">
         <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">Ranges</div>
-        <Table rows={data.ranges ?? []} cols={[{key:'period',label:'Period'},{key:'chgPct',label:'Chg %'},{key:'high',label:'High'},{key:'low',label:'Low'},{key:'atr',label:'ATR'}]} />
+        <Table rows={data.ranges ?? []} cols={[{ key: 'period', label: 'Period' }, { key: 'chgPct', label: 'Chg %' }, { key: 'high', label: 'High' }, { key: 'low', label: 'Low' }, { key: 'atr', label: 'ATR' }]} />
       </div>
       <div className="card p-3">
         <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">Catalysts</div>
-        <Table rows={(data.catalysts ?? []).map((c:any)=>({date:c.date,label:c.label}))} cols={[{key:'date',label:'Date'},{key:'label',label:'Label'}]} />
+        <Table rows={(data.catalysts ?? []).map((c: any) => ({ date: c.date, label: c.label }))} cols={[{ key: 'date', label: 'Date' }, { key: 'label', label: 'Label' }]} />
       </div>
       {data.macroNote && <div className="text-sm text-slate-700 dark:text-slate-300">{data.macroNote}</div>}
       <div className="text-xs text-slate-500 dark:text-slate-400">{data.disclaimer}</div>
@@ -263,10 +404,10 @@ function DeepDiveView({ data }: { data: any }) {
   return (
     <div className="space-y-3">
       <div className="text-sm text-slate-600 dark:text-slate-400">{data.ticker}</div>
-      <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Overview</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{typeof data.overview === 'string' ? data.overview : (()=>{ try { return JSON.stringify(data.overview); } catch { return String(data.overview); } })()}</p></div>
+      <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Overview</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{typeof data.overview === 'string' ? data.overview : (() => { try { return JSON.stringify(data.overview); } catch { return String(data.overview); } })()}</p></div>
       <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Recent Results</div>
         {Array.isArray(data.recentResults) ? (
-          <ul className="list-disc list-inside text-sm space-y-1 mt-1 text-slate-700 dark:text-slate-300">{data.recentResults.map((x:any,i:number)=>(<li key={i}>{typeof x==='string'?x:JSON.stringify(x)}</li>))}</ul>
+          <ul className="list-disc list-inside text-sm space-y-1 mt-1 text-slate-700 dark:text-slate-300">{data.recentResults.map((x: any, i: number) => (<li key={i}>{typeof x === 'string' ? x : JSON.stringify(x)}</li>))}</ul>
         ) : (
           <p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{String(data.recentResults ?? '')}</p>
         )}
@@ -277,10 +418,10 @@ function DeepDiveView({ data }: { data: any }) {
       </div>
       {momentum && <div className="text-sm text-slate-700 dark:text-slate-300">{momentum}</div>}
       <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Valuation</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{renderValuation(data.valuationContext)}</p></div>
-      {Array.isArray(data.comps) && data.comps.length>0 && (
+      {Array.isArray(data.comps) && data.comps.length > 0 && (
         <div className="card p-3">
           <div className="font-medium mb-1 text-slate-900 dark:text-slate-100">Comps</div>
-          <div className="flex flex-wrap gap-2">{data.comps.map((c:any,i:number)=>(<span key={i} className="px-2 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300">{typeof c==='string'?c:JSON.stringify(c)}</span>))}</div>
+          <div className="flex flex-wrap gap-2">{data.comps.map((c: any, i: number) => (<span key={i} className="px-2 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300">{typeof c === 'string' ? c : JSON.stringify(c)}</span>))}</div>
         </div>
       )}
       <div className="grid md:grid-cols-3 gap-3">
@@ -322,7 +463,7 @@ function MacroView({ data }: { data: any }) {
       <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Summary</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{data.summary}</p></div>
       <div className="card p-3">
         <div className="font-medium mb-1 text-slate-900 dark:text-slate-100">Week Ahead</div>
-        <Table rows={week} cols={[{key:'date',label:'Date'},{key:'item',label:'Item'}]} />
+        <Table rows={week} cols={[{ key: 'date', label: 'Date' }, { key: 'item', label: 'Item' }]} />
       </div>
       <ListBox title="Watchouts" items={data.watchouts ?? []} />
       <div className="text-xs text-slate-500 dark:text-slate-400">{data.disclaimer}</div>
@@ -334,7 +475,7 @@ function TasksView({ items }: { items: any }) {
   const groups = useMemo(() => {
     const g: Record<string, string[]> = { today: [], this_week: [], this_month: [] } as any;
     const list: any[] = Array.isArray(items) ? items : [];
-    list.forEach((t:any)=>{ const key = t?.horizon ?? 'today'; (g[key] ||= []).push((t?.text ?? '') + (t?.symbol?` (${t.symbol})`:'')); });
+    list.forEach((t: any) => { const key = t?.horizon ?? 'today'; (g[key] ||= []).push((t?.text ?? '') + (t?.symbol ? ` (${t.symbol})` : '')); });
     return g;
   }, [items]);
   return (

@@ -419,3 +419,18 @@ enum TransferType {
   DEPOSIT
   WITHDRAWAL
 }
+
+// AI Provider Configuration
+model AiConfig {
+  id          String    @id @default(dbgenerated("gen_random_uuid()"))
+  orgId       String    @unique
+  provider    String    @default("openai") // openai, openrouter, custom
+  baseUrl     String    @default("https://api.openai.com/v1")
+  apiKey      String?   // Encrypted API key (null = use env var)
+  model       String    @default("gpt-4o-mini")
+  temperature Float     @default(0.2)
+  createdAt   DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+
+  @@index([orgId])
+}
