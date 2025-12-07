@@ -23,7 +23,7 @@ export default function HelpPage() {
           <a href="#journal" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Journal</a>
           <a href="#bulk-upload" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Bulk Upload</a>
           <a href="#calendar" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Calendar</a>
-          <a href="#charts" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Charts</a>
+          <a href="#performance" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Performance</a>
           <a href="#brokerbridge" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ BrokerBridge</a>
           <a href="#connections" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Connections</a>
           <a href="#positions" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Positions</a>
@@ -43,10 +43,10 @@ export default function HelpPage() {
 
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">What You'll Find:</h3>
           <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 mb-4">
-            <li><strong>Daily P&L Summary:</strong> See today's realized and unrealized profit/loss at a glance</li>
-            <li><strong>Monthly Performance:</strong> Track your month-to-date performance with Net Asset Value (NAV) charts</li>
-            <li><strong>Recent Journal Entries:</strong> Quick access to your latest trading notes and reflections</li>
-            <li><strong>Performance Metrics:</strong> View key statistics like win rate, average gain/loss, and total P&L</li>
+            <li><strong>Performance Health:</strong> Key metrics like Sharpe Ratio, Sortino Ratio, and Win Rate at a glance</li>
+            <li><strong>Financial Overview:</strong> MTD Realized P&L, Current Unrealized P&L, YTD P&L, and Latest NAV</li>
+            <li><strong>Recent Trading Activity:</strong> Your last 5 daily P&L entries with realized profits/losses</li>
+            <li><strong>Quick Actions:</strong> Fast links to add journal entries, view calendar, and analyze performance</li>
           </ul>
 
           <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700 mb-4">
@@ -128,44 +128,67 @@ export default function HelpPage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-4">📤 Bulk Upload</h2>
 
           <p className="text-gray-700 dark:text-slate-300 mb-4">
-            <strong>Bulk Upload</strong> allows you to import multiple journal entries at once from a CSV file. This is perfect for backfilling
-            historical journal entries, migrating from another trading journal, or batch-importing weekly reflections.
+            <strong>Bulk Upload</strong> allows you to import multiple records at once from a CSV file. You can import three types of data:
+            <strong> Daily P&L</strong> (your trading results), <strong>Monthly NAV</strong> (month-end portfolio values), and
+            <strong> Journal Notes</strong> (trading observations). Perfect for backfilling historical data or migrating from spreadsheets.
           </p>
 
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">What You'll Find:</h3>
           <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 mb-4">
-            <li><strong>CSV Template:</strong> Download a template to see the required format</li>
+            <li><strong>Data Type Selector:</strong> Choose between Daily P&L, Monthly NAV, or Journal Notes</li>
+            <li><strong>CSV Templates:</strong> Download templates for each data type</li>
             <li><strong>Drag & Drop Upload:</strong> Simply drag your CSV file into the upload zone</li>
-            <li><strong>Preview Before Import:</strong> Review all entries before committing them to your journal</li>
-            <li><strong>Validation:</strong> Automatic checking for required fields and date formats</li>
+            <li><strong>Validation & Preview:</strong> Validate your data before importing</li>
+            <li><strong>Undo Capability:</strong> Roll back any import if needed</li>
           </ul>
 
           <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700 mb-4">
-            <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">💡 Example CSV Format:</h4>
-            <div className="bg-white dark:bg-slate-900 p-3 rounded border border-gray-300 dark:border-slate-700 font-mono text-xs overflow-x-auto">
-              <pre className="text-gray-900 dark:text-slate-100">
-{`date,text,tags
-2024-12-10,"Great trading day. Focused on tech stocks. +$1,200 profit","#winning-day,#tech"
-2024-12-11,"Overtraded. Need to be more selective. -$350","#mistakes,#discipline"
-2024-12-12,"Flat day. Stayed patient, no trades. $0","#patience,#discipline"`}
-              </pre>
+            <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">💡 CSV Formats:</h4>
+
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 mb-1">Daily P&L:</p>
+              <div className="bg-white dark:bg-slate-900 p-2 rounded border border-gray-300 dark:border-slate-700 font-mono text-xs overflow-x-auto">
+                <pre className="text-gray-900 dark:text-slate-100">{`date,realized,unrealized,totalEquity,note
+2025-12-01,1200,-50,385000,Good momentum day
+2025-12-02,-200,0,384800,Cut losses early`}</pre>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Required: date, realized. Optional: unrealized, totalEquity, note</p>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 mb-1">Monthly NAV:</p>
+              <div className="bg-white dark:bg-slate-900 p-2 rounded border border-gray-300 dark:border-slate-700 font-mono text-xs overflow-x-auto">
+                <pre className="text-gray-900 dark:text-slate-100">{`date,nav
+2025-01,265700
+2025-02,280000`}</pre>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Use YYYY-MM format or any date (auto-converted to month-end)</p>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 mb-1">Journal Notes:</p>
+              <div className="bg-white dark:bg-slate-900 p-2 rounded border border-gray-300 dark:border-slate-700 font-mono text-xs overflow-x-auto">
+                <pre className="text-gray-900 dark:text-slate-100">{`date,text,tags
+2025-12-01,"Strong tech setup today",#winning,#tech`}</pre>
+              </div>
             </div>
           </div>
 
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">How to Use:</h3>
           <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-slate-300 mb-4">
-            <li>Download the CSV template by clicking "Download Template"</li>
-            <li>Fill in your journal entries with dates, text, and tags (comma-separated)</li>
-            <li>Save the file and drag it into the upload zone</li>
-            <li>Review the preview to ensure all entries look correct</li>
-            <li>Click "Import" to add all entries to your journal</li>
+            <li>Select your data type (Daily P&L, Monthly NAV, or Journal)</li>
+            <li>Download the appropriate CSV template</li>
+            <li>Fill in your data, save, and drag the file into the upload zone</li>
+            <li>Click "Validate" to preview and check for errors</li>
+            <li>Click "Import" to save the data</li>
           </ol>
 
           <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
             <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">📌 Best Practice:</h4>
             <p className="text-gray-700 dark:text-slate-300">
-              Keep a "trading journal draft" document throughout the week. At week's end, copy your notes into the CSV template
-              and bulk upload them. This workflow helps you maintain consistency without interrupting your trading day.
+              For Daily P&L, include <code className="bg-gray-200 dark:bg-slate-800 px-1 rounded">totalEquity</code> when possible -
+              this enables tracking your portfolio value over time. If you already have data without totalEquity, you can always
+              bulk upload again with the upsert strategy to add it later.
             </p>
           </div>
         </div>
@@ -217,62 +240,66 @@ export default function HelpPage() {
         </div>
       </section>
 
-      {/* Charts Section */}
-      <section id="charts" className="mb-12 scroll-mt-6">
+      {/* Performance Section */}
+      <section id="performance" className="mb-12 scroll-mt-6">
         <div className="border-l-4 border-pink-500 dark:border-pink-400 pl-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-4">📈 Charts</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-4">📈 Performance</h2>
 
           <p className="text-gray-700 dark:text-slate-300 mb-4">
-            <strong>Charts</strong> transforms your raw trading data into visual insights. Track your equity curve, analyze P&L trends,
-            compare realized vs. unrealized gains, and measure your progress toward trading goals. Data visualization makes patterns
-            obvious that would be invisible in spreadsheets.
+            <strong>Performance</strong> is your comprehensive performance analysis dashboard. Compare your returns against major benchmarks
+            (S&P 500, Nasdaq, Russell 2000), visualize your equity curve, track monthly P&L trends, and identify how you stack up against
+            the broader market. All with beautiful animated charts that bring your data to life.
           </p>
 
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">What You'll Find:</h3>
           <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 mb-4">
-            <li><strong>Equity Curve:</strong> Your account balance over time - the ultimate measure of success</li>
-            <li><strong>Daily P&L Chart:</strong> Bar chart showing profit/loss for each trading day</li>
-            <li><strong>Realized vs. Unrealized P&L:</strong> Separate lines tracking closed trades vs. open positions</li>
-            <li><strong>Cumulative Returns:</strong> Your total percentage gain/loss since starting</li>
-            <li><strong>Monthly Comparison:</strong> Compare current month performance to previous months</li>
-            <li><strong>Win Rate Trends:</strong> Track your percentage of winning trades over time</li>
+            <li><strong>Benchmark Comparison Chart:</strong> Your cumulative returns vs. S&P 500, Nasdaq, and Russell 2000 - animated line chart</li>
+            <li><strong>Outperformance Stats:</strong> See exactly how many percentage points you're beating (or trailing) each benchmark</li>
+            <li><strong>Monthly Realized P&L Chart:</strong> Bar chart showing your profit/loss for each month of the year</li>
+            <li><strong>NAV & Equity Chart:</strong> Track your Net Asset Value over time with a smooth line chart</li>
+            <li><strong>Year Selector:</strong> Analyze current or previous years of trading performance</li>
+            <li><strong>Starting Capital Settings:</strong> Configure your starting capital for accurate return calculations</li>
           </ul>
 
           <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700 mb-4">
             <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">💡 Example Analysis:</h4>
             <p className="text-gray-700 dark:text-slate-300 mb-3">
-              Your Charts page reveals:
+              Your Performance page reveals:
             </p>
             <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 ml-4">
-              <li><strong>Equity Curve:</strong> Steady upward trend from $100K to $125K over 6 months (+25%)</li>
-              <li><strong>Daily P&L Pattern:</strong> Smaller wins ($500-1,000) and smaller losses ($200-400) - good risk management</li>
-              <li><strong>Drawdown:</strong> Largest drawdown was only 3.2% in September - excellent risk control</li>
-              <li><strong>Win Rate:</strong> Consistent 58-62% win rate - sustainable edge in the market</li>
-              <li><strong>Recent Trend:</strong> Last 30 days show acceleration - equity curve steepening</li>
+              <li><strong>Your Return (YTD):</strong> +68.98% - crushing it!</li>
+              <li><strong>vs. S&P 500:</strong> +45.02pp outperformance (S&P is only +23.96%)</li>
+              <li><strong>vs. Nasdaq:</strong> +36.30pp outperformance</li>
+              <li><strong>vs. Russell 2000:</strong> +50.77pp outperformance</li>
+              <li><strong>Monthly Trend:</strong> November was your best month with +$12,000 in realized P&L</li>
             </ul>
+            <p className="text-gray-700 dark:text-slate-300 mt-3">
+              <strong>Key Insight:</strong> You're significantly outperforming all major benchmarks - your trading edge is real and measurable!
+            </p>
           </div>
 
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">Chart Types Explained:</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">Understanding the Charts:</h3>
           <div className="space-y-3 text-gray-700 dark:text-slate-300">
             <div>
-              <strong className="text-gray-900 dark:text-slate-100">Equity Curve:</strong> The line should generally trend upward for profitable trading.
-              Flat periods are normal. Sharp drops indicate large losses or drawdowns to analyze.
+              <strong className="text-gray-900 dark:text-slate-100">Benchmark Comparison:</strong> The animated line chart shows your cumulative
+              return (gold line) vs. benchmark indices. Lines above the X-axis mean positive returns; your goal is to have your gold line
+              above all the benchmark lines.
             </div>
             <div>
-              <strong className="text-gray-900 dark:text-slate-100">Daily P&L Bars:</strong> Green bars above zero are winning days, red bars below are losing days.
-              Look for consistency - you want many small wins, few large losses.
+              <strong className="text-gray-900 dark:text-slate-100">Monthly P&L Bars:</strong> Green/blue bars show profitable months.
+              This helps you identify seasonal patterns in your trading - maybe you perform better in Q4, or struggle in summer months.
             </div>
             <div>
-              <strong className="text-gray-900 dark:text-slate-100">Unrealized P&L:</strong> Shows paper gains/losses on open positions.
-              If this line is consistently high, you might be holding winners too long or not taking profits.
+              <strong className="text-gray-900 dark:text-slate-100">NAV Chart:</strong> Your total portfolio value over time.
+              A steadily rising line indicates consistent profitability. Sharp drops indicate drawdowns to analyze.
             </div>
           </div>
 
           <div className="bg-yellow-50 dark:bg-yellow-950/30 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 mt-4">
             <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">⚡ Pro Tip:</h4>
             <p className="text-gray-700 dark:text-slate-300">
-              Check your charts weekly, not daily. Daily fluctuations create emotional noise. Weekly reviews let you see the actual trend
-              and make rational adjustments to your strategy. Your equity curve is your report card - let it guide your decisions.
+              Review your Performance page weekly to track progress. Beating benchmarks consistently (not just once) is the true sign of trading skill.
+              If you're underperforming the S&P 500 long-term, you might be better off with index funds - use this data to stay accountable.
             </p>
           </div>
         </div>
@@ -597,7 +624,7 @@ export default function HelpPage() {
           </a>
         </p>
         <p className="text-sm text-gray-500 dark:text-slate-500 mt-2">
-          Last updated: December 2024 • TIASAS v1.0
+          Last updated: December 2025 • TIASAS v1.0
         </p>
       </div>
     </div>
