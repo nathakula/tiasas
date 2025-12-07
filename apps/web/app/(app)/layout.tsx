@@ -40,7 +40,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <NavLink href="/market-desk/journal">Journal</NavLink>
             <NavLink href="/market-desk/journal/bulk">Bulk Upload</NavLink>
             <NavLink href="/market-desk/calendar">Calendar</NavLink>
-            <NavLink href="/market-desk/charts">Charts</NavLink>
+            <NavLink href="/market-desk/performance">Performance</NavLink>
             <NavLink href="/market-desk/ai">Analyst's Bench (AI)</NavLink>
             <Section label="BrokerBridge" />
             <NavLink href="/market-desk/connections">Connections</NavLink>

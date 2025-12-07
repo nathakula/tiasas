@@ -29,6 +29,7 @@ export default async function JournalPage() {
     ...entry,
     realizedPnl: entry.realizedPnl.toString(),
     unrealizedPnl: entry.unrealizedPnl.toString(),
+    totalEquity: entry.totalEquity?.toString() ?? null,
   }));
 
   return (

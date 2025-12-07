@@ -107,7 +107,7 @@ export default function BulkUploadPage() {
   async function undoLast() {
     setBusy(true); setResult(null);
     try {
-      const imports = await fetch(`/api/bulk/imports?type=${mode === "PNL" ? "PNL" : mode === "NAV" ? "NAV_MONTHLY" : "JOURNAL"}&limit=1`).then((r)=>r.json());
+      const imports = await fetch(`/api/bulk/imports?type=${mode === "PNL" ? "PNL" : mode === "NAV" ? "NAV_MONTHLY" : "JOURNAL"}&limit=1`).then((r) => r.json());
       const last = imports.imports?.[0];
       if (!last) { alert("No recent import found"); return; }
       const res = await fetch("/api/bulk/undo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ importId: last.id }) });
@@ -145,7 +145,7 @@ export default function BulkUploadPage() {
       <div className="card p-4">
         <div className="flex items-center gap-3 mb-3">
           <div className="text-sm text-slate-900 dark:text-slate-100">Type</div>
-          <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value={mode} onChange={(e)=>setMode(e.target.value as Mode)}>
+          <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
             <option value="PNL">Daily P&L</option>
             <option value="JOURNAL">Journal Notes</option>
             <option value="NAV">Monthly NAV</option>
@@ -153,7 +153,7 @@ export default function BulkUploadPage() {
           {(mode === "PNL" || mode === "NAV") && (
             <>
               <div className="text-sm text-slate-900 dark:text-slate-100">Conflict</div>
-              <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value={strategy} onChange={(e)=>setStrategy(e.target.value as any)}>
+              <select className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value={strategy} onChange={(e) => setStrategy(e.target.value as any)}>
                 <option value="upsert">Upsert (default)</option>
                 <option value="skip">Skip existing</option>
               </select>
@@ -162,28 +162,27 @@ export default function BulkUploadPage() {
           <button className="ml-auto px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors" disabled={busy} onClick={undoLast}>Undo last import</button>
         </div>
         <div className="grid md:grid-cols-2 gap-4">
-        <div>
-          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Paste CSV (Ctrl+V or Cmd+V)</div>
-          <textarea
-            className="w-full h-48 border border-slate-200 dark:border-slate-700 rounded-md p-2 font-mono text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-            value={text}
-            onChange={(e)=>{setText(e.target.value); setFileName("");}}
-            placeholder={mode === "NAV" ? "date,nav\n2025-05,265700\n2025-06,280000" : mode === "PNL" ? "date,realized,unrealized,note\n2025-05-31,5000,2000,Good day" : "date,text,tags\n2025-05-31,Market closed early,#trading #news"}
-          />
-          {detectedCols && <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">✓ Detected columns: {detectedCols}</div>}
-          {fileName && <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">✓ File loaded: {fileName}</div>}
-        </div>
+          <div>
+            <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Paste CSV (Ctrl+V or Cmd+V)</div>
+            <textarea
+              className="w-full h-48 border border-slate-200 dark:border-slate-700 rounded-md p-2 font-mono text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              value={text}
+              onChange={(e) => { setText(e.target.value); setFileName(""); }}
+              placeholder={mode === "NAV" ? "date,nav\n2025-05,265700\n2025-06,280000" : mode === "PNL" ? "date,realized,unrealized,totalEquity,note\n2025-05-31,5000,2000,385000,Good day" : "date,text,tags\n2025-05-31,Market closed early,#trading #news"}
+            />
+            {detectedCols && <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">✓ Detected columns: {detectedCols}</div>}
+            {fileName && <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">✓ File loaded: {fileName}</div>}
+          </div>
           <div>
             <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">or Drag & Drop .csv file</div>
             <div
               onDrop={onDrop}
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
-              className={`h-48 border-2 border-dashed rounded-md flex flex-col items-center justify-center transition-colors ${
-                isDragging
-                  ? 'border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/30'
-                  : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}
+              className={`h-48 border-2 border-dashed rounded-md flex flex-col items-center justify-center transition-colors ${isDragging
+                ? 'border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/30'
+                : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
             >
               <svg className="w-12 h-12 text-slate-400 dark:text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -239,7 +238,7 @@ export default function BulkUploadPage() {
       )}
       <div className="card p-4">
         <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Templates</div>
-        <div className="text-sm text-slate-700 dark:text-slate-300">Daily P&L: headers "date,realized,unrealized,note" - <a className="text-gold-600 dark:text-gold-400 underline" href="/templates/pnl_template.csv" download>Download template</a></div>
+        <div className="text-sm text-slate-700 dark:text-slate-300">Daily P&L: headers "date,realized,unrealized,totalEquity,note" - <a className="text-gold-600 dark:text-gold-400 underline" href="/templates/pnl_template.csv" download>Download template</a></div>
         <div className="text-sm text-slate-700 dark:text-slate-300">Monthly NAV: headers "date,nav" - <a className="text-gold-600 dark:text-gold-400 underline" href="/templates/nav_monthly_template.csv" download>Download template</a></div>
         <div className="text-sm text-slate-700 dark:text-slate-300">Journal: headers "date,text,tags" - <a className="text-gold-600 dark:text-gold-400 underline" href="/templates/journal_template.csv" download>Download template</a></div>
       </div>
@@ -248,7 +247,8 @@ export default function BulkUploadPage() {
         <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Field Guide</div>
         {mode === "PNL" && (
           <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-slate-300 space-y-1">
-            <li>Headers: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">date,realized,unrealized,note</code>. Required: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">date</code>, <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">realized</code>.</li>
+            <li>Headers: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">date,realized,unrealized,totalEquity,note</code>. Required: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">date</code>, <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">realized</code>.</li>
+            <li><code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">totalEquity</code> is optional. If omitted, it will remain null (not zero).</li>
             <li>Strategy: <b>Upsert</b> overwrites same day; <b>Skip</b> leaves existing rows unchanged.</li>
             <li>Dates: YYYY-MM-DD (UTC). NAV is not needed here.</li>
             <li>Validate runs a dry‑run; Import writes and appears in Recent Imports.</li>
@@ -362,7 +362,7 @@ function NavPreviewTable({ rows, onToggle }: { rows: { date: string; nav: string
         <tbody>
           {display.map((r, idx) => (
             <tr key={`${r.date}-${idx}`} className="border-t dark:border-slate-700">
-              <td className="py-1"><input type="checkbox" checked={!!r.selected} onChange={(e)=>onToggle(idx, e.target.checked)} /></td>
+              <td className="py-1"><input type="checkbox" checked={!!r.selected} onChange={(e) => onToggle(idx, e.target.checked)} /></td>
               <td className="text-slate-900 dark:text-slate-100">{r.date}</td>
               <td className="text-slate-900 dark:text-slate-100">{r.nav}</td>
               <td className={r.exists ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}>{r.exists ? `Replace (was ${r.existingNav ?? '-'})` : "New"}</td>
@@ -378,7 +378,7 @@ function NavPreviewTable({ rows, onToggle }: { rows: { date: string; nav: string
 }
 
 // Detect and display how we'll interpret the first pasted line
-function useDetectColumns(text: string, mode: "PNL" | "JOURNAL" | "NAV", setDetected: (s: string)=>void) {
+function useDetectColumns(text: string, mode: "PNL" | "JOURNAL" | "NAV", setDetected: (s: string) => void) {
   const [last, setLast] = useState<string>("");
   useEffect(() => {
     if (text === last) return;
@@ -386,7 +386,7 @@ function useDetectColumns(text: string, mode: "PNL" | "JOURNAL" | "NAV", setDete
     const rows = parseCsv(text || "");
     if (rows.length === 0) { setDetected(""); return; }
     const parts = rows[0] ?? [];
-    const lower = parts.map(s=>s.toLowerCase());
+    const lower = parts.map(s => s.toLowerCase());
     const has = (name: string) => lower.includes(name);
     const header = has('date') && (mode === 'NAV' ? has('nav') : mode === 'PNL' ? has('realized') : has('text'));
     if (header) { setDetected(lower.join(', ')); return; }
@@ -395,12 +395,9 @@ function useDetectColumns(text: string, mode: "PNL" | "JOURNAL" | "NAV", setDete
       return;
     }
     if (mode === 'PNL') {
-      const cols = ['date','realized'];
+      const cols = ['date', 'realized'];
       if (parts.length >= 3) cols.push('unrealized');
-      if (parts.length >= 4) {
-        const c = lower[3];
-        cols.push(c === 'notes' ? 'note' : (c || 'nav'));
-      }
+      if (parts.length >= 4) cols.push('totalEquity');
       if (parts.length >= 5) cols.push('note');
       setDetected(cols.join(', '));
       return;

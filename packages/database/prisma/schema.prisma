@@ -59,16 +59,18 @@ model VerificationToken {
 }
 
 model Org {
-  id                String             @id @default(cuid())
-  name              String
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  auditLogs         AuditLog[]
-  brokerConnections BrokerConnection[] @relation("BrokerConnectionOrg")
-  connections       Connection[]
-  dailyPnl          DailyPnl[]
-  journal           JournalEntry[]
-  memberships       Membership[]
+  id                         String                        @id @default(cuid())
+  name                       String
+  createdAt                  DateTime                      @default(now())
+  updatedAt                  DateTime                      @updatedAt
+  auditLogs                  AuditLog[]
+  brokerConnections          BrokerConnection[]            @relation("BrokerConnectionOrg")
+  connections                Connection[]
+  dailyPnl                   DailyPnl[]
+  journal                    JournalEntry[]
+  memberships                Membership[]
+  yearlyPerformanceSettings  YearlyPerformanceSettings[]
+  capitalTransfers           CapitalTransfer[]
 }
 
 model Membership {
@@ -91,6 +93,7 @@ model JournalEntry {
   date      DateTime
   text      String
   tags      String[]
+  isWinner  Boolean?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   org       Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
@@ -103,6 +106,7 @@ model DailyPnl {
   date          DateTime
   realizedPnl   Decimal  @db.Decimal(20, 8)
   unrealizedPnl Decimal  @db.Decimal(20, 8)
+  totalEquity   Decimal? @db.Decimal(20, 8)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   note          String?
@@ -379,4 +383,39 @@ enum TradeSide {
   SELL_PUT
   ASSIGN
   EXPIRE
+}
+
+model YearlyPerformanceSettings {
+  id              String    @id @default(dbgenerated("gen_random_uuid()"))
+  orgId           String
+  year            Int
+  startingCapital Decimal   @db.Decimal(20, 8)
+  benchmarks      String[]  @default(["SPY", "QQQ"])
+  createdAt       DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+
+  org             Org       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, year], map: "YearlyPerformanceSettings_org_year_uq")
+  @@index([orgId, year], map: "YearlyPerformanceSettings_orgId_year_idx")
+}
+
+model CapitalTransfer {
+  id        String       @id @default(dbgenerated("gen_random_uuid()"))
+  orgId     String
+  date      DateTime     @db.Date
+  amount    Decimal      @db.Decimal(20, 8)
+  type      TransferType
+  note      String?
+  createdAt DateTime?    @default(now()) @db.Timestamp(6)
+  updatedAt DateTime?    @default(now()) @updatedAt @db.Timestamp(6)
+
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, date], map: "CapitalTransfer_org_date_idx")
+}
+
+enum TransferType {
+  DEPOSIT
+  WITHDRAWAL
 }

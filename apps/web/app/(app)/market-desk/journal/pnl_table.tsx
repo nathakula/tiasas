@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useToast } from "@/components/toast";
 
 type PnlEntry = {
@@ -8,13 +8,21 @@ type PnlEntry = {
   date: Date;
   realizedPnl: string;
   unrealizedPnl: string;
+  totalEquity: string | null;
   note: string | null;
 };
+
+// Helper to format dates without timezone shift
+function formatDateSafe(date: Date, formatStr: string = "yyyy-MM-dd"): string {
+  // Convert to ISO string and take the date part to avoid timezone issues
+  const isoDateStr = date instanceof Date ? date.toISOString().split('T')[0] : String(date).split('T')[0];
+  return format(parseISO(isoDateStr), formatStr);
+}
 
 export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
   const [entries, setEntries] = useState<PnlEntry[]>(initialEntries);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ realized: string; unrealized: string; note: string }>({ realized: "", unrealized: "", note: "" });
+  const [editValues, setEditValues] = useState<{ realized: string; unrealized: string; totalEquity: string; note: string }>({ realized: "", unrealized: "", totalEquity: "", note: "" });
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<"date" | "realized">("date");
@@ -24,7 +32,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
   const filteredEntries = entries
     .filter((entry) => {
       if (!searchTerm) return true;
-      const dateStr = format(new Date(entry.date), "yyyy-MM-dd");
+      const dateStr = formatDateSafe(entry.date);
       const noteStr = (entry.note || "").toLowerCase();
       const search = searchTerm.toLowerCase();
       return dateStr.includes(search) || noteStr.includes(search);
@@ -40,6 +48,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
     setEditValues({
       realized: entry.realizedPnl,
       unrealized: entry.unrealizedPnl,
+      totalEquity: entry.totalEquity || "",
       note: entry.note || "",
     });
   }
@@ -56,9 +65,10 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        date: format(new Date(entry.date), "yyyy-MM-dd"),
+        date: formatDateSafe(entry.date),
         realizedPnl: editValues.realized,
         unrealizedPnl: editValues.unrealized || undefined,
+        totalEquity: editValues.totalEquity || undefined,
         note: editValues.note || undefined,
       }),
     });
@@ -73,7 +83,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
     setEntries((prev) =>
       prev.map((e) =>
         e.id === editingId
-          ? { ...e, realizedPnl: editValues.realized, unrealizedPnl: editValues.unrealized || "0", note: editValues.note || null }
+          ? { ...e, realizedPnl: editValues.realized, unrealizedPnl: editValues.unrealized || "0", totalEquity: editValues.totalEquity || null, note: editValues.note || null }
           : e
       )
     );
@@ -82,9 +92,9 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
   }
 
   async function deleteEntry(entry: PnlEntry) {
-    if (!confirm(`Delete P&L entry for ${format(new Date(entry.date), "yyyy-MM-dd")}?`)) return;
+    if (!confirm(`Delete P&L entry for ${formatDateSafe(entry.date)}?`)) return;
 
-    const res = await fetch(`/api/pnl/daily?date=${format(new Date(entry.date), "yyyy-MM-dd")}`, {
+    const res = await fetch(`/api/pnl/daily?date=${formatDateSafe(entry.date)}`, {
       method: "DELETE",
     });
 
@@ -141,6 +151,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
                 </button>
               </th>
               <th className="text-right py-2 px-2 text-slate-500 dark:text-slate-400">Unrealized</th>
+              <th className="text-right py-2 px-2 text-slate-500 dark:text-slate-400">Total Equity</th>
               <th className="text-left py-2 px-2 text-slate-500 dark:text-slate-400">Note</th>
               <th className="text-right py-2 px-2 text-slate-500 dark:text-slate-400">Actions</th>
             </tr>
@@ -157,7 +168,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
                   key={entry.id}
                   className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150 cursor-pointer group"
                 >
-                  <td className="py-2 px-2 text-slate-900 dark:text-slate-100">{format(new Date(entry.date), "yyyy-MM-dd")}</td>
+                  <td className="py-2 px-2 text-slate-900 dark:text-slate-100">{formatDateSafe(entry.date)}</td>
                   <td className="py-2 px-2 text-right">
                     {isEditing ? (
                       <input
@@ -180,6 +191,17 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
                       />
                     ) : (
                       entry.unrealizedPnl
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-right text-slate-900 dark:text-slate-100">
+                    {isEditing ? (
+                      <input
+                        className="border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 w-24 text-right bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                        value={editValues.totalEquity}
+                        onChange={(e) => setEditValues({ ...editValues, totalEquity: e.target.value })}
+                      />
+                    ) : (
+                      entry.totalEquity || "-"
                     )}
                   </td>
                   <td className="py-2 px-2">
@@ -232,7 +254,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
             })}
             {filteredEntries.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={6} className="py-4 text-center text-slate-500 dark:text-slate-400">
                   {searchTerm ? "No entries found" : "No P&L entries yet"}
                 </td>
               </tr>

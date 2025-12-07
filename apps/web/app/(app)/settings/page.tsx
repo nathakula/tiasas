@@ -1,6 +1,7 @@
 import { db as prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { PerformanceSettingsForm } from "@/components/settings/performance-settings-form";
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
@@ -48,6 +49,9 @@ export default async function SettingsPage() {
         <div className="font-medium mb-1 text-slate-900 dark:text-slate-100">Connections</div>
         <div className="text-sm text-slate-600 dark:text-slate-400">Placeholder connections UI for v0.1</div>
       </div>
-    </div>
+
+      {/* Performance Settings */}
+      <PerformanceSettingsForm />
+    </div >
   );
 }

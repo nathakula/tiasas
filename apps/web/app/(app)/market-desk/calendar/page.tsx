@@ -29,7 +29,7 @@ const getMonthData = cache(async (orgId: string, start: Date, end: Date) => {
     }),
     prisma.dailyPnl.findMany({
       where: { orgId, date: { gte: startUtc, lt: nextMonthStartUtc } },
-      select: { date: true, realizedPnl: true, unrealizedPnl: true, note: true }
+      select: { date: true, realizedPnl: true, unrealizedPnl: true, totalEquity: true, note: true }
     }),
   ]);
 
@@ -167,6 +167,7 @@ export default async function CalendarPage() {
   const pnlByDate = new Map(pnl.map(p => [toIso(p.date), {
     realized: p.realizedPnl.toString(),
     unrealized: p.unrealizedPnl.toString(),
+    totalEquity: p.totalEquity?.toString(),
     note: p.note ?? ""
   }]));
 

@@ -1,68 +1,172 @@
-import { db as prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
-import { requireAuthOrgMembership } from "@/app/api/route-helpers";
-import { z } from "zod";
-import { NextResponse } from "next/server";
-import { rateLimit } from "@tiasas/core/src/ratelimit";
-import { cookies } from "next/headers";
 
-const upsertSchema = z.object({
-  date: z.string(),
-  realizedPnl: z.string(), // required
-  unrealizedPnl: z.string().optional(), // optional, default 0
-  note: z.string().optional(),
-});
+import { authOptions } from "@/lib/auth";
+import { db } from "@tiasas/database";
+import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
+import { logDebug, logError } from "@/lib/logger";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const auth = await requireAuthOrgMembership();
-  if ("error" in auth) return auth.error;
-  const { orgId } = auth;
-  const { searchParams } = new URL(req.url);
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-  const where: any = { orgId };
-  if (from || to) where.date = { gte: from ? new Date(from) : undefined, lte: to ? new Date(to) : undefined };
-  const rows = await prisma.dailyPnl.findMany({ where, orderBy: { date: "asc" } });
-  const response = NextResponse.json(rows);
-  // Cache for 2 minutes since daily P&L data doesn't change frequently
-  response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
-  return response;
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const startStr = searchParams.get("start") || searchParams.get("from");
+    const endStr = searchParams.get("end") || searchParams.get("to");
+    let orgId = searchParams.get("orgId");
+
+    if (!orgId) {
+      const membership = await db.membership.findFirst({
+        where: { userId: (session.user as any).id }, // Fix TS error
+        select: { orgId: true }
+      });
+      orgId = membership?.orgId || null;
+    }
+
+    if (!orgId) {
+      return new NextResponse("No Organization Found", { status: 400 });
+    }
+
+    if (!startStr || !endStr) {
+      return new NextResponse("Missing start or end date", { status: 400 });
+    }
+
+    const startDate = new Date(startStr);
+    const endDate = new Date(endStr);
+
+    const dailyPnl = await db.dailyPnl.findMany({
+      where: {
+        orgId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      orderBy: { date: 'asc' },
+      select: {
+        date: true,
+        realizedPnl: true,
+        unrealizedPnl: true,
+        totalEquity: true
+      }
+    });
+
+    // Log raw Prisma response for December records
+    const decemberRecords = dailyPnl.filter(d => d.date >= new Date('2025-12-01') && d.date < new Date('2025-12-10'));
+    if (decemberRecords.length > 0) {
+      logDebug("PNL_DAILY_GET", "December raw Prisma data:", {
+        count: decemberRecords.length,
+        records: decemberRecords.map(d => ({
+          date: d.date.toISOString(),
+          totalEquity: d.totalEquity?.toString() || 'NULL',
+          totalEquityType: typeof d.totalEquity
+        }))
+      });
+    }
+
+    const data = dailyPnl.map(d => ({
+      date: d.date.toISOString(),
+      realizedPnl: Number(d.realizedPnl),
+      unrealizedPnl: Number(d.unrealizedPnl),
+      totalEquity: d.totalEquity ? Number(d.totalEquity) : null
+    }));
+
+    logDebug("PNL_DAILY_GET", `Returning ${data.length} records from ${startStr} to ${endStr}`, {
+      count: data.length,
+      sample: data.length > 0 ? data[0] : null
+    });
+
+    return NextResponse.json(data);
+
+  } catch (error) {
+    logError("PNL_DAILY_GET", "Error fetching daily PnL", error);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
-  const auth = await requireAuthOrgMembership();
-  if ("error" in auth) return auth.error;
-  const { orgId, session, user } = auth as any;
-  const rl = rateLimit(`pnl:${session.user.email}`);
-  if (!rl.ok) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
-  const body = await req.json();
-  const parsed = upsertSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  const d = parsed.data;
-  const dateIso = `${d.date}T00:00:00.000Z`;
-  const up = await prisma.dailyPnl.upsert({
-    where: { orgId_date: { orgId, date: new Date(dateIso) } },
-    update: { realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, note: d.note ?? null },
-    create: { orgId, date: new Date(dateIso), realizedPnl: d.realizedPnl as any, unrealizedPnl: (d.unrealizedPnl ?? "0") as any, note: d.note ?? null },
-  });
-  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "UPSERT", entity: "DailyPnl", entityId: up.id, before: Prisma.DbNull, after: JSON.parse(JSON.stringify(up)) } });
-  return NextResponse.json(up);
-}
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
-export async function DELETE(req: Request) {
-  const auth = await requireAuthOrgMembership();
-  if ("error" in auth) return auth.error;
-  const { orgId, user } = auth as any;
-  const { searchParams } = new URL(req.url);
-  const date = searchParams.get("date");
-  if (!date) return NextResponse.json({ error: "Missing date parameter" }, { status: 400 });
+    const body = await req.json();
+    const { date, realizedPnl, unrealizedPnl, totalEquity, note } = body;
 
-  const dateIso = `${date}T00:00:00.000Z`;
-  const existing = await prisma.dailyPnl.findUnique({ where: { orgId_date: { orgId, date: new Date(dateIso) } } });
-  if (!existing) return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+    logDebug("PNL_DAILY_POST", "Received request body", body);
+    logDebug("PNL_DAILY_POST", `totalEquity value: ${totalEquity}, type: ${typeof totalEquity}`);
 
-  await prisma.dailyPnl.delete({ where: { orgId_date: { orgId, date: new Date(dateIso) } } });
-  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "DELETE", entity: "DailyPnl", entityId: existing.id, before: JSON.parse(JSON.stringify(existing)), after: Prisma.DbNull } });
+    let orgId = (session.user as any).orgId;
+    if (!orgId) {
+      // Fallback look up
+      const membership = await db.membership.findFirst({
+        where: { userId: (session.user as any).id },
+        select: { orgId: true }
+      });
+      orgId = membership?.orgId;
+    }
 
-  return NextResponse.json({ ok: true });
+    if (!orgId) return new NextResponse("No Org", { status: 400 });
+
+    // Validate
+    if (!date || realizedPnl === undefined) {
+      return new NextResponse("Missing date or realizedPnl", { status: 400 });
+    }
+
+    const d = new Date(date);
+
+    // Upsert
+    const upsertData = {
+      orgId,
+      date: d.toISOString(),
+      realizedPnl,
+      unrealizedPnl: unrealizedPnl ?? 0,
+      totalEquity: totalEquity ?? null,
+      note
+    };
+    logDebug("PNL_DAILY_POST", "About to upsert with:", upsertData);
+
+    const entry = await db.dailyPnl.upsert({
+      where: {
+        orgId_date: {
+          orgId,
+          date: d
+        }
+      },
+      create: {
+        orgId,
+        date: d,
+        realizedPnl: realizedPnl,
+        unrealizedPnl: unrealizedPnl ?? 0,
+        totalEquity: totalEquity ?? null,
+        note: note
+      },
+      update: {
+        realizedPnl: realizedPnl,
+        unrealizedPnl: unrealizedPnl ?? 0,
+        totalEquity: totalEquity ?? null,
+        note: note
+      }
+    });
+
+    logDebug("PNL_DAILY_POST", "Successfully upserted entry", {
+      id: entry.id,
+      date: entry.date,
+      realizedPnl: entry.realizedPnl.toString(),
+      unrealizedPnl: entry.unrealizedPnl.toString(),
+      totalEquity: entry.totalEquity?.toString() ?? null,
+      note: entry.note
+    });
+
+    return NextResponse.json(entry);
+
+  } catch (error) {
+    logError("PNL_DAILY_POST", "Error during upsert", error);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
 }

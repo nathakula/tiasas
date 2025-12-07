@@ -5,6 +5,7 @@ export function DailyPnlForm() {
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [realized, setRealized] = useState<string>("");
   const [unrealized, setUnrealized] = useState<string>("");
+  const [totalEquity, setTotalEquity] = useState<string>("");
   const [note, setNote] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
@@ -15,7 +16,7 @@ export function DailyPnlForm() {
       const res = await fetch(`/api/pnl/daily?from=${date}&to=${date}`);
       if (!res.ok) {
         if (!ignore) {
-          setRealized(""); setUnrealized(""); setNote("");
+          setRealized(""); setUnrealized(""); setTotalEquity(""); setNote("");
         }
         return;
       }
@@ -25,9 +26,10 @@ export function DailyPnlForm() {
         if (row) {
           setRealized(String(row.realizedPnl ?? ""));
           setUnrealized(String(row.unrealizedPnl ?? ""));
+          setTotalEquity(String(row.totalEquity ?? ""));
           setNote(String(row.note ?? ""));
         } else {
-          setRealized(""); setUnrealized(""); setNote("");
+          setRealized(""); setUnrealized(""); setTotalEquity(""); setNote("");
         }
       }
     }
@@ -41,24 +43,32 @@ export function DailyPnlForm() {
     const res = await fetch("/api/pnl/daily", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, realizedPnl: realized, unrealizedPnl: unrealized || undefined, note: note || undefined }),
+      body: JSON.stringify({
+        date,
+        realizedPnl: realized,
+        unrealizedPnl: unrealized || undefined,
+        totalEquity: totalEquity || undefined,
+        note: note || undefined
+      }),
     });
     setSaving(false);
     if (!res.ok) return alert("Failed to save P&L");
     setRealized("");
     setUnrealized("");
+    setTotalEquity("");
     setNote("");
     alert("Saved daily P&L");
   }
 
   return (
     <div className="card p-4">
-      <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Add Daily P&L</div>
-      <div className="grid md:grid-cols-4 gap-2">
+      <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Add Daily P&L (v2)</div>
+      <div className="grid md:grid-cols-5 gap-2">
         <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Realized (required)" value={realized} onChange={(e) => setRealized(e.target.value)} />
-        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Unrealized (optional)" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
-        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Realized (Req)" value={realized} onChange={(e) => setRealized(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Unrealized (Opt)" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Total Equity (Opt)" value={totalEquity} onChange={(e) => setTotalEquity(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Note (Opt)" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
       <div className="mt-3">
         <button className="px-3 py-1.5 rounded-md bg-gold-600 hover:bg-gold-700 text-white disabled:opacity-50 transition-colors" disabled={saving} onClick={save}>Save</button>

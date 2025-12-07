@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useToast } from "@/components/toast";
 
 type Entry = {
@@ -84,7 +84,7 @@ export default function JournalClient({ initialEntries, showCreate = true }: { i
       <ul className="space-y-3">
         {entries.map((e) => (
           <li key={e.id} className="card p-4">
-            <div className="text-sm text-slate-500 dark:text-slate-400">{format(new Date(e.date), "yyyy-MM-dd")}</div>
+            <div className="text-sm text-slate-500 dark:text-slate-400">{format(parseISO(new Date(e.date).toISOString().split('T')[0]), "yyyy-MM-dd")}</div>
             {editingId === e.id ? (
               <>
                 <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 w-full mt-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" value={editText} onChange={(ev) => setEditText(ev.target.value)} />

@@ -9,6 +9,7 @@ const RowSchema = z.object({
   date: z.string(),
   realized: z.string(),
   unrealized: z.string().optional(),
+  totalEquity: z.string().optional(),
   nav: z.string().optional(),
   note: z.string().optional(),
 });
@@ -33,6 +34,7 @@ function normalizeRows(payload: z.infer<typeof PayloadSchema>) {
     date: h.indexOf("date"),
     realized: h.indexOf("realized"),
     unrealized: h.indexOf("unrealized"),
+    totalEquity: h.indexOf("totalequity") >= 0 ? h.indexOf("totalequity") : h.indexOf("equity"),
     nav: h.indexOf("nav"),
     note: h.indexOf("note"),
   };
@@ -43,20 +45,28 @@ function normalizeRows(payload: z.infer<typeof PayloadSchema>) {
   };
   if (idx.date < 0 || idx.realized < 0) {
     if (headerLooksLikeData()) {
-      // Assume positional columns: date, realized, [unrealized], [nav], [note]
       lines = [header, ...lines];
       const first = lines[0] ?? [];
-      idx = { date: 0, realized: 1, unrealized: first.length > 2 ? 2 : -1, nav: first.length > 3 ? 3 : -1, note: first.length > 4 ? 4 : -1 } as any;
+      // Assume positional columns: date, realized, [unrealized], [totalEquity], [note]
+      idx = {
+        date: 0,
+        realized: 1,
+        unrealized: first.length > 2 ? 2 : -1,
+        totalEquity: first.length > 3 ? 3 : -1,
+        nav: -1, // NAV not supported in positional mode
+        note: first.length > 4 ? 4 : -1
+      } as any;
     }
   }
   for (const cols of lines) {
     const date = cols[idx.date];
     const realized = toDecimalString(cols[idx.realized]);
     const unrealized = idx.unrealized >= 0 ? toDecimalString(cols[idx.unrealized]) : undefined;
+    const totalEquity = idx.totalEquity >= 0 ? toDecimalString(cols[idx.totalEquity]) : undefined;
     const nav = idx.nav >= 0 ? toDecimalString(cols[idx.nav]) : undefined;
     const note = idx.note >= 0 ? cols[idx.note] : undefined;
     if (!date || !realized) continue;
-    out.push({ date, realized, unrealized, nav, note });
+    out.push({ date, realized, unrealized, totalEquity, nav, note });
   }
   return out;
 }
@@ -153,11 +163,12 @@ export async function POST(req: Request) {
           if (dryRun) { results.imported++; continue; }
           if (existing) before.push(existing);
 
-          // DailyPnl only has realizedPnl, unrealizedPnl, and note fields
+          // DailyPnl has realizedPnl, unrealizedPnl, totalEquity, and note fields
           // NAV is stored separately in MonthlyNav_eom table
           const updateData: any = {
             realizedPnl: row.realized as any,
             unrealizedPnl: (row.unrealized ?? "0") as any,
+            totalEquity: row.totalEquity ? (row.totalEquity as any) : null,
             note: row.note ?? null
           };
           const createData: any = {
@@ -165,6 +176,7 @@ export async function POST(req: Request) {
             date: dateObj,
             realizedPnl: row.realized as any,
             unrealizedPnl: (row.unrealized ?? "0") as any,
+            totalEquity: row.totalEquity ? (row.totalEquity as any) : null,
             note: row.note ?? null
           };
 
