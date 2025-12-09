@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState, useEffect } from "react";
 import { parseCsv } from "@/lib/csv";
+import { parseImportFile, detectFileFormat, type ImportFormat } from "@tiasas/core/src/import";
 
 type Mode = "PNL" | "JOURNAL" | "NAV";
 
@@ -32,13 +33,31 @@ export default function BulkUploadPage() {
     setIsDragging(false);
   }
 
-  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+  async function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setIsDragging(false);
     const f = e.dataTransfer.files?.[0];
     if (!f) return;
+
+    // Detect file format
+    const format = detectFileFormat(f.name);
+    if (!format) {
+      alert("Unsupported file format. Please upload CSV, Excel (.xlsx), or JSON files.");
+      return;
+    }
+
     setFileName(f.name);
-    f.text().then((t) => setText(t));
+    setBusy(true);
+
+    try {
+      const csvText = await parseImportFile(f, format);
+      setText(csvText);
+    } catch (error: any) {
+      alert(error.message);
+      setFileName("");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function validate() {
@@ -174,7 +193,7 @@ export default function BulkUploadPage() {
             {fileName && <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">✓ File loaded: {fileName}</div>}
           </div>
           <div>
-            <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">or Drag & Drop .csv file</div>
+            <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">or Upload File (CSV, Excel, JSON)</div>
             <div
               onDrop={onDrop}
               onDragOver={onDragOver}
@@ -187,10 +206,43 @@ export default function BulkUploadPage() {
               <svg className="w-12 h-12 text-slate-400 dark:text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              <div className="text-slate-500 dark:text-slate-400 text-sm">
-                {isDragging ? 'Drop file here' : 'Drop .csv file here'}
+              <div className="text-slate-500 dark:text-slate-400 text-sm mb-2">
+                {isDragging ? 'Drop file here' : 'Drag & drop file here'}
               </div>
-              <div className="text-slate-400 dark:text-slate-500 text-xs mt-1">CSV files only</div>
+              <div className="text-slate-400 dark:text-slate-500 text-xs mb-2">CSV, Excel (.xlsx), or JSON</div>
+              <input
+                type="file"
+                id="file-upload"
+                accept=".csv,.xlsx,.xls,.json"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  const format = detectFileFormat(f.name);
+                  if (!format) {
+                    alert("Unsupported file format. Please upload CSV, Excel (.xlsx), or JSON files.");
+                    return;
+                  }
+                  setFileName(f.name);
+                  setBusy(true);
+                  try {
+                    const csvText = await parseImportFile(f, format);
+                    setText(csvText);
+                  } catch (error: any) {
+                    alert(error.message);
+                    setFileName("");
+                  } finally {
+                    setBusy(false);
+                  }
+                  e.target.value = ""; // Reset input
+                }}
+              />
+              <label
+                htmlFor="file-upload"
+                className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-300 dark:hover:bg-slate-600 cursor-pointer transition-colors text-sm"
+              >
+                Choose File
+              </label>
             </div>
           </div>
         </div>

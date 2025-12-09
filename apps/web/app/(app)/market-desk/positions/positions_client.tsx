@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo } from "react";
 import { AssetClass, BrokerProvider } from "@prisma/client";
 import { Search, Filter, TrendingUp, TrendingDown, Info } from "lucide-react";
 import { getBrokerDisplayName } from "@tiasas/core/src/brokerbridge/parsers/broker-detector";
+import { ExportButton } from "@/components/export/export-button";
 
 type AggregatedPosition = {
   instrument: {
@@ -318,8 +319,11 @@ export default function PositionsClient({ orgId }: { orgId: string }) {
           </label>
         </div>
 
-        <div className="text-sm text-gray-600 dark:text-slate-400">
-          {filteredPositions.length} position{filteredPositions.length !== 1 ? "s" : ""}
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-gray-600 dark:text-slate-400">
+            {filteredPositions.length} position{filteredPositions.length !== 1 ? "s" : ""}
+          </div>
+          <ExportButton endpoint="/api/export/positions" label="Export" variant="secondary" />
         </div>
       </div>
 

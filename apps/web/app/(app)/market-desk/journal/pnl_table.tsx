@@ -2,6 +2,10 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/components/toast";
+import { ExportButton } from "@/components/export/export-button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const ENTRIES_PER_PAGE = 25;
 
 type PnlEntry = {
   id: string;
@@ -27,6 +31,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<"date" | "realized">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [currentPage, setCurrentPage] = useState(1);
   const { showToast } = useToast();
 
   const filteredEntries = entries
@@ -42,6 +47,18 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
       const bVal = sortField === "date" ? new Date(b.date).getTime() : Number(b.realizedPnl);
       return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
     });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredEntries.length / ENTRIES_PER_PAGE);
+  const startIndex = (currentPage - 1) * ENTRIES_PER_PAGE;
+  const endIndex = startIndex + ENTRIES_PER_PAGE;
+  const paginatedEntries = filteredEntries.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   function startEdit(entry: PnlEntry) {
     setEditingId(entry.id);
@@ -120,12 +137,15 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
     <div className="card p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="font-medium text-slate-900 dark:text-slate-100">All Daily P&L Entries</div>
-        <input
-          className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm w-64 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-          placeholder="Search by date or note..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div className="flex items-center gap-2">
+          <input
+            className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm w-64 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            placeholder="Search by date or note..."
+            value={searchTerm}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
+          <ExportButton endpoint="/api/export/daily-pnl" label="Export" variant="secondary" />
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -157,7 +177,7 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
             </tr>
           </thead>
           <tbody>
-            {filteredEntries.map((entry) => {
+            {paginatedEntries.map((entry) => {
               const isEditing = editingId === entry.id;
               const realizedNum = Number(entry.realizedPnl);
               const profit = realizedNum > 0;
@@ -263,8 +283,34 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
         </table>
       </div>
 
-      <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-        Showing {filteredEntries.length} of {entries.length} entries
+      <div className="mt-4 flex items-center justify-between">
+        <div className="text-xs text-slate-500 dark:text-slate-400">
+          Showing {filteredEntries.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredEntries.length)} of {filteredEntries.length} entries
+          {searchTerm && ` (filtered from ${entries.length} total)`}
+        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-3 h-3" />
+              Prev
+            </button>
+            <span className="text-xs text-slate-600 dark:text-slate-400">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
