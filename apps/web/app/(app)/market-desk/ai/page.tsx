@@ -1,21 +1,24 @@
 "use client";
 import { useMemo, useState, useRef, useEffect } from "react";
+import { PortfolioAdvisor } from "@/components/ai/portfolio-advisor";
 
-type Tab = "chat" | "quick" | "deep" | "macro" | "notes";
+type Tab = "chat" | "quick" | "deep" | "macro" | "notes" | "portfolio";
 
 type Message = { role: "user" | "assistant"; content: string };
 
 export default function AIPage() {
-  const [tab, setTab] = useState<Tab>("chat");
+  const [tab, setTab] = useState<Tab>("portfolio");
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
+        <button className={`px-2 py-1 border rounded transition-colors ${tab === 'portfolio' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('portfolio')}>💼 Portfolio Advisor</button>
         <button className={`px-2 py-1 border rounded transition-colors ${tab === 'chat' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('chat')}>💬 Chat</button>
         <button className={`px-2 py-1 border rounded transition-colors ${tab === 'quick' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('quick')}>Quick Scan</button>
         <button className={`px-2 py-1 border rounded transition-colors ${tab === 'deep' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('deep')}>Deep Dive</button>
         <button className={`px-2 py-1 border rounded transition-colors ${tab === 'macro' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('macro')}>Macro</button>
         <button className={`px-2 py-1 border rounded transition-colors ${tab === 'notes' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('notes')}>Notes → Actions</button>
       </div>
+      {tab === 'portfolio' && <PortfolioAdvisor />}
       {tab === 'chat' && <ChatInterface />}
       {tab === 'quick' && <QuickScan />}
       {tab === 'deep' && <DeepDive />}

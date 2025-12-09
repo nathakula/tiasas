@@ -51,7 +51,8 @@ export async function GET(req: Request) {
         date: true,
         realizedPnl: true,
         unrealizedPnl: true,
-        totalEquity: true
+        totalEquity: true,
+        note: true
       }
     });
 
@@ -72,7 +73,8 @@ export async function GET(req: Request) {
       date: d.date.toISOString(),
       realizedPnl: Number(d.realizedPnl),
       unrealizedPnl: Number(d.unrealizedPnl),
-      totalEquity: d.totalEquity ? Number(d.totalEquity) : null
+      totalEquity: d.totalEquity ? Number(d.totalEquity) : null,
+      note: d.note ?? null
     }));
 
     logDebug("PNL_DAILY_GET", `Returning ${data.length} records from ${startStr} to ${endStr}`, {
