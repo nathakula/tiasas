@@ -34,13 +34,14 @@ export default async function JournalPage() {
 
   return (
     <div className="space-y-6">
+      {/* Daily P&L Entry Form - For entering numerical trading data (realized/unrealized P&L, equity) */}
       <DailyPnlForm />
 
-      {/* Comprehensive P&L data table */}
+      {/* Daily P&L History Table - View and edit all daily P&L numerical records */}
       <PnlTable initialEntries={pnlEntriesFormatted} />
 
-      {/* Showing only the list for now; creation moved to Daily P&L form */}
-      <JournalClient initialEntries={entries} showCreate={false} />
+      {/* Trading Journal - For writing observations, notes, and thoughts about your trading */}
+      <JournalClient initialEntries={entries} showCreate={true} />
     </div>
   );
 }

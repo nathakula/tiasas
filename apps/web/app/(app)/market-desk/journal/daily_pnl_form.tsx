@@ -62,16 +62,21 @@ export function DailyPnlForm() {
 
   return (
     <div className="card p-4">
-      <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Add Daily P&L (v2)</div>
+      <div className="mb-3">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Daily P&L Entry</h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          Record your daily trading performance numbers: realized P&L, unrealized P&L, and total account equity. This is for quantitative data only.
+        </p>
+      </div>
       <div className="grid md:grid-cols-5 gap-2">
         <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Realized (Req)" value={realized} onChange={(e) => setRealized(e.target.value)} />
-        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Unrealized (Opt)" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
-        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Total Equity (Opt)" value={totalEquity} onChange={(e) => setTotalEquity(e.target.value)} />
-        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Note (Opt)" value={note} onChange={(e) => setNote(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Realized P&L (Required)" value={realized} onChange={(e) => setRealized(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Unrealized P&L" value={unrealized} onChange={(e) => setUnrealized(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Total Equity" value={totalEquity} onChange={(e) => setTotalEquity(e.target.value)} />
+        <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Note (Optional)" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
       <div className="mt-3">
-        <button className="px-3 py-1.5 rounded-md bg-gold-600 hover:bg-gold-700 text-white disabled:opacity-50 transition-colors" disabled={saving} onClick={save}>Save</button>
+        <button className="px-3 py-1.5 rounded-md bg-gold-600 hover:bg-gold-700 text-white disabled:opacity-50 transition-colors" disabled={saving} onClick={save}>Save P&L Entry</button>
       </div>
     </div>
   );

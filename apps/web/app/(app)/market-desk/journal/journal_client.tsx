@@ -93,20 +93,31 @@ export default function JournalClient({ initialEntries, showCreate = true }: { i
     <div className="space-y-6">
       {showCreate && (
         <div className="card p-4">
+          <div className="mb-3">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Trading Journal</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Record your observations, market insights, trade setups, and lessons learned. This is for qualitative notes, not numbers.
+            </p>
+          </div>
           <div className="grid md:grid-cols-4 gap-2">
             <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 md:col-span-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Write a note" value={text} onChange={(e) => setText(e.target.value)} />
+            <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 md:col-span-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Write your trading note or observation..." value={text} onChange={(e) => setText(e.target.value)} />
             <input className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="tags,comma,separated" value={tags} onChange={(e) => setTags(e.target.value)} />
           </div>
           <div className="mt-3">
-            <button className="px-3 py-1.5 rounded-md bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={createEntry}>Add entry</button>
+            <button className="px-3 py-1.5 rounded-md bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={createEntry}>Add Journal Entry</button>
           </div>
         </div>
       )}
       <div className="card p-4">
         <div className="flex items-center justify-between mb-3">
-          <div className="font-medium text-slate-900 dark:text-slate-100">
-            Journal Entries ({entries.length} total)
+          <div>
+            <div className="font-medium text-slate-900 dark:text-slate-100">
+              Journal Entries ({entries.length} total)
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Your trading notes, observations, and insights
+            </div>
           </div>
           <ExportButton endpoint="/api/export/journal" label="Export Journal" variant="secondary" />
         </div>

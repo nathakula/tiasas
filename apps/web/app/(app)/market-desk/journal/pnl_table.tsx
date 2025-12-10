@@ -5,7 +5,7 @@ import { useToast } from "@/components/toast";
 import { ExportButton } from "@/components/export/export-button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const ENTRIES_PER_PAGE = 25;
+const ENTRIES_PER_PAGE = 20;
 
 type PnlEntry = {
   id: string;
@@ -136,7 +136,12 @@ export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
   return (
     <div className="card p-4">
       <div className="flex items-center justify-between mb-3">
-        <div className="font-medium text-slate-900 dark:text-slate-100">All Daily P&L Entries</div>
+        <div>
+          <div className="font-medium text-slate-900 dark:text-slate-100">All Daily P&L Entries</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Historical view of your daily trading performance numbers
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <input
             className="border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm w-64 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
