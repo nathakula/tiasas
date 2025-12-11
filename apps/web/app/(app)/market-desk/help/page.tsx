@@ -19,6 +19,7 @@ export default function HelpPage() {
       <div className="mb-12 p-6 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-4">Quick Navigation</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <a href="#getting-started" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Getting Started</a>
           <a href="#overview" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Overview</a>
           <a href="#journal" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Journal</a>
           <a href="#bulk-upload" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Bulk Upload</a>
@@ -30,6 +31,117 @@ export default function HelpPage() {
           <a href="#ai" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Analyst's Bench (AI)</a>
         </div>
       </div>
+
+      {/* Getting Started Section */}
+      <section id="getting-started" className="mb-12 scroll-mt-6">
+        <div className="border-l-4 border-gold-500 dark:border-gold-400 pl-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-4">🚀 Getting Started</h2>
+
+          <p className="text-gray-700 dark:text-slate-300 mb-4">
+            Welcome to TIASAS! When you first sign up, you'll go through a quick <strong>5-step onboarding wizard</strong> designed to
+            personalize your experience and get you up and running fast. The entire process takes about 2-3 minutes, and you can skip it
+            if you prefer to explore on your own.
+          </p>
+
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">The Onboarding Wizard:</h3>
+
+          <div className="space-y-4 mb-6">
+            <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">Step 1: Welcome & Proficiency</h4>
+              <p className="text-gray-700 dark:text-slate-300 mb-2">
+                Tell us about your trading experience and goals. This helps TIASAS customize features and content to your skill level.
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 text-sm ml-4">
+                <li><strong>Proficiency Level:</strong> Beginner, Intermediate, Advanced, or Professional</li>
+                <li><strong>Trading Goals:</strong> Select from options like Build Consistency, Improve Win Rate, Track Performance, etc.</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">Step 2: Broker Connections</h4>
+              <p className="text-gray-700 dark:text-slate-300 mb-2">
+                Connect your brokerage accounts or plan to import positions via CSV. Currently showing upcoming integrations:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 text-sm ml-4">
+                <li>E*TRADE, Fidelity, Charles Schwab, Robinhood (Coming Soon)</li>
+                <li>Generic CSV import (Available now)</li>
+              </ul>
+              <p className="text-gray-700 dark:text-slate-300 mt-2 text-sm">
+                You can skip this step and add connections later from the Connections page.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">Step 3: Seed Data Option</h4>
+              <p className="text-gray-700 dark:text-slate-300 mb-2">
+                Choose how you want to start using TIASAS:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 text-sm ml-4">
+                <li><strong>Use Real Data:</strong> Start with a clean slate and import your actual trading data</li>
+                <li><strong>Demo Data:</strong> Pre-populate with sample trades, positions, and journal entries to explore features</li>
+                <li><strong>Hybrid Mode:</strong> Get demo data to explore while you prepare to import your real data</li>
+              </ul>
+              <p className="text-yellow-700 dark:text-yellow-400 mt-2 text-sm">
+                Note: Demo data can be removed anytime from Settings → Seed Data Manager
+              </p>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">Step 4: Preferences & Settings</h4>
+              <p className="text-gray-700 dark:text-slate-300 mb-2">
+                Configure essential settings for performance tracking:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 text-sm ml-4">
+                <li><strong>Starting Capital:</strong> Your portfolio value at the start of the year (for calculating returns)</li>
+                <li><strong>Benchmark Symbols:</strong> Indices to compare your performance against (e.g., SPY, QQQ, IWM)</li>
+                <li><strong>AI Provider:</strong> Choose your AI service for Analyst's Bench (OpenAI, OpenRouter, or Custom)</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
+              <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">Step 5: Completion & Next Steps</h4>
+              <p className="text-gray-700 dark:text-slate-300 mb-2">
+                Review your setup and get personalized next steps to start using TIASAS effectively. You'll be directed to the
+                Market Desk dashboard to begin tracking your trading journey.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
+            <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">💡 First Steps After Onboarding:</h4>
+            <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-slate-300">
+              <li>If you chose demo data, explore the Journal, Calendar, and Performance pages to see how TIASAS works</li>
+              <li>If you chose real data, head to Bulk Upload to import your historical trading data</li>
+              <li>Connect your broker(s) from the Connections page to sync positions</li>
+              <li>Create your first journal entry to document today's market thoughts</li>
+              <li>Set up daily P&L tracking (manual entry or broker sync)</li>
+            </ol>
+          </div>
+
+          <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-200 dark:border-green-800">
+            <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">✨ Can I Skip Onboarding?</h4>
+            <p className="text-gray-700 dark:text-slate-300">
+              Yes! You can click "Skip" at any step to go directly to the Market Desk. However, we recommend completing it -
+              the wizard takes just 2-3 minutes and ensures you get the most out of TIASAS from day one. You can always
+              adjust settings later from the Settings page.
+            </p>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-lg border border-amber-200 dark:border-amber-800 mt-4">
+            <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">🔄 Removing Demo Data:</h4>
+            <p className="text-gray-700 dark:text-slate-300">
+              If you selected demo data during onboarding and want to remove it later:
+            </p>
+            <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-slate-300 mt-2 ml-4">
+              <li>Navigate to Settings (gear icon in sidebar)</li>
+              <li>Scroll to the "Seed Data Manager" section</li>
+              <li>Review the demo data statistics (journal entries, P&L records, positions, etc.)</li>
+              <li>Click "Delete All Seed Data" and confirm</li>
+              <li>All demo data will be permanently removed, leaving you with a clean slate</li>
+            </ol>
+          </div>
+        </div>
+      </section>
 
       {/* Overview Section */}
       <section id="overview" className="mb-12 scroll-mt-6">
@@ -624,7 +736,7 @@ export default function HelpPage() {
           </a>
         </p>
         <p className="text-sm text-gray-500 dark:text-slate-500 mt-2">
-          Last updated: December 2025 • TIASAS v1.0
+          Last updated: December 2025 • TIASAS v1.1 • Added: Onboarding Flow
         </p>
       </div>
     </div>

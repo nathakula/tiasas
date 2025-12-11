@@ -2,6 +2,7 @@ import { db as prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PerformanceSettingsForm } from "@/components/settings/performance-settings-form";
+import { SeedDataManager } from "@/components/settings/seed-data-manager";
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
@@ -11,6 +12,51 @@ export default async function SettingsPage() {
   const memberships = user
     ? await prisma.membership.findMany({ where: { userId: user.id }, include: { org: true } })
     : [];
+
+  // Fetch seed data statistics
+  const orgId = memberships[0]?.orgId;
+  let seedDataStats = {
+    hasSeedData: false,
+    journalEntries: 0,
+    dailyPnlEntries: 0,
+    positions: 0,
+    monthlyNavEntries: 0,
+  };
+
+  if (orgId) {
+    const [journalCount, dailyPnlCount, positionCount, monthlyNavCount] =
+      await Promise.all([
+        prisma.journalEntry.count({
+          where: {
+            orgId,
+            OR: [{ text: { contains: "[DEMO]" } }, { tags: { has: "demo" } }],
+          },
+        }),
+        prisma.dailyPnl.count({
+          where: { orgId, note: { contains: "[DEMO]" } },
+        }),
+        prisma.positionSnapshot.count({
+          where: {
+            account: {
+              connection: { orgId, brokerSource: "DEMO" },
+            },
+          },
+        }),
+        prisma.monthlyNavEom.count({
+          where: { orgId, note: { contains: "[DEMO]" } },
+        }),
+      ]);
+
+    seedDataStats = {
+      hasSeedData:
+        journalCount + dailyPnlCount + positionCount + monthlyNavCount > 0,
+      journalEntries: journalCount,
+      dailyPnlEntries: dailyPnlCount,
+      positions: positionCount,
+      monthlyNavEntries: monthlyNavCount,
+    };
+  }
+
   return (
     <div className="space-y-6">
       <div className="card p-4">
@@ -49,6 +95,9 @@ export default async function SettingsPage() {
         <div className="font-medium mb-1 text-slate-900 dark:text-slate-100">Connections</div>
         <div className="text-sm text-slate-600 dark:text-slate-400">Placeholder connections UI for v0.1</div>
       </div>
+
+      {/* Demo Data Management */}
+      <SeedDataManager initialStats={seedDataStats} />
 
       {/* Performance Settings */}
       <PerformanceSettingsForm />

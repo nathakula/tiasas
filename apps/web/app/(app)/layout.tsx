@@ -5,7 +5,7 @@ import type { Route } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db as prisma } from "@/lib/db";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { OrgSelector } from "@/components/org-selector";
 import { Logo } from "@/components/logo";
@@ -17,7 +17,21 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) redirect("/signin");
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: { preferences: true },
+  });
+
+  // Check if user needs onboarding
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+  if (user && user.preferences && !user.preferences.onboardingCompleted) {
+    // Don't redirect if already on onboarding page
+    if (!pathname.includes("/onboarding")) {
+      redirect("/onboarding");
+    }
+  }
+
   const memberships = await prisma.membership.findMany({
     where: { userId: user!.id },
     include: { org: true },

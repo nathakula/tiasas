@@ -69,6 +69,46 @@ export const authOptions: NextAuthOptions = {
           const org = await prisma.org.create({ data: { name: `${base}'s Workspace` } });
           await prisma.membership.create({ data: { userId: user.id, orgId: org.id, role: "OWNER" as any } });
         }
+
+        // Create UserPreferences if they don't exist
+        const existingPreferences = await prisma.userPreferences.findUnique({
+          where: { userId: user.id },
+        });
+
+        if (!existingPreferences) {
+          // Check if user has any existing data (journal, P&L, positions, etc.)
+          // If they do, mark onboarding as completed since they're an existing user
+          const [journalCount, dailyPnlCount, positionCount] = await Promise.all([
+            prisma.journalEntry.count({ where: { userId: user.id } }),
+            prisma.dailyPnl.count({
+              where: {
+                org: {
+                  memberships: {
+                    some: { userId: user.id }
+                  }
+                }
+              }
+            }),
+            prisma.positionSnapshot.count({
+              where: {
+                account: {
+                  connection: {
+                    userId: user.id
+                  }
+                }
+              }
+            })
+          ]);
+
+          const hasExistingData = journalCount > 0 || dailyPnlCount > 0 || positionCount > 0;
+
+          await prisma.userPreferences.create({
+            data: {
+              userId: user.id,
+              onboardingCompleted: hasExistingData, // Existing users skip onboarding, new users see it
+            },
+          });
+        }
       } catch (e) {
         console.error("signIn provisioning error", e);
       }
