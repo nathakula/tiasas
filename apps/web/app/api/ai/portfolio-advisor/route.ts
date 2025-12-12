@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActiveOrgId } from "@/lib/org";
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db as prisma } from "@/lib/db";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 interface Message {
   role: "user" | "assistant";
@@ -25,6 +23,9 @@ interface PortfolioContext {
  * Context-aware AI that adapts responses based on user's current portfolio state
  */
 export async function POST(req: NextRequest) {
+  // Store provider info outside try block for error handling
+  let providerInfo = { provider: "unknown", model: "unknown" };
+
   try {
     const orgId = await getActiveOrgId();
     if (!orgId) {
@@ -54,47 +55,158 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Store settings for error handling
+    providerInfo = { provider: settings.provider || "unknown", model: settings.model || "unknown" };
+
     // Build context-aware system prompt
     const systemPrompt = buildSystemPrompt(context);
 
-    // Build conversation history
-    const conversationHistory: Anthropic.MessageParam[] = history.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
+    let assistantMessage = "";
+    let usage = { inputTokens: 0, outputTokens: 0 };
 
-    // Add current user message
-    conversationHistory.push({
-      role: "user",
-      content: message,
-    });
+    // Call AI based on provider
+    const provider = (settings.provider || "openai").toUpperCase();
 
-    // Call Claude API with user's key
-    const client = new Anthropic({
-      apiKey: settings.apiKey,
-    });
+    if (provider === "GEMINI") {
+      // Use Google Generative AI (Gemini)
+      const genAI = new GoogleGenerativeAI(settings.apiKey);
+      const model = genAI.getGenerativeModel({ model: settings.model });
 
-    const response = await client.messages.create({
-      model: settings.model,
-      max_tokens: 2048,
-      temperature: Number(settings.temperature),
-      system: systemPrompt,
-      messages: conversationHistory,
-    });
+      // Build conversation history for Gemini
+      const chatHistory = history.map((msg) => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.content }],
+      }));
 
-    const assistantMessage = response.content[0].type === "text" ? response.content[0].text : "";
+      const chat = model.startChat({
+        history: chatHistory,
+        generationConfig: {
+          temperature: Number(settings.temperature),
+          maxOutputTokens: 2048,
+        },
+        systemInstruction: systemPrompt,
+      });
+
+      const result = await chat.sendMessage(message);
+      const response = await result.response;
+      assistantMessage = response.text();
+
+      // Gemini doesn't provide token counts in the same way
+      usage = {
+        inputTokens: response.usageMetadata?.promptTokenCount || 0,
+        outputTokens: response.usageMetadata?.candidatesTokenCount || 0,
+      };
+    } else if (provider === "ANTHROPIC") {
+      // Use Anthropic API (Claude)
+      const client = new Anthropic({
+        apiKey: settings.apiKey,
+      });
+
+      const conversationHistory: Anthropic.MessageParam[] = history.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      conversationHistory.push({
+        role: "user",
+        content: message,
+      });
+
+      const response = await client.messages.create({
+        model: settings.model,
+        max_tokens: 2048,
+        temperature: Number(settings.temperature),
+        system: systemPrompt,
+        messages: conversationHistory,
+      });
+
+      assistantMessage = response.content[0].type === "text" ? response.content[0].text : "";
+      usage = {
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+      };
+    } else {
+      // Use OpenAI-compatible API (OpenAI, OpenRouter, Ollama, Custom)
+      const client = new OpenAI({
+        apiKey: settings.apiKey,
+        baseURL: settings.baseUrl || undefined,
+      });
+
+      const messages: OpenAI.ChatCompletionMessageParam[] = [
+        { role: "system", content: systemPrompt },
+        ...history.map((msg) => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+        })),
+        { role: "user", content: message },
+      ];
+
+      // Detect reasoning models (gpt-5*, o3*, o4*, gpt-4.1*) that require max_completion_tokens
+      const modelName = settings.model.toLowerCase();
+      const isReasoningModel =
+        modelName.startsWith("gpt-5") ||
+        modelName.startsWith("o3") ||
+        modelName.startsWith("o4") ||
+        modelName.startsWith("gpt-4.1");
+
+      // Build request parameters based on model type
+      const requestParams: any = {
+        model: settings.model,
+        messages,
+        temperature: Number(settings.temperature),
+      };
+
+      // Reasoning models use max_completion_tokens, others use max_tokens
+      // Reasoning models need MORE tokens since they use many for "thinking"
+      if (isReasoningModel) {
+        requestParams.max_completion_tokens = 10000; // Increased for reasoning + output
+      } else {
+        requestParams.max_tokens = 2048;
+      }
+
+      const response = await client.chat.completions.create(requestParams);
+
+      // Debug logging
+      console.log("OpenAI Response:", JSON.stringify(response, null, 2));
+      console.log("Message content:", response.choices[0]?.message?.content);
+
+      // For reasoning models, check if content is empty and finish_reason is "length"
+      // This means the model used all tokens for reasoning and didn't produce output
+      const messageContent = response.choices[0]?.message?.content || "";
+      const finishReason = response.choices[0]?.finish_reason;
+
+      if (!messageContent && finishReason === "length" && isReasoningModel) {
+        // Reasoning model ran out of tokens - need to increase max_completion_tokens
+        assistantMessage = "I apologize, but I need more tokens to provide a complete analysis. The reasoning model used all available tokens for thinking. Please try again with a simpler question, or contact support to increase the token limit.";
+      } else {
+        assistantMessage = messageContent;
+      }
+
+      usage = {
+        inputTokens: response.usage?.prompt_tokens || 0,
+        outputTokens: response.usage?.completion_tokens || 0,
+      };
+    }
 
     return NextResponse.json({
       response: assistantMessage,
-      usage: {
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-      },
+      usage,
     });
   } catch (error: any) {
     console.error("Error in Portfolio Advisor:", error);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      provider: providerInfo?.provider,
+      model: providerInfo?.model,
+    });
     return NextResponse.json(
-      { error: "AI request failed", details: error.message },
+      {
+        error: "AI request failed",
+        details: error.message,
+        provider: providerInfo?.provider,
+        model: providerInfo?.model
+      },
       { status: 500 }
     );
   }

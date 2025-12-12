@@ -5,8 +5,8 @@ import { requireAuthOrgMembership } from "@/app/api/route-helpers";
 import { db as prisma } from "@/lib/db";
 
 const UpdateSchema = z.object({
-    provider: z.enum(["openai", "openrouter", "ollama", "custom"]).optional(),
-    baseUrl: z.string().url().optional(),
+    provider: z.enum(["openai", "anthropic", "gemini", "openrouter", "ollama", "custom"]).optional(),
+    baseUrl: z.string().optional(), // Allow any string for flexibility (some providers don't use URLs)
     apiKey: z.string().optional(),
     model: z.string().min(1).optional(),
     temperature: z.number().min(0).max(2).optional(),
@@ -96,34 +96,78 @@ export async function POST(req: Request) {
     const { orgId } = auth;
 
     const body = await req.json().catch(() => ({}));
-    const { baseUrl, apiKey, model } = body;
+    const { baseUrl, apiKey, model, provider } = body;
 
     // Get from DB or use provided values
     const config = await prisma.aiConfig.findUnique({ where: { orgId } });
-    const testUrl = baseUrl || config?.baseUrl || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+    const testProvider = provider || config?.provider || "openai";
+    const testUrl = baseUrl || config?.baseUrl || "https://api.openai.com/v1";
     const testKey = apiKey || config?.apiKey || process.env.OPENAI_API_KEY;
-    const testModel = model || config?.model || process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const testModel = model || config?.model || "gpt-4o-mini";
 
     if (!testKey) {
         return NextResponse.json({ success: false, error: "No API key configured" }, { status: 400 });
     }
 
     try {
-        // Simple test: list models or send a tiny request
-        const url = testUrl.replace(/\/$/, "") + "/models";
-        const res = await fetch(url, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${testKey}`,
-            },
-        });
+        // Test based on provider
+        if (testProvider === "gemini") {
+            // For Gemini, test with the generative language API
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${testModel}?key=${testKey}`;
+            const res = await fetch(url, { method: "GET" });
 
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            return NextResponse.json({ success: false, error: `API returned ${res.status}: ${text.slice(0, 200)}` });
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                return NextResponse.json({
+                    success: false,
+                    error: `Gemini API returned ${res.status}: ${text.slice(0, 200)}`
+                });
+            }
+            return NextResponse.json({ success: true, message: "Connection successful" });
+        } else if (testProvider === "anthropic") {
+            // For Anthropic, test with a simple messages request
+            const url = "https://api.anthropic.com/v1/messages";
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": testKey,
+                    "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                    model: testModel,
+                    max_tokens: 10,
+                    messages: [{ role: "user", content: "test" }],
+                }),
+            });
+
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                return NextResponse.json({
+                    success: false,
+                    error: `Anthropic API returned ${res.status}: ${text.slice(0, 200)}`
+                });
+            }
+            return NextResponse.json({ success: true, message: "Connection successful" });
+        } else {
+            // For OpenAI-compatible APIs (OpenAI, OpenRouter, Ollama, Custom)
+            const url = testUrl.replace(/\/$/, "") + "/models";
+            const res = await fetch(url, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${testKey}`,
+                },
+            });
+
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                return NextResponse.json({
+                    success: false,
+                    error: `API returned ${res.status}: ${text.slice(0, 200)}`
+                });
+            }
+            return NextResponse.json({ success: true, message: "Connection successful" });
         }
-
-        return NextResponse.json({ success: true, message: "Connection successful" });
     } catch (e: any) {
         return NextResponse.json({ success: false, error: e.message || "Connection failed" });
     }

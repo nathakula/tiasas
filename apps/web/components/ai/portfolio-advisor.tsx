@@ -113,17 +113,28 @@ export function PortfolioAdvisor() {
         }),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to get AI response");
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        throw new Error(`Failed to parse response: ${res.status} ${res.statusText}`);
       }
 
-      const data = await res.json();
+      if (!res.ok) {
+        // Display the actual error message from the API
+        const errorMessage = data.error || "Failed to get AI response";
+        const details = data.details ? ` - ${data.details}` : "";
+        const provider = data.provider ? ` (Provider: ${data.provider}, Model: ${data.model})` : "";
+        throw new Error(`${errorMessage}${details}${provider}`);
+      }
+
       setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
     } catch (err: any) {
       console.error("Error sending message:", err);
+      const errorMessage = err.message || "Sorry, I encountered an error. Please try again.";
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Sorry, I encountered an error. Please try again." },
+        { role: "assistant", content: errorMessage },
       ]);
     } finally {
       setSending(false);

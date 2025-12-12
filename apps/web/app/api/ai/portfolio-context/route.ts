@@ -21,33 +21,39 @@ export async function GET() {
 
     // Fetch data in parallel
     const [positionSnapshots, recentTrades, mtdPnl, latestPnl, performanceMetrics] = await Promise.all([
-      // Current positions from BrokerBridge - get latest snapshot
-      prisma.positionSnapshot.findMany({
-        where: {
-          account: {
-            connection: {
-              orgId: orgId,
+      // Current positions from BrokerBridge - get latest snapshot per account
+      prisma.$queryRaw`
+        SELECT DISTINCT ON (ps."accountId") ps.*
+        FROM "PositionSnapshot" ps
+        INNER JOIN "BrokerAccount" ba ON ps."accountId" = ba.id
+        INNER JOIN "BrokerConnection" bc ON ba."connectionId" = bc.id
+        WHERE bc."orgId" = ${orgId}
+        ORDER BY ps."accountId", ps."asOf" DESC
+      `.then(async (snapshots: any[]) => {
+        // Fetch full snapshot data with relations for each latest snapshot
+        return await prisma.positionSnapshot.findMany({
+          where: {
+            id: {
+              in: snapshots.map((s) => s.id),
             },
           },
-        },
-        include: {
-          positionLots: {
-            include: {
-              instrument: true,
+          include: {
+            positionLots: {
+              include: {
+                instrument: true,
+              },
             },
-          },
-          account: {
-            include: {
-              connection: {
-                select: {
-                  broker: true,
+            account: {
+              include: {
+                connection: {
+                  select: {
+                    broker: true,
+                  },
                 },
               },
             },
           },
-        },
-        orderBy: { asOf: "desc" },
-        take: 1, // Get the latest snapshot
+        });
       }),
 
       // Recent trades (last 30 days with non-zero realized P&L)
@@ -125,10 +131,72 @@ export async function GET() {
     const stdDev = Math.sqrt(variance);
     const sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : null; // Annualized
 
-    // Extract position lots from snapshots
-    const positions = positionSnapshots.length > 0
-      ? positionSnapshots[0].positionLots
-      : [];
+    // Extract position lots from all snapshots (across all accounts)
+    const allPositionLots = positionSnapshots.flatMap((snapshot) =>
+      snapshot.positionLots.map((lot) => ({
+        lot,
+        snapshot,
+      }))
+    );
+
+    // Aggregate positions by symbol (matching what Positions page shows)
+    const aggregatedPositions = new Map<string, {
+      symbol: string;
+      totalQuantity: number;
+      weightedAvgPrice: number;
+      currentPrice: number;
+      totalUnrealizedPnl: number;
+      totalCostBasis: number;
+      totalMarketValue: number;
+      brokers: Set<string>;
+      accounts: Set<string>;
+      lastUpdated: Date;
+    }>();
+
+    allPositionLots.forEach(({ lot, snapshot }) => {
+      const symbol = lot.instrument.symbol;
+      const quantity = Number(lot.quantity);
+      const avgPrice = Number(lot.averagePrice) || 0;
+      const marketPrice = Number(lot.marketPrice) || 0;
+      const unrealizedPL = Number(lot.unrealizedPL) || 0;
+      const costBasis = Number(lot.costBasis) || (quantity * avgPrice);
+      const marketValue = Number(lot.marketValue) || (quantity * marketPrice);
+
+      if (aggregatedPositions.has(symbol)) {
+        const existing = aggregatedPositions.get(symbol)!;
+        const newTotalQuantity = existing.totalQuantity + quantity;
+        const newTotalCostBasis = existing.totalCostBasis + costBasis;
+        const newTotalMarketValue = existing.totalMarketValue + marketValue;
+
+        aggregatedPositions.set(symbol, {
+          symbol,
+          totalQuantity: newTotalQuantity,
+          weightedAvgPrice: newTotalQuantity > 0 ? newTotalCostBasis / newTotalQuantity : 0,
+          currentPrice: marketPrice, // Use latest price
+          totalUnrealizedPnl: existing.totalUnrealizedPnl + unrealizedPL,
+          totalCostBasis: newTotalCostBasis,
+          totalMarketValue: newTotalMarketValue,
+          brokers: existing.brokers.add(snapshot.account.connection.broker || "Unknown"),
+          accounts: existing.accounts.add(snapshot.account.nickname || snapshot.account.maskedNumber || "Unknown"),
+          lastUpdated: snapshot.asOf > existing.lastUpdated ? snapshot.asOf : existing.lastUpdated,
+        });
+      } else {
+        aggregatedPositions.set(symbol, {
+          symbol,
+          totalQuantity: quantity,
+          weightedAvgPrice: avgPrice,
+          currentPrice: marketPrice,
+          totalUnrealizedPnl: unrealizedPL,
+          totalCostBasis: costBasis,
+          totalMarketValue: marketValue,
+          brokers: new Set([snapshot.account.connection.broker || "Unknown"]),
+          accounts: new Set([snapshot.account.nickname || snapshot.account.maskedNumber || "Unknown"]),
+          lastUpdated: snapshot.asOf,
+        });
+      }
+    });
+
+    const positions = Array.from(aggregatedPositions.values());
 
     // Determine context mode
     let mode: "positions" | "recent_trades" | "no_data" = "no_data";
@@ -139,16 +207,16 @@ export async function GET() {
     }
 
     // Format positions for AI context
-    const positionsContext = positions.map((lot) => ({
-      symbol: lot.instrument.symbol,
-      quantity: Number(lot.quantity),
-      averagePrice: Number(lot.averagePrice) || 0,
-      currentPrice: Number(lot.marketPrice) || 0,
-      unrealizedPnl: Number(lot.unrealizedPL) || 0,
-      unrealizedPnlPercent: Number(lot.unrealizedPLPct) || 0,
-      broker: positionSnapshots[0]?.account.connection.broker || "Unknown",
-      account: positionSnapshots[0]?.account.nickname || positionSnapshots[0]?.account.maskedNumber || "Unknown",
-      lastUpdated: positionSnapshots[0]?.asOf || new Date(),
+    const positionsContext = positions.map((pos) => ({
+      symbol: pos.symbol,
+      quantity: pos.totalQuantity,
+      averagePrice: pos.weightedAvgPrice,
+      currentPrice: pos.currentPrice,
+      unrealizedPnl: pos.totalUnrealizedPnl,
+      unrealizedPnlPercent: pos.totalCostBasis > 0 ? (pos.totalUnrealizedPnl / pos.totalCostBasis) * 100 : 0,
+      broker: Array.from(pos.brokers).join(", "),
+      account: Array.from(pos.accounts).join(", "),
+      lastUpdated: pos.lastUpdated,
     }));
 
     // Format recent trades for AI context
