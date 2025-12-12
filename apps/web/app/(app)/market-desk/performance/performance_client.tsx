@@ -5,6 +5,7 @@ import { BenchmarkComparisonChart } from "@/components/charts/benchmark-comparis
 import { MonthlyPnlChart, NavByMonthChart } from "@/components/charts/monthly-widgets";
 import { TrendingUp, TrendingDown, Target, Calendar } from "lucide-react";
 import { useCounterAnimation } from "@/hooks/use-counter-animation";
+import { ExportButton } from "@/components/export/export-button";
 
 interface BenchmarkData {
   year: number;
@@ -322,9 +323,20 @@ export function PerformanceClient() {
 
         {/* NAV Line Chart */}
         <div className="card p-6">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
-            NAV & Equity
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+              NAV & Equity
+            </h2>
+            <ExportButton
+              endpoint="/api/export/nav"
+              label="Export NAV"
+              variant="secondary"
+              dateRange={{
+                startDate: `${selectedYear}-01-01`,
+                endDate: `${selectedYear}-12-31`,
+              }}
+            />
+          </div>
           <NavByMonthChart key={`nav-${chartKey}`} monthly={monthlyData} />
         </div>
       </div>
