@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 
-type Provider = "openai" | "openrouter" | "ollama" | "custom";
+type Provider = "openai" | "anthropic" | "gemini" | "openrouter" | "ollama" | "custom";
 
 const PRESETS: Record<Provider, { baseUrl: string; model: string }> = {
     openai: { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+    anthropic: { baseUrl: "https://api.anthropic.com", model: "claude-3-5-sonnet-20241022" },
+    gemini: { baseUrl: "https://generativelanguage.googleapis.com", model: "gemini-2.0-flash-exp" },
     openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-3.5-sonnet" },
     ollama: { baseUrl: "http://localhost:11434/v1", model: "llama3.1" },
     custom: { baseUrl: "", model: "" },
@@ -76,7 +78,7 @@ export default function SettingsPage() {
             const res = await fetch("/api/settings/ai", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ baseUrl, apiKey: apiKey || undefined, model }),
+                body: JSON.stringify({ provider, baseUrl, apiKey: apiKey || undefined, model }),
             });
             const data = await res.json();
             setTestResult({ success: data.success, message: data.message || data.error || "Unknown result" });
@@ -98,7 +100,7 @@ export default function SettingsPage() {
             <div className="card p-6 space-y-4">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">AI Configuration</h2>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Configure the AI provider for the Analyst Workbench. You can use OpenAI, OpenRouter, local Ollama, or a custom endpoint.
+                    Configure the AI provider for the Analyst Workbench. Supports OpenAI, Anthropic (Claude), Google Gemini, OpenRouter, local Ollama, or a custom endpoint.
                 </p>
 
                 <div className="space-y-4">
@@ -110,10 +112,12 @@ export default function SettingsPage() {
                             value={provider}
                             onChange={(e) => handleProviderChange(e.target.value as Provider)}
                         >
-                            <option value="openai">OpenAI</option>
+                            <option value="openai">OpenAI (GPT-4, GPT-4o, etc.)</option>
+                            <option value="anthropic">Anthropic (Claude)</option>
+                            <option value="gemini">Google Gemini</option>
                             <option value="openrouter">OpenRouter</option>
                             <option value="ollama">Ollama (Local)</option>
-                            <option value="custom">Custom</option>
+                            <option value="custom">Custom Endpoint</option>
                         </select>
                     </div>
 
@@ -157,7 +161,7 @@ export default function SettingsPage() {
                             placeholder="gpt-4o-mini"
                         />
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            Examples: gpt-4o, gpt-4o-mini, anthropic/claude-3.5-sonnet, llama3.1
+                            Examples: gpt-4o-mini, claude-3-5-sonnet-20241022, gemini-2.0-flash-exp, llama3.1, anthropic/claude-3.5-sonnet (OpenRouter)
                         </p>
                     </div>
 
