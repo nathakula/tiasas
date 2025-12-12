@@ -5,7 +5,7 @@ import { useState } from "react";
 export interface PreferencesStepData {
   startingCapital: number | null;
   benchmarks: string[];
-  aiProvider: "openai" | "openrouter" | "custom";
+  aiProvider: "openai" | "anthropic" | "gemini" | "openrouter" | "ollama" | "custom";
   aiBaseUrl?: string;
 }
 
@@ -29,7 +29,7 @@ export function PreferencesStep({
     initialData?.benchmarks?.join(", ") ?? "SPY, QQQ"
   );
   const [aiProvider, setAiProvider] = useState<
-    "openai" | "openrouter" | "custom"
+    "openai" | "anthropic" | "gemini" | "openrouter" | "ollama" | "custom"
   >(initialData?.aiProvider ?? "openai");
   const [aiBaseUrl, setAiBaseUrl] = useState<string>(
     initialData?.aiBaseUrl ?? ""
@@ -108,12 +108,15 @@ export function PreferencesStep({
           <select
             value={aiProvider}
             onChange={(e) =>
-              setAiProvider(e.target.value as "openai" | "openrouter" | "custom")
+              setAiProvider(e.target.value as "openai" | "anthropic" | "gemini" | "openrouter" | "ollama" | "custom")
             }
             className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold-500 dark:focus:ring-gold-600"
           >
-            <option value="openai">OpenAI (GPT-4)</option>
+            <option value="openai">OpenAI (GPT-4o, GPT-5)</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="gemini">Google (Gemini)</option>
             <option value="openrouter">OpenRouter (Multi-model)</option>
+            <option value="ollama">Ollama (Local)</option>
             <option value="custom">Custom Endpoint</option>
           </select>
 

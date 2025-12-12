@@ -174,7 +174,10 @@ export async function POST(req: NextRequest) {
           const aiProvider = step4.aiProvider.toUpperCase();
           const defaultBaseUrls: Record<string, string> = {
             OPENAI: "https://api.openai.com/v1",
+            ANTHROPIC: "https://api.anthropic.com/v1",
+            GEMINI: "https://generativelanguage.googleapis.com/v1beta",
             OPENROUTER: "https://openrouter.ai/api/v1",
+            OLLAMA: "http://localhost:11434/v1",
             CUSTOM: step4.aiBaseUrl || "https://api.openai.com/v1",
           };
 
