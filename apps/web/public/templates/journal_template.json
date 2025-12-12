@@ -1,0 +1,12 @@
+[
+  {
+    "date": "2025-01-02",
+    "text": "Execution focus",
+    "tags": "process,execution"
+  },
+  {
+    "date": "2025-01-03",
+    "text": "Review losers",
+    "tags": "postmortem"
+  }
+]

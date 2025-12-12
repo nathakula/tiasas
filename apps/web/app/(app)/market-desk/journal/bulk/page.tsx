@@ -289,10 +289,61 @@ export default function BulkUploadPage() {
         </div>
       )}
       <div className="card p-4">
-        <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Templates</div>
-        <div className="text-sm text-slate-700 dark:text-slate-300">Daily P&L: headers "date,realized,unrealized,totalEquity,note" - <a className="text-gold-600 dark:text-gold-400 underline" href="/templates/pnl_template.csv" download>Download template</a></div>
-        <div className="text-sm text-slate-700 dark:text-slate-300">Monthly NAV: headers "date,nav" - <a className="text-gold-600 dark:text-gold-400 underline" href="/templates/nav_monthly_template.csv" download>Download template</a></div>
-        <div className="text-sm text-slate-700 dark:text-slate-300">Journal: headers "date,text,tags" - <a className="text-gold-600 dark:text-gold-400 underline" href="/templates/journal_template.csv" download>Download template</a></div>
+        <div className="font-medium mb-3 text-slate-900 dark:text-slate-100">Download Templates</div>
+        <div className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+          Choose your preferred format. All templates contain sample data to help you get started.
+        </div>
+
+        {/* Daily P&L Templates */}
+        <div className="mb-4">
+          <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Daily P&L</div>
+          <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Headers: date, realized, unrealized, totalEquity, note</div>
+          <div className="flex gap-2 flex-wrap">
+            <a className="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1" href="/templates/pnl_template.csv" download>
+              <span>📄</span> CSV
+            </a>
+            <a className="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1" href="/templates/pnl_template.xlsx" download>
+              <span>📊</span> Excel
+            </a>
+            <a className="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1" href="/templates/pnl_template.json" download>
+              <span>📋</span> JSON
+            </a>
+          </div>
+        </div>
+
+        {/* Monthly NAV Templates */}
+        <div className="mb-4">
+          <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Monthly NAV</div>
+          <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Headers: date, nav</div>
+          <div className="flex gap-2 flex-wrap">
+            <a className="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1" href="/templates/nav_monthly_template.csv" download>
+              <span>📄</span> CSV
+            </a>
+            <a className="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1" href="/templates/nav_monthly_template.xlsx" download>
+              <span>📊</span> Excel
+            </a>
+            <a className="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1" href="/templates/nav_monthly_template.json" download>
+              <span>📋</span> JSON
+            </a>
+          </div>
+        </div>
+
+        {/* Journal Templates */}
+        <div>
+          <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Journal</div>
+          <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Headers: date, text, tags</div>
+          <div className="flex gap-2 flex-wrap">
+            <a className="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1" href="/templates/journal_template.csv" download>
+              <span>📄</span> CSV
+            </a>
+            <a className="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1" href="/templates/journal_template.xlsx" download>
+              <span>📊</span> Excel
+            </a>
+            <a className="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors inline-flex items-center gap-1" href="/templates/journal_template.json" download>
+              <span>📋</span> JSON
+            </a>
+          </div>
+        </div>
       </div>
 
       <div className="card p-4">
