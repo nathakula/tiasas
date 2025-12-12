@@ -19,6 +19,11 @@ export function PerformanceKpi({ orgId, metrics }: { orgId: string; metrics?: Pe
     const [data, setData] = useState<PerformanceMetrics | null>(metrics || null);
     const [loading, setLoading] = useState(!metrics);
 
+    // Animated values for gauges
+    const [animatedSharpe, setAnimatedSharpe] = useState(0);
+    const [animatedSortino, setAnimatedSortino] = useState(0);
+    const [animatedWinRate, setAnimatedWinRate] = useState(0);
+
     useEffect(() => {
         if (metrics) {
             setData(metrics);
@@ -43,6 +48,43 @@ export function PerformanceKpi({ orgId, metrics }: { orgId: string; metrics?: Pe
         fetchData();
     }, [orgId, metrics]);
 
+    // Animate gauges when data changes
+    useEffect(() => {
+        if (!data || loading) return;
+
+        const targetSharpe = data.sharpeRatio || 0;
+        const targetSortino = data.sortinoRatio || 0;
+        const targetWinRate = (data.winRate || 0) * 100;
+
+        const duration = 1500; // 1.5 seconds
+        const steps = 60; // 60 steps for smooth animation
+        const stepDuration = duration / steps;
+
+        let currentStep = 0;
+
+        const interval = setInterval(() => {
+            currentStep++;
+            const progress = currentStep / steps;
+
+            // Easing function (ease-out cubic)
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+
+            setAnimatedSharpe(targetSharpe * easeOut);
+            setAnimatedSortino(targetSortino * easeOut);
+            setAnimatedWinRate(targetWinRate * easeOut);
+
+            if (currentStep >= steps) {
+                clearInterval(interval);
+                // Set final values to ensure precision
+                setAnimatedSharpe(targetSharpe);
+                setAnimatedSortino(targetSortino);
+                setAnimatedWinRate(targetWinRate);
+            }
+        }, stepDuration);
+
+        return () => clearInterval(interval);
+    }, [data, loading]);
+
     if (loading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -59,8 +101,10 @@ export function PerformanceKpi({ orgId, metrics }: { orgId: string; metrics?: Pe
         return "#ef4444"; // Red
     };
 
-    const sharpeValue = data?.sharpeRatio || 0;
-    const sortinoValue = data?.sortinoRatio || 0;
+    // Use animated values for display
+    const sharpeValue = animatedSharpe;
+    const sortinoValue = animatedSortino;
+    const winRateValue = animatedWinRate;
 
     // Data for Recharts
     const sharpeData = [{ name: 'Sharpe', value: sharpeValue, fill: getScoreColor(sharpeValue) }];
@@ -160,7 +204,7 @@ export function PerformanceKpi({ orgId, metrics }: { orgId: string; metrics?: Pe
                                 innerRadius="70%"
                                 outerRadius="100%"
                                 barSize={10}
-                                data={[{ name: 'WinRate', value: (data?.winRate ?? 0) * 100, fill: (data?.winRate ?? 0) >= 0.5 ? "#22c55e" : "#ef4444" }]}
+                                data={[{ name: 'WinRate', value: winRateValue, fill: winRateValue >= 50 ? "#22c55e" : "#ef4444" }]}
                                 startAngle={180}
                                 endAngle={0}
                             >
@@ -169,7 +213,7 @@ export function PerformanceKpi({ orgId, metrics }: { orgId: string; metrics?: Pe
                             </RadialBarChart>
                         </ResponsiveContainer>
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-center">
-                            <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">{((data?.winRate ?? 0) * 100).toFixed(0)}%</div>
+                            <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">{winRateValue.toFixed(0)}%</div>
                             <div className="text-xs text-muted-foreground mt-1">
                                 {data?.totalTrades} Trades
                             </div>
