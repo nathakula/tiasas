@@ -30,7 +30,9 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/app/:path*",
+    "/market-desk/:path*",
+    "/settings/:path*",
+    "/onboarding/:path*",
     "/api/:path*",
   ],
 };
