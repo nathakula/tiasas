@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { MembersTable } from "@/components/workspace/members-table";
 import { InvitationsTable } from "@/components/workspace/invitations-table";
 import { InviteMemberButton } from "@/components/workspace/invite-member-button";
@@ -110,9 +111,19 @@ export default async function WorkspaceSettingsPage() {
               Manage workspace members and permissions
             </p>
           </div>
-          {canManageInvitations && (
-            <InviteMemberButton orgId={orgId} />
-          )}
+          <div className="flex items-center gap-3">
+            {canManageInvitations && (
+              <>
+                <Link
+                  href="/settings/workspace/audit-logs"
+                  className="px-4 py-2 text-sm border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                >
+                  View Audit Logs
+                </Link>
+                <InviteMemberButton orgId={orgId} />
+              </>
+            )}
+          </div>
         </div>
       </div>
 
