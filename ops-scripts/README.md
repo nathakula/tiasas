@@ -1,146 +1,51 @@
-# Tiasas Operations Scripts
+# TiasasWeb Operations Scripts
 
-This directory contains operational scripts for managing the Tiasas application as Windows scheduled tasks.
+This folder contains service management scripts for TiasasWeb.
 
-## 📋 Current Setup
+## ⚠️ IMPORTANT: Run as Administrator
 
-The application runs using **Windows Task Scheduler** with these tasks:
-- **TiasasWeb** - Next.js web application (port 13000)
-- **CloudflareTunnel** - Cloudflare tunnel to app.tiasas.online
+All batch files require administrator privileges. When you double-click them, you'll see a UAC prompt - click "Yes" to allow.
 
-## 🚀 Active Scripts
+## Quick Reference
 
-### Daily Operations
+### 🔄 Restart Service (Most Common)
+**Double-click:** `restart-service.bat`
 
-**`manage-tasks.ps1`**
-- Interactive menu for managing scheduled tasks
-- Start/Stop/Restart tasks
-- View task status and details
-- Test connectivity
-- **Usage**: Right-click → Run with PowerShell (as Admin)
+Use this after rebuilding the application to apply changes.
 
-**`diagnose-task.ps1`**
-- Troubleshooting tool for task issues
-- Checks Node.js availability, build status, port usage
-- Attempts to start task and diagnose failures
-- **Usage**: Right-click → Run with PowerShell (as Admin)
+### ⏹️ Stop Service
+**Double-click:** `stop-service.bat`
 
-### Setup & Configuration
+Stops the running Node.js server on port 13000.
 
-**`setup-task-scheduler.ps1`**
-- Initial setup script (already run)
-- Creates both TiasasWeb and CloudflareTunnel tasks
-- Configures auto-start on boot and auto-restart on crash
-- **Usage**: Only needed for initial setup or complete reconfiguration
+### ▶️ Start Service
+**Double-click:** `start-service.bat`
 
-**`update-task-to-use-batch.ps1`**
-- Updates TiasasWeb task to use batch file wrapper (already run)
-- Use this if task configuration needs to be reset
-- **Usage**: Run in PowerShell as Administrator
+Starts the Next.js production server.
 
-**`update-task-path.ps1`**
-- Updates TiasasWeb task to use new batch file path after reorganization
-- **Usage**: Run once after scripts were moved to ops-scripts folder
+## Typical Workflow
 
-**`create-desktop-shortcuts.ps1`**
-- Creates desktop shortcuts for easy task management
-- **Usage**: Run once to create shortcuts on your desktop
-
-### Core Task Script
-
-**`start-web-app.bat`**
-- Wrapper script used by TiasasWeb scheduled task
-- Validates environment, checks build, starts Next.js server
-- Logs all activity to `apps/web/logs/`
-- **Do not run manually** - Used automatically by Task Scheduler
-
-## 📊 Checking Task Status
-
-### Option 1: PowerShell Commands
-```powershell
-# View all Tiasas tasks
-Get-ScheduledTask | Where-Object {$_.TaskName -like "*Tiasas*"}
-
-# Start a task
-Start-ScheduledTask -TaskName "TiasasWeb"
-
-# Stop a task
-Stop-ScheduledTask -TaskName "TiasasWeb"
-
-# Get detailed info
-Get-ScheduledTaskInfo -TaskName "TiasasWeb"
-```
-
-### Option 2: Task Scheduler GUI
-1. Press `Win + R`
-2. Type `taskschd.msc`
-3. Press Enter
-4. Look for `TiasasWeb` and `CloudflareTunnel`
-
-### Option 3: Interactive Manager
-```powershell
-cd d:\GenAi\Projects\Tiasas\ops-scripts
-.\manage-tasks.ps1
-```
-
-## 📝 Log Files
-
-Application logs are stored in:
-- **Startup Log**: `d:\GenAi\Projects\Tiasas\apps\web\logs\startup.log`
-- **Application Log**: `d:\GenAi\Projects\Tiasas\apps\web\logs\app.log`
-- **Error Log**: `d:\GenAi\Projects\Tiasas\apps\web\logs\error.log`
-- **Tunnel Log**: `C:\Users\srina\.cloudflared\tunnel.log`
-
-## 🌐 Access Points
-
-- **Local**: http://localhost:13000
-- **Public**: https://app.tiasas.online
-
-## 🔄 Auto-Start Behavior
-
-Both tasks are configured to:
-- ✅ Start automatically when Windows boots
-- ✅ Auto-restart if they crash (up to 3 times, 1 minute interval)
-- ✅ Run in background (no console windows)
-- ✅ Run with highest privileges
-
-## 🔧 Troubleshooting
-
-### Task shows "Running" but app doesn't respond
-
-1. Check logs:
-   ```powershell
-   notepad d:\GenAi\Projects\Tiasas\apps\web\logs\startup.log
-   notepad d:\GenAi\Projects\Tiasas\apps\web\logs\error.log
+1. **Make code changes** in your editor
+2. **Build the application:**
+   ```bash
+   cd D:\GenAi\Projects\Tiasas
+   pnpm build
    ```
+3. **Restart service:** Double-click `ops-scripts\restart-service.bat`
+4. **Clear browser cache:** Press `Ctrl + Shift + R`
+5. **Verify:** Navigate to `http://localhost:13000`
 
-2. Run diagnostic:
-   ```powershell
-   cd d:\GenAi\Projects\Tiasas\ops-scripts
-   .\diagnose-task.ps1
-   ```
+## Files
 
-3. Common issues:
-   - Next.js not built: Run `pnpm build` in project root
-   - Port 13000 in use: Check `netstat -ano | findstr 13000`
-   - Node.js not in PATH: Verify with `where node`
+- `restart-service.bat` - Restart service (stops then starts)
+- `stop-service.bat` - Stop service only
+- `start-service.bat` - Start service only
+- `restart-service.ps1` - PowerShell restart script
+- `stop-service.ps1` - PowerShell stop script
+- `start-service.ps1` - PowerShell start script
 
-### Task won't start
+## Notes
 
-1. Verify Node.js is installed: `node --version`
-2. Check if build exists: Look for `apps/web/.next` folder
-3. Review Task Scheduler for error codes
-4. Re-run setup: `.\update-task-to-use-batch.ps1`
-
-### After Windows reboot, tasks don't start
-
-1. Open Task Scheduler (taskschd.msc)
-2. Check if tasks are enabled
-3. Verify trigger is set to "At startup"
-4. Check "Last Run Result" column for errors
-
-## 📦 What Happened to Windows Services / NSSM?
-
-We initially tried using NSSM (Non-Sucking Service Manager) to create Windows Services, but encountered persistent "PAUSED" state issues with Node.js applications. We switched to Windows Task Scheduler which is more reliable for Node.js apps.
-
-All NSSM-related scripts have been archived to `archive/old-code/`.
+- All batch files run with administrator privileges automatically
+- Scripts use port 13000 for the TiasasWeb application
+- The working directory is automatically set to the project root
