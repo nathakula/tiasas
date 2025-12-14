@@ -29,12 +29,12 @@ export async function GET() {
         INNER JOIN "BrokerConnection" bc ON ba."connectionId" = bc.id
         WHERE bc."orgId" = ${orgId}
         ORDER BY ps."accountId", ps."asOf" DESC
-      `.then(async (snapshots: any[]) => {
+      `.then(async (snapshots: any) => {
         // Fetch full snapshot data with relations for each latest snapshot
         return await prisma.positionSnapshot.findMany({
           where: {
             id: {
-              in: snapshots.map((s) => s.id),
+              in: snapshots.map((s: any) => s.id),
             },
           },
           include: {

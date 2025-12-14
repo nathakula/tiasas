@@ -85,11 +85,11 @@ function Section({ label }: { label: string }) {
   return <div className="mt-4 px-2 text-xs uppercase text-slate-500 dark:text-slate-400">{label}</div>;
 }
 
-function NavLink({ href, children }: { href: Route; children: ReactNode }) {
+function NavLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link
       className="block px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-gold-600 dark:hover:text-gold-400 hover:border-l-2 hover:border-gold-500 transition-all duration-200 hover:translate-x-1 transform"
-      href={href}
+      href={href as any}
     >
       {children}
     </Link>

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db as prisma } from "@/lib/db";
 
+import { Prisma } from "@prisma/client";
+
 /**
  * GET /api/settings/seed-data
  * Returns statistics about seed data in the user's account
@@ -90,6 +92,8 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+
 
 /**
  * DELETE /api/settings/seed-data
@@ -208,7 +212,7 @@ export async function DELETE(req: NextRequest) {
         action: "DELETE",
         entity: "SeedData",
         entityId: "bulk_delete",
-        before: null,
+        before: Prisma.DbNull,
         after: result,
       },
     });

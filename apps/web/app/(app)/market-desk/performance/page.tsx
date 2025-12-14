@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PerformancePage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
+  if (!session?.user?.email) redirect("/login");
 
   return <PerformanceClient />;
 }

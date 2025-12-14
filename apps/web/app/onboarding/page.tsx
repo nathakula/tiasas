@@ -197,7 +197,7 @@ export default function OnboardingPage() {
       {currentStep === 5 && (
         <CompletionStep
           wizardData={{
-            proficiencyLevel: wizardData.step1?.proficiencyLevel,
+            proficiencyLevel: wizardData.step1?.proficiencyLevel ?? undefined,
             goals: wizardData.step1?.goals,
             connectionsCount: wizardData.step2?.connections?.length ?? 0,
             seedDataOption: wizardData.step3?.seedDataOption,

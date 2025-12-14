@@ -60,13 +60,13 @@ export async function POST(req: NextRequest) {
         where: { userId: user.id },
         update: {
           onboardingCompleted: true,
-          proficiencyLevel: step1?.proficiencyLevel || null,
+          proficiencyLevel: step1?.proficiencyLevel || undefined,
           goals: step1?.goals || [],
         },
         create: {
           userId: user.id,
           onboardingCompleted: true,
-          proficiencyLevel: step1?.proficiencyLevel || null,
+          proficiencyLevel: step1?.proficiencyLevel || undefined,
           goals: step1?.goals || [],
         },
       });
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
             action: "CREATE",
             entity: "Onboarding",
             entityId: "partial_complete",
-            before: null,
+            before: Prisma.DbNull,
             after: { step: "partial_complete", data },
           },
         });
@@ -118,13 +118,13 @@ export async function POST(req: NextRequest) {
           where: { userId: user.id },
           update: {
             onboardingCompleted: true,
-            proficiencyLevel: step1?.proficiencyLevel || null,
+            proficiencyLevel: step1?.proficiencyLevel || undefined,
             goals: step1?.goals || [],
           },
           create: {
             userId: user.id,
             onboardingCompleted: true,
-            proficiencyLevel: step1?.proficiencyLevel || null,
+            proficiencyLevel: step1?.proficiencyLevel || undefined,
             goals: step1?.goals || [],
           },
         });
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
             action: "CREATE",
             entity: "Onboarding",
             entityId: "complete",
-            before: null,
+            before: Prisma.DbNull,
             after: {
               step: "complete",
               proficiencyLevel: step1?.proficiencyLevel,

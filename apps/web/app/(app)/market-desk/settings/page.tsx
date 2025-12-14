@@ -103,6 +103,20 @@ export default function SettingsPage() {
                     Configure the AI provider for the Analyst Workbench. Supports OpenAI, Anthropic (Claude), Google Gemini, OpenRouter, local Ollama, or a custom endpoint.
                 </p>
 
+                {/* Security Notice */}
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                    <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <div className="flex-1">
+                        <p className="text-sm text-emerald-800 dark:text-emerald-300 font-medium">Your API keys are secure</p>
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
+                            All API keys are encrypted with AES-256 before storage and transmitted securely over TLS 1.3. Your credentials are never shared or used for training AI models.
+                            <a href="/security" className="underline hover:text-emerald-900 dark:hover:text-emerald-200 ml-1" target="_blank" rel="noopener">Learn more</a>
+                        </p>
+                    </div>
+                </div>
+
                 <div className="space-y-4">
                     {/* Provider */}
                     <div>
@@ -135,7 +149,10 @@ export default function SettingsPage() {
 
                     {/* API Key */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
                             API Key {hasApiKey && <span className="text-emerald-600 dark:text-emerald-400">(configured)</span>}
                         </label>
                         <input
@@ -146,7 +163,7 @@ export default function SettingsPage() {
                             placeholder={hasApiKey ? "••••••••••••••••" : "Enter API key"}
                         />
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            Leave blank to use environment variable or keep existing key.
+                            🔒 Encrypted with AES-256 at rest. Leave blank to keep existing key.
                         </p>
                     </div>
 

@@ -92,6 +92,7 @@ export default function Page() {
             <a className="hover:text-gold-600 dark:hover:text-gold-400 transition-colors" href="#vision">Vision</a>
             <a className="hover:text-gold-600 dark:hover:text-gold-400 transition-colors" href="#suite">Products</a>
             <a className="hover:text-gold-600 dark:hover:text-gold-400 transition-colors" href="#market-desk">Market Desk</a>
+            <a className="hover:text-gold-600 dark:hover:text-gold-400 transition-colors" href="#security">Security</a>
             <a className="hover:text-gold-600 dark:hover:text-gold-400 transition-colors" href="#faq">FAQ</a>
           </nav>
           <div className="flex items-center gap-3">
@@ -249,8 +250,65 @@ export default function Page() {
         </div>
       </section>
 
+      {/* Security & Privacy */}
+      <section id="security" className="border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-950">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-semibold">Security & Privacy</h2>
+            <p className="mt-2 text-gray-600 dark:text-slate-300">Built with trust, transparency, and ethical AI use at the core</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Encryption at Rest */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-white dark:bg-slate-800 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium">Encrypted at Rest</h3>
+              </div>
+              <p className="text-gray-600 dark:text-slate-300">All API keys and sensitive credentials are encrypted using AES-256 encryption before being stored in our database. Your secrets are never stored in plain text.</p>
+            </div>
+
+            {/* Encryption in Transit */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-white dark:bg-slate-800 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium">Secured in Transit</h3>
+              </div>
+              <p className="text-gray-600 dark:text-slate-300">All data transmission uses TLS 1.3 encryption. Your information is protected end-to-end from your browser to our servers and back.</p>
+            </div>
+
+            {/* Ethical AI */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 bg-white dark:bg-slate-800 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium">Ethical AI Use</h3>
+              </div>
+              <p className="text-gray-600 dark:text-slate-300">We use AI to enhance your analysis, not to train on your private data. Your financial information stays yours. AI providers process requests ephemerally with no data retention.</p>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-600 dark:text-slate-400">
+              Questions about security? Read our detailed <a href="/security" className="text-gold-600 dark:text-gold-400 hover:underline font-medium">security documentation</a>
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Signup */}
-      <section id="signup" className="border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-950">
+      <section id="signup" className="border-t dark:border-slate-700">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 grid lg:grid-cols-2 gap-10 items-center">
           <div>
             <h2 className="text-2xl font-semibold">Join the early list</h2>
