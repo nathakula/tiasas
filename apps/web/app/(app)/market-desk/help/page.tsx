@@ -29,6 +29,7 @@ export default function HelpPage() {
           <a href="#connections" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Connections</a>
           <a href="#positions" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Positions</a>
           <a href="#ai" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Analyst's Bench (AI)</a>
+          <a href="#workspace-sharing" className="text-blue-600 dark:text-gold-400 hover:text-blue-800 dark:hover:text-gold-300 hover:underline">→ Workspace Sharing</a>
         </div>
       </div>
 
@@ -629,6 +630,204 @@ export default function HelpPage() {
         </div>
       </section>
 
+      {/* Workspace Sharing Section */}
+      <section id="workspace-sharing" className="mb-12 scroll-mt-6">
+        <div className="border-l-4 border-emerald-500 dark:border-emerald-400 pl-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-4">👥 Workspace Sharing</h2>
+
+          <p className="text-gray-700 dark:text-slate-300 mb-4">
+            <strong>Workspace Sharing</strong> allows you to collaborate with others on TIASAS by sharing your workspace with different permission levels.
+            Perfect for families managing trading accounts together, hedge fund teams with analysts and managers, or mentors working with students.
+            Control exactly what each person can see and do in your workspace with role-based access control.
+          </p>
+
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">Why Workspace Sharing?</h3>
+          <p className="text-gray-700 dark:text-slate-300 mb-4">
+            Many trading scenarios require multiple people to access the same trading data:
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 mb-4">
+            <li><strong>Family Trading:</strong> Share portfolios between family members (e.g., Srinath and Sridhar managing separate accounts but wanting visibility into each other's performance)</li>
+            <li><strong>Hedge Fund Teams:</strong> A fund manager with multiple analysts - Junior Analysts get view-only access, Senior Analysts can edit, Chief Analyst can manage connections</li>
+            <li><strong>Mentorship:</strong> Trading coaches can view student accounts to provide feedback without making changes</li>
+            <li><strong>Multi-Portfolio Management:</strong> Manage 5 different portfolios with different team members assigned to each</li>
+          </ul>
+
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">The 4 Permission Levels:</h3>
+
+          <div className="space-y-3 mb-6">
+            <div className="bg-purple-50 dark:bg-purple-950/30 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+              <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">👑 OWNER - Full Control</h4>
+              <p className="text-gray-700 dark:text-slate-300 mb-2">
+                The workspace creator with complete control. Can do everything including managing members and changing roles.
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 text-sm ml-4">
+                <li>View all data (journal, positions, P&L, performance)</li>
+                <li>Edit journal entries and daily P&L</li>
+                <li>Manage broker connections</li>
+                <li>Invite new members and manage permissions</li>
+                <li>Change member roles or remove members</li>
+                <li>Delete the workspace</li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+              <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">⚙️ ADMIN - Management Access</h4>
+              <p className="text-gray-700 dark:text-slate-300 mb-2">
+                Trusted team members who can manage workspace settings and invite others. Cannot change roles or remove members.
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 text-sm ml-4">
+                <li>View all data (journal, positions, P&L, performance)</li>
+                <li>Edit journal entries and daily P&L</li>
+                <li>Manage broker connections (add, edit, sync)</li>
+                <li>Invite new members to the workspace</li>
+                <li>Cannot change member roles or remove members</li>
+              </ul>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-200 dark:border-green-800">
+              <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">✏️ MEMBER - Edit Access</h4>
+              <p className="text-gray-700 dark:text-slate-300 mb-2">
+                Can view and edit trading data but cannot manage workspace settings or invite others.
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 text-sm ml-4">
+                <li>View all data (journal, positions, P&L, performance)</li>
+                <li>Create, edit, and delete journal entries</li>
+                <li>Add and edit daily P&L records</li>
+                <li>Cannot manage broker connections</li>
+                <li>Cannot invite members or change permissions</li>
+              </ul>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+              <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">👁️ VIEWER - Read-Only Access</h4>
+              <p className="text-gray-700 dark:text-slate-300 mb-2">
+                Can only view data, perfect for observers, auditors, or junior team members who are learning.
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 text-sm ml-4">
+                <li>View all data (journal, positions, P&L, performance)</li>
+                <li>Export data to CSV</li>
+                <li>Cannot create, edit, or delete anything</li>
+                <li>Cannot manage connections or invite members</li>
+                <li>Read-only banner displayed on pages</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">How to Share Your Workspace:</h3>
+          <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-slate-300 mb-4">
+            <li>Navigate to <strong>Settings → Workspace</strong> in the sidebar</li>
+            <li>Click the <strong>"Invite Member"</strong> button (available to ADMIN and OWNER roles)</li>
+            <li>Enter the email address of the person you want to invite</li>
+            <li>Select their permission level (VIEWER, MEMBER, or ADMIN)</li>
+            <li>Click <strong>"Send Invitation"</strong> - an invitation link is generated</li>
+            <li>Copy the invitation link and send it to the person via email or messaging</li>
+            <li>They click the link, sign in (or create an account), and accept the invitation</li>
+            <li>They now have access to your workspace with the specified permissions</li>
+          </ol>
+
+          <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700 mb-4">
+            <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">💡 Example Use Cases:</h4>
+
+            <div className="space-y-4 mt-3">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-slate-100 mb-1">Family SaaS Scenario:</p>
+                <p className="text-gray-700 dark:text-slate-300 text-sm">
+                  Srinath has his workspace "Srinath Trading Account". He invites his brother Sridhar as a MEMBER so Sridhar can view
+                  Srinath's trades and add journal notes when they discuss strategies together. Sridhar creates his own workspace
+                  "Sridhar Trading Account" and invites Srinath as a VIEWER so Srinath can monitor performance but not make changes.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-medium text-gray-900 dark:text-slate-100 mb-1">Hedge Fund Manager Scenario:</p>
+                <p className="text-gray-700 dark:text-slate-300 text-sm">
+                  A hedge fund manager creates 5 workspaces: "Tech Portfolio", "Healthcare Portfolio", "Energy Portfolio", "Real Estate Portfolio", and "International Portfolio".
+                  Each workspace has different team members:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-slate-300 text-sm ml-4 mt-2">
+                  <li>Manager: OWNER on all 5 workspaces</li>
+                  <li>Chief Analyst: ADMIN on all 5 workspaces (can invite sector specialists)</li>
+                  <li>Senior Analyst (Tech specialist): MEMBER on Tech Portfolio, VIEWER on others</li>
+                  <li>Junior Analyst: VIEWER on assigned portfolios (learning and observing)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">Managing Workspace Members:</h3>
+          <p className="text-gray-700 dark:text-slate-300 mb-3">
+            On the <strong>Settings → Workspace</strong> page, you'll see:
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 mb-4">
+            <li><strong>Current Members Table:</strong> All workspace members with their roles and when they joined</li>
+            <li><strong>Change Roles (OWNER only):</strong> Click the role dropdown to promote/demote members (e.g., upgrade a MEMBER to ADMIN)</li>
+            <li><strong>Remove Members (OWNER only):</strong> Click the remove button to revoke someone's access instantly</li>
+            <li><strong>Pending Invitations:</strong> See all sent invitations that haven't been accepted yet</li>
+            <li><strong>Copy Invitation Link:</strong> Re-send the invitation link if needed</li>
+            <li><strong>Cancel Invitation:</strong> Revoke a pending invitation before it's accepted</li>
+          </ul>
+
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mt-6 mb-3">Viewing Shared Workspaces:</h3>
+          <p className="text-gray-700 dark:text-slate-300 mb-3">
+            When you're invited to someone else's workspace, you'll see it in the workspace selector (top of sidebar):
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 mb-4">
+            <li><strong>"My Workspaces"</strong> section shows workspaces where you're the OWNER</li>
+            <li><strong>"Shared With Me"</strong> section shows workspaces shared by others</li>
+            <li>Each workspace shows your role badge (👑 OWNER, ⚙️ ADMIN, ✏️ MEMBER, 👁️ VIEWER)</li>
+            <li>Switch between workspaces instantly using the dropdown</li>
+          </ul>
+
+          <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
+            <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">🔒 Security & Privacy:</h4>
+            <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300">
+              <li>Invitations expire after 7 days for security</li>
+              <li>Members can only access workspaces they're explicitly invited to</li>
+              <li>OWNER can remove anyone's access instantly</li>
+              <li>All permission checks are enforced at the API level - UI restrictions cannot be bypassed</li>
+              <li>Audit logs track who made what changes in the workspace</li>
+            </ul>
+          </div>
+
+          <div className="bg-yellow-50 dark:bg-yellow-950/30 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">⚡ Best Practices:</h4>
+            <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300">
+              <li><strong>Start Conservative:</strong> Invite new members as VIEWER first, then promote based on trust and need</li>
+              <li><strong>Limit ADMIN Roles:</strong> Only give ADMIN to people who truly need to manage settings and invite others</li>
+              <li><strong>Regular Audits:</strong> Review the members list monthly and remove anyone who no longer needs access</li>
+              <li><strong>Clear Communication:</strong> Let team members know their role and what they can/can't do</li>
+              <li><strong>Use Multiple Workspaces:</strong> Don't put everything in one workspace - create separate workspaces for different portfolios or strategies</li>
+            </ul>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-lg border border-amber-200 dark:border-amber-800 mt-4">
+            <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-2">❓ Common Questions:</h4>
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-slate-100">Q: Can I be a member of multiple workspaces?</p>
+                <p className="text-gray-700 dark:text-slate-300">A: Yes! You can own multiple workspaces and be invited to others. Switch between them using the workspace selector.</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-slate-100">Q: What happens if I remove someone from my workspace?</p>
+                <p className="text-gray-700 dark:text-slate-300">A: They immediately lose access to the workspace. The workspace disappears from their account.</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-slate-100">Q: Can members see each other?</p>
+                <p className="text-gray-700 dark:text-slate-300">A: All members can see the full members list on the Workspace settings page, including names and roles.</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-slate-100">Q: Can I transfer workspace ownership?</p>
+                <p className="text-gray-700 dark:text-slate-300">A: Currently, workspace ownership cannot be transferred. The OWNER role is permanent for the creator.</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-slate-100">Q: Do VIEWERs see a different interface?</p>
+                <p className="text-gray-700 dark:text-slate-300">A: VIEWERs see the same data but without edit buttons. A blue banner at the top reminds them they're in read-only mode.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Analyst's Bench (AI) Section */}
       <section id="ai" className="mb-12 scroll-mt-6">
         <div className="border-l-4 border-violet-500 dark:border-violet-400 pl-6">
@@ -736,7 +935,7 @@ export default function HelpPage() {
           </a>
         </p>
         <p className="text-sm text-gray-500 dark:text-slate-500 mt-2">
-          Last updated: December 2025 • TIASAS v1.1 • Added: Onboarding Flow
+          Last updated: December 2025 • TIASAS v1.2 • Added: Workspace Sharing & Role-Based Access Control
         </p>
       </div>
     </div>
