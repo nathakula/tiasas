@@ -24,6 +24,7 @@ model User {
   sessions          Session[]
   preferences       UserPreferences?
   onboardingProgress OnboardingProgress?
+  sentInvitations   Invitation[]        @relation("InvitedBy")
 }
 
 model Account {
@@ -73,6 +74,7 @@ model Org {
   memberships                Membership[]
   yearlyPerformanceSettings  YearlyPerformanceSettings[]
   capitalTransfers           CapitalTransfer[]
+  invitations                Invitation[]
 }
 
 model Membership {
@@ -86,6 +88,25 @@ model Membership {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, orgId])
+}
+
+model Invitation {
+  id         String           @id @default(cuid())
+  email      String
+  orgId      String
+  role       Role
+  invitedBy  String
+  token      String           @unique @default(cuid())
+  status     InvitationStatus @default(PENDING)
+  expiresAt  DateTime
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  org        Org              @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  inviter    User             @relation("InvitedBy", fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@unique([email, orgId])
+  @@index([token])
+  @@index([orgId])
 }
 
 model JournalEntry {
@@ -323,6 +344,14 @@ enum Role {
   ADMIN
   MEMBER
   VIEWER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
 }
 
 enum ConnectionProvider {

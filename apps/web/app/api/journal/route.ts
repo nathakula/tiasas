@@ -1,6 +1,6 @@
 import { db as prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { requireAuthOrgMembership } from "@/app/api/route-helpers";
+import { requireAuthOrgMembership, requireWriteAccess } from "@/app/api/route-helpers";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@tiasas/core/src/ratelimit";
@@ -13,6 +13,7 @@ const createSchema = z.object({
 });
 
 export async function GET(req: Request) {
+  // All roles can read journal entries (VIEWER+)
   const auth = await requireAuthOrgMembership();
   if ("error" in auth) return auth.error;
   const { orgId } = auth;
@@ -32,18 +33,29 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  // Require MEMBER role or higher to create journal entries
   const auth = await requireAuthOrgMembership();
   if ("error" in auth) return auth.error;
-  const { orgId, session, user } = auth as any;
-  const rl = rateLimit(`journal:${session.user.email}`);
+  const orgId = auth.orgId;
+  const session = auth.session;
+  if (!("user" in auth)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = auth.user;
+  const membership = auth.membership;
+
+  // Check MEMBER role
+  if (membership.role !== "MEMBER" && membership.role !== "ADMIN" && membership.role !== "OWNER") {
+    return NextResponse.json({ error: "Write access required" }, { status: 403 });
+  }
+
+  const rl = rateLimit(`journal:${session.user?.email || "unknown"}`);
   if (!rl.ok) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const created = await prisma.journalEntry.create({
-    data: { orgId, userId: user!.id, date: new Date(parsed.data.date), text: parsed.data.text, tags: parsed.data.tags },
+    data: { orgId, userId: user.id, date: new Date(parsed.data.date), text: parsed.data.text, tags: parsed.data.tags },
   });
-  await prisma.auditLog.create({ data: { orgId, userId: user!.id, action: "CREATE", entity: "JournalEntry", entityId: created.id, before: Prisma.DbNull, after: JSON.parse(JSON.stringify(created)) } });
+  await prisma.auditLog.create({ data: { orgId, userId: user.id, action: "CREATE", entity: "JournalEntry", entityId: created.id, before: Prisma.DbNull, after: JSON.parse(JSON.stringify(created)) } });
   return NextResponse.json(created);
 }

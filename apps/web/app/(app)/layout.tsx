@@ -60,7 +60,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <NavLink href="/market-desk/connections">Connections</NavLink>
             <NavLink href="/market-desk/positions">Positions</NavLink>
             <Section label="Settings" />
-            <NavLink href="/settings">Profile & Org</NavLink>
+            <NavLink href="/settings">Profile</NavLink>
+            <NavLink href="/settings/workspace">Workspace</NavLink>
             <NavLink href="/market-desk/settings">AI Configuration</NavLink>
             <NavLink href="/market-desk/help">Help Center</NavLink>
           </nav>
