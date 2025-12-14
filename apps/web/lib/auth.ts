@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { db as prisma } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -61,10 +62,13 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   events: {
-    async signIn({ user }) {
+    async signIn({ user, account, isNewUser }) {
       try {
         const memberships = await prisma.membership.count({ where: { userId: user.id } });
+        let isFirstMembership = false;
+
         if (memberships === 0) {
+          isFirstMembership = true;
           const base = user.name?.split(" ")[0] || user.email?.split("@")[0] || "Personal";
           const org = await prisma.org.create({ data: { name: `${base}'s Workspace` } });
           await prisma.membership.create({ data: { userId: user.id, orgId: org.id, role: "OWNER" as any } });
@@ -109,8 +113,56 @@ export const authOptions: NextAuthOptions = {
             },
           });
         }
+
+        // Log successful login (audit logging)
+        const membership = await prisma.membership.findFirst({
+          where: { userId: user.id }
+        });
+
+        if (membership) {
+          await logAudit({
+            orgId: membership.orgId,
+            userId: user.id,
+            action: "LOGIN",
+            entity: "Session",
+            entityId: user.id,
+            after: {
+              method: account?.provider || "credentials",
+              isNewUser: isNewUser || isFirstMembership,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
       } catch (e) {
         console.error("signIn provisioning error", e);
+      }
+    },
+
+    async signOut({ session, token }) {
+      try {
+        // Log logout event
+        const userId = (token?.uid || (session?.user as any)?.id) as string;
+
+        if (userId) {
+          const membership = await prisma.membership.findFirst({
+            where: { userId }
+          });
+
+          if (membership) {
+            await logAudit({
+              orgId: membership.orgId,
+              userId,
+              action: "LOGOUT",
+              entity: "Session",
+              entityId: userId,
+              after: {
+                timestamp: new Date().toISOString()
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.error("signOut logging error", e);
       }
     },
   },

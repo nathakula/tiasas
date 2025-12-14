@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db as prisma } from "@/lib/db";
 import { z } from "zod";
+import { logAudit } from "@/lib/audit";
 
 const acceptInvitationSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -116,8 +117,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Create the membership and update invitation in a transaction
-    const [membership] = await prisma.$transaction([
-      prisma.membership.create({
+    const [membership] = await prisma.$transaction(async (tx) => {
+      const newMembership = await tx.membership.create({
         data: {
           userId: user.id,
           orgId: invitation.orgId,
@@ -126,12 +127,33 @@ export async function POST(req: NextRequest) {
         include: {
           org: { select: { id: true, name: true } },
         },
-      }),
-      prisma.invitation.update({
+      });
+
+      await tx.invitation.update({
         where: { id: invitation.id },
         data: { status: "ACCEPTED" },
-      }),
-    ]);
+      });
+
+      // Log invitation accepted (audit logging)
+      await tx.auditLog.create({
+        data: {
+          orgId: invitation.orgId,
+          userId: user.id,
+          action: "INVITE_ACCEPTED",
+          entity: "Invitation",
+          entityId: invitation.id,
+          before: { status: "PENDING" },
+          after: {
+            status: "ACCEPTED",
+            membershipId: newMembership.id,
+            role: invitation.role,
+            acceptedBy: user.id
+          }
+        }
+      });
+
+      return [newMembership];
+    });
 
     return NextResponse.json({
       success: true,

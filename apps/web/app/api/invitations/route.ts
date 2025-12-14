@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, requireAuthOrgMembership } from "../route-helpers";
 import { db as prisma } from "@/lib/db";
 import { z } from "zod";
+import { logAudit } from "@/lib/audit";
 
 const createInvitationSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -127,6 +128,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Log invitation sent (audit logging)
+    await logAudit({
+      orgId,
+      userId: user.id,
+      action: "INVITE_SENT",
+      entity: "Invitation",
+      entityId: invitation.id,
+      after: {
+        email: invitation.email,
+        role: invitation.role,
+        expiresAt: invitation.expiresAt.toISOString(),
+        invitedBy: user.id
+      }
+    });
+
     // TODO: Send email notification to invited user
     // This would integrate with your email service (SendGrid, Resend, etc.)
     // await sendInvitationEmail({
@@ -200,6 +216,20 @@ export async function DELETE(req: NextRequest) {
     await prisma.invitation.update({
       where: { id: invitation.id },
       data: { status: "CANCELLED" },
+    });
+
+    // Log invitation cancelled (audit logging)
+    if (!("user" in res)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = res.user;
+
+    await logAudit({
+      orgId,
+      userId: user.id,
+      action: "INVITE_CANCELLED",
+      entity: "Invitation",
+      entityId: invitation.id,
+      before: { status: "PENDING", email: invitation.email, role: invitation.role },
+      after: { status: "CANCELLED" }
     });
 
     return NextResponse.json({ success: true });
