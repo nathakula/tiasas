@@ -12,8 +12,9 @@ export default withAuth(
 
         // Public routes that don't require authentication
         const publicRoutes = [
-          "/api/invitations/accept", // GET endpoint for invitation details
+          "/api/invitations/accept", // GET endpoint for invitation details (unauthenticated preview)
           "/api/auth/register",
+          "/api/auth", // NextAuth routes
         ];
 
         // Allow public routes without token
@@ -21,7 +22,7 @@ export default withAuth(
           return true;
         }
 
-        // All other routes require authentication
+        // All other matched routes require authentication
         return !!token;
       },
     },
