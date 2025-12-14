@@ -14,8 +14,8 @@ function Write-Log {
 Write-Log "======================================" "Yellow"
 Write-Log "Stopping TiasasWeb..." "Yellow"
 
-# Find processes using port 13000
-$processes = netstat -ano | Select-String ":13000" | ForEach-Object {
+# Find processes using port 13000 (only LISTENING state, ignore TIME_WAIT)
+$processes = netstat -ano | Select-String ":13000" | Where-Object { $_ -match "LISTENING" } | ForEach-Object {
     $line = $_.Line.Trim()
     $parts = $line -split '\s+'
     if ($parts.Length -ge 5) {
@@ -29,7 +29,8 @@ if ($processes) {
     $killFailCount = 0
 
     foreach ($processId in $processes) {
-        if ($processId -match '^\d+$') {
+        # Skip PID 0 (System Idle Process) and ensure it's a valid number
+        if ($processId -match '^\d+$' -and $processId -ne "0") {
             try {
                 $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
                 if ($proc) {
@@ -51,10 +52,10 @@ if ($processes) {
     Write-Log "Waiting 2 seconds for processes to terminate..." "Cyan"
     Start-Sleep -Seconds 2
 
-    # Verify port is free
-    $stillRunning = netstat -ano | Select-String ":13000"
+    # Verify port is free (check for LISTENING state only, ignore TIME_WAIT)
+    $stillRunning = netstat -ano | Select-String ":13000" | Where-Object { $_ -match "LISTENING" }
     if ($stillRunning) {
-        Write-Log "WARNING: Port 13000 may still be in use after cleanup" "Yellow"
+        Write-Log "WARNING: Port 13000 still has LISTENING processes after cleanup" "Yellow"
         Write-Log "Killed $killSuccessCount process(es), $killFailCount failed" "Yellow"
         Write-Log "Stop operation completed with warnings" "Yellow"
         exit 0  # Exit success even with warnings - port might free up

@@ -14,11 +14,11 @@ function Write-Log {
 Write-Log "======================================" "Yellow"
 Write-Log "Starting TiasasWeb..." "Yellow"
 
-# Check if already running
+# Check if already running (only check LISTENING state, ignore TIME_WAIT)
 Write-Log "Checking if port 13000 is already in use..." "Cyan"
-$existingProcess = netstat -ano | Select-String ":13000"
+$existingProcess = netstat -ano | Select-String ":13000" | Where-Object { $_ -match "LISTENING" }
 if ($existingProcess) {
-    Write-Log "WARNING: Port 13000 is already in use" "Yellow"
+    Write-Log "WARNING: Port 13000 is in LISTENING state" "Yellow"
     Write-Log "Attempting to clean up existing processes..." "Yellow"
 
     # Try to kill the existing processes
@@ -31,7 +31,7 @@ if ($existingProcess) {
     } | Select-Object -Unique
 
     foreach ($processId in $processes) {
-        if ($processId -match '^\d+$') {
+        if ($processId -match '^\d+$' -and $processId -ne "0") {
             try {
                 $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
                 if ($proc) {
@@ -49,17 +49,17 @@ if ($existingProcess) {
     Write-Log "Waiting 3 seconds for port to free up..." "Cyan"
     Start-Sleep -Seconds 3
 
-    # Verify port is now free
-    $stillBlocked = netstat -ano | Select-String ":13000"
+    # Verify port is now free (only check LISTENING state)
+    $stillBlocked = netstat -ano | Select-String ":13000" | Where-Object { $_ -match "LISTENING" }
     if ($stillBlocked) {
-        Write-Log "ERROR: Port 13000 is still blocked after cleanup attempt" "Red"
+        Write-Log "ERROR: Port 13000 is still in LISTENING state after cleanup" "Red"
         Write-Log "Manual intervention required - check Task Manager" "Yellow"
         Write-Log "Start operation aborted" "Red"
         exit 1
     }
     Write-Log "Port 13000 is now available after cleanup" "Green"
 } else {
-    Write-Log "Port 13000 is available" "Green"
+    Write-Log "Port 13000 is available (no LISTENING processes)" "Green"
 }
 
 # Check if build exists
@@ -93,16 +93,16 @@ try {
     $taskInfoAfter = Get-ScheduledTask -TaskName "TiasasWeb" -ErrorAction Stop
     Write-Log "Task state after start command: $($taskInfoAfter.State)" "Cyan"
 
-    # Verify it's running
+    # Verify it's running (check for LISTENING state)
     Write-Log "Verifying service is accessible on port 13000..." "Cyan"
-    $running = netstat -ano | Select-String ":13000"
+    $running = netstat -ano | Select-String ":13000" | Where-Object { $_ -match "LISTENING" }
     if ($running) {
         $processInfo = $running -join ', '
         Write-Log "SUCCESS: TiasasWeb is running on port 13000" "Green"
         Write-Log "Process info: $processInfo" "Cyan"
         Write-Log "Access the app at: http://localhost:13000" "Green"
     } else {
-        Write-Log "WARNING: Port 13000 is not responding" "Yellow"
+        Write-Log "WARNING: Port 13000 is not in LISTENING state" "Yellow"
         Write-Log "Task state is: $($taskInfoAfter.State)" "Yellow"
         Write-Log "Check Task Scheduler for errors or run the task manually" "Yellow"
     }
