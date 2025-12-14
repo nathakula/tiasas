@@ -41,17 +41,25 @@ function AcceptInviteContent() {
 
     // Fetch invitation details
     fetch(`/api/invitations/accept?token=${token}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      })
       .then((data) => {
         if (data.error) {
           setError(data.error);
-        } else {
+        } else if (data.invitation) {
           setInvitation(data.invitation);
+        } else {
+          setError("Invalid response from server");
         }
         setLoading(false);
       })
       .catch((err) => {
-        setError("Failed to load invitation");
+        console.error("Invitation fetch error:", err);
+        setError(`Failed to load invitation: ${err.message}`);
         setLoading(false);
       });
   }, [token]);

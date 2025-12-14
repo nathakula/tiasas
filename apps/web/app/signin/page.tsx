@@ -1,12 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/logo";
 import Link from "next/link";
 
-export default function SignIn() {
+function SignInContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/market-desk";
   const [data, setData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -25,7 +27,7 @@ export default function SignIn() {
       if (res?.error) {
         setError("Invalid email or password");
       } else {
-        router.push("/market-desk");
+        router.push(callbackUrl as any);
         router.refresh();
       }
     } catch (err: any) {
@@ -55,7 +57,7 @@ export default function SignIn() {
         <div className="space-y-4">
           <button
             className="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-            onClick={() => signIn("google", { callbackUrl: "/market-desk" })}
+            onClick={() => signIn("google", { callbackUrl })}
           >
             <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="h-5 w-5 mr-3" />
             Continue with Google
@@ -112,5 +114,27 @@ export default function SignIn() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SignIn() {
+  return (
+    <Suspense
+      fallback={
+        <main className="max-w-md mx-auto px-6 py-16">
+          <div className="card p-8">
+            <div className="flex justify-center mb-4">
+              <Logo size="md" />
+            </div>
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-slate-600 dark:text-slate-400">Loading...</p>
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <SignInContent />
+    </Suspense>
   );
 }
