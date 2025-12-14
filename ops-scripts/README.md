@@ -44,8 +44,17 @@ Starts the Next.js production server.
 - `stop-service.ps1` - PowerShell stop script
 - `start-service.ps1` - PowerShell start script
 
+## How It Works
+
+These scripts interact with the Windows Task Scheduler task named "TiasasWeb":
+
+- **Stop:** Kills the Node.js process running on port 13000
+- **Start:** Triggers the Task Scheduler task to start the service
+- **Restart:** Stops the process, then triggers the task to start it again
+
 ## Notes
 
 - All batch files run with administrator privileges automatically
 - Scripts use port 13000 for the TiasasWeb application
-- The working directory is automatically set to the project root
+- The Task Scheduler task must be named "TiasasWeb" (case-sensitive)
+- After stopping, the task status shows "Ready" until you start it again

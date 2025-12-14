@@ -1,5 +1,5 @@
 # Start TiasasWeb Service
-# Starts the Next.js production server on port 13000
+# Starts the TiasasWeb Task Scheduler task
 
 Write-Host "Starting TiasasWeb..." -ForegroundColor Yellow
 
@@ -11,37 +11,35 @@ if ($existingProcess) {
     exit 1
 }
 
-# Set working directory (parent of ops-scripts)
-$projectPath = Split-Path -Parent $PSScriptRoot
-Set-Location $projectPath
-
 # Check if build exists
+$projectPath = Split-Path -Parent $PSScriptRoot
 if (-not (Test-Path "$projectPath\apps\web\.next")) {
     Write-Host "Build not found. Please run 'pnpm build' first." -ForegroundColor Red
     exit 1
 }
 
-Write-Host "Starting Next.js production server..." -ForegroundColor Cyan
+Write-Host "Starting TiasasWeb Task Scheduler task..." -ForegroundColor Cyan
 
-# Start the process in the background
-$env:NODE_ENV = "production"
-$process = Start-Process -FilePath "pnpm" `
-    -ArgumentList "--filter @tiasas/web start" `
-    -WorkingDirectory $projectPath `
-    -WindowStyle Hidden `
-    -PassThru
+try {
+    # Start the Task Scheduler task
+    Start-ScheduledTask -TaskName "TiasasWeb" -ErrorAction Stop
+    Write-Host "Task Scheduler task 'TiasasWeb' started successfully!" -ForegroundColor Green
 
-Write-Host "TiasasWeb started successfully!" -ForegroundColor Green
-Write-Host "Process ID: $($process.Id)" -ForegroundColor Cyan
-Write-Host "Access the app at: http://localhost:13000" -ForegroundColor Cyan
+    # Wait a moment for the task to start the process
+    Write-Host "Waiting for service to start..." -ForegroundColor Cyan
+    Start-Sleep -Seconds 5
 
-# Wait a moment and verify it's running
-Start-Sleep -Seconds 3
-
-$running = netstat -ano | Select-String ":13000"
-if ($running) {
-    Write-Host "Verified: Server is running on port 13000" -ForegroundColor Green
-} else {
-    Write-Host "Warning: Server may not have started correctly" -ForegroundColor Yellow
-    Write-Host "Check the logs for errors" -ForegroundColor Yellow
+    # Verify it's running
+    $running = netstat -ano | Select-String ":13000"
+    if ($running) {
+        Write-Host "Verified: TiasasWeb is running on port 13000" -ForegroundColor Green
+        Write-Host "Access the app at: http://localhost:13000" -ForegroundColor Cyan
+    } else {
+        Write-Host "Warning: Service may not have started correctly" -ForegroundColor Yellow
+        Write-Host "Check Task Scheduler for errors or run the task manually" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "Error starting Task Scheduler task: $_" -ForegroundColor Red
+    Write-Host "Please ensure the 'TiasasWeb' task exists in Task Scheduler" -ForegroundColor Yellow
+    exit 1
 }
