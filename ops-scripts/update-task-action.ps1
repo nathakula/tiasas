@@ -26,8 +26,10 @@ try {
     Set-ScheduledTask -TaskName "TiasasWeb" -Action $action
     Write-Host "Task action updated successfully!" -ForegroundColor Green
     Write-Host ""
-    Write-Host "The task now runs: pnpm --filter @tiasas/web start" -ForegroundColor Cyan
+    Write-Host "The task now runs: $batchPath" -ForegroundColor Cyan
     Write-Host "Working directory: $projectPath" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "The batch file will keep running (blocking) to maintain task status." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "You can now use the restart-service.bat script!" -ForegroundColor Green
 } catch {

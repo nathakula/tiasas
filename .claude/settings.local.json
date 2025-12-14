@@ -15,7 +15,8 @@
       "Bash(git add:*)",
       "Bash(pnpm build:*)",
       "Bash(cat:*)",
-      "Bash(SKIP_TYPE_CHECK=true pnpm build:*)"
+      "Bash(SKIP_TYPE_CHECK=true pnpm build:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

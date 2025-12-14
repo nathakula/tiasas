@@ -3,6 +3,7 @@ import { requireAdmin, requireAuthOrgMembership } from "../route-helpers";
 import { db as prisma } from "@/lib/db";
 import { z } from "zod";
 import { logAudit } from "@/lib/audit";
+import { Prisma } from "@tiasas/database";
 
 /**
  * GET /api/members
@@ -208,7 +209,7 @@ export async function DELETE(req: NextRequest) {
           entity: "Membership",
           entityId: targetMembership.id,
           before: { userId: userId, role: targetMembership.role },
-          after: null
+          after: Prisma.DbNull
         }
       });
     });
