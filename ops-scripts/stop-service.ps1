@@ -25,6 +25,9 @@ $processes = netstat -ano | Select-String ":13000" | ForEach-Object {
 
 if ($processes) {
     Write-Log "Found $($processes.Count) process(es) on port 13000" "Cyan"
+    $killSuccessCount = 0
+    $killFailCount = 0
+
     foreach ($processId in $processes) {
         if ($processId -match '^\d+$') {
             try {
@@ -33,9 +36,13 @@ if ($processes) {
                     Write-Log "Killing process: $($proc.Name) (PID: $processId)" "Cyan"
                     Stop-Process -Id $processId -Force
                     Write-Log "Successfully stopped process $processId" "Green"
+                    $killSuccessCount++
+                } else {
+                    Write-Log "Process $processId already terminated" "Yellow"
                 }
             } catch {
                 Write-Log "Failed to stop process $processId : $_" "Red"
+                $killFailCount++
             }
         }
     }
@@ -47,12 +54,18 @@ if ($processes) {
     # Verify port is free
     $stillRunning = netstat -ano | Select-String ":13000"
     if ($stillRunning) {
-        Write-Log "Warning: Port 13000 may still be in use" "Yellow"
+        Write-Log "WARNING: Port 13000 may still be in use after cleanup" "Yellow"
+        Write-Log "Killed $killSuccessCount process(es), $killFailCount failed" "Yellow"
+        Write-Log "Stop operation completed with warnings" "Yellow"
+        exit 0  # Exit success even with warnings - port might free up
     } else {
         Write-Log "TiasasWeb stopped successfully. Port 13000 is now free." "Green"
+        Write-Log "Killed $killSuccessCount process(es)" "Green"
+        Write-Log "Stop operation completed successfully" "Green"
+        exit 0
     }
 } else {
-    Write-Log "No processes found running on port 13000" "Yellow"
+    Write-Log "No processes found running on port 13000 (already stopped)" "Yellow"
+    Write-Log "Stop operation completed (nothing to stop)" "Green"
+    exit 0
 }
-
-Write-Log "Stop operation completed" "Yellow"

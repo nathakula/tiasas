@@ -18,13 +18,49 @@ Write-Log "Starting TiasasWeb..." "Yellow"
 Write-Log "Checking if port 13000 is already in use..." "Cyan"
 $existingProcess = netstat -ano | Select-String ":13000"
 if ($existingProcess) {
-    Write-Log "ERROR: TiasasWeb is already running on port 13000" "Red"
-    Write-Log "Existing process detected: $($existingProcess -join ', ')" "Yellow"
-    Write-Log "Run stop-service.bat first to stop the existing process" "Yellow"
-    Write-Log "Start operation aborted" "Red"
-    exit 1
+    Write-Log "WARNING: Port 13000 is already in use" "Yellow"
+    Write-Log "Attempting to clean up existing processes..." "Yellow"
+
+    # Try to kill the existing processes
+    $processes = $existingProcess | ForEach-Object {
+        $line = $_.Line.Trim()
+        $parts = $line -split '\s+'
+        if ($parts.Length -ge 5) {
+            $parts[4]
+        }
+    } | Select-Object -Unique
+
+    foreach ($processId in $processes) {
+        if ($processId -match '^\d+$') {
+            try {
+                $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
+                if ($proc) {
+                    Write-Log "Force killing process: $($proc.Name) (PID: $processId)" "Cyan"
+                    Stop-Process -Id $processId -Force
+                    Write-Log "Killed process $processId" "Green"
+                }
+            } catch {
+                Write-Log "Failed to kill process $processId : $_" "Red"
+            }
+        }
+    }
+
+    # Wait for cleanup
+    Write-Log "Waiting 3 seconds for port to free up..." "Cyan"
+    Start-Sleep -Seconds 3
+
+    # Verify port is now free
+    $stillBlocked = netstat -ano | Select-String ":13000"
+    if ($stillBlocked) {
+        Write-Log "ERROR: Port 13000 is still blocked after cleanup attempt" "Red"
+        Write-Log "Manual intervention required - check Task Manager" "Yellow"
+        Write-Log "Start operation aborted" "Red"
+        exit 1
+    }
+    Write-Log "Port 13000 is now available after cleanup" "Green"
+} else {
+    Write-Log "Port 13000 is available" "Green"
 }
-Write-Log "Port 13000 is available" "Green"
 
 # Check if build exists
 $projectPath = Split-Path -Parent $PSScriptRoot
@@ -71,7 +107,8 @@ try {
         Write-Log "Check Task Scheduler for errors or run the task manually" "Yellow"
     }
 
-    Write-Log "Start operation completed" "Green"
+    Write-Log "Start operation completed successfully" "Green"
+    exit 0
 } catch {
     Write-Log "ERROR: Failed to start Task Scheduler task: $_" "Red"
     Write-Log "Exception type: $($_.Exception.GetType().FullName)" "Red"
