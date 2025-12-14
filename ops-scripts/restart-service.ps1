@@ -1,21 +1,54 @@
 # Restart TiasasWeb Service
 # Stops and then starts the Next.js production server
 
-Write-Host "Restarting TiasasWeb..." -ForegroundColor Yellow
-Write-Host "=====================================`n" -ForegroundColor Yellow
+# Setup logging
+$logFile = Join-Path $PSScriptRoot "service-management.log"
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+function Write-Log {
+    param($Message, $Color = "White")
+    $logMessage = "[$timestamp] [RESTART] $Message"
+    Add-Content -Path $logFile -Value $logMessage
+    Write-Host $Message -ForegroundColor $Color
+}
+
+Write-Log "==========================================" "Yellow"
+Write-Log "RESTART OPERATION STARTED" "Yellow"
+Write-Log "==========================================" "Yellow"
 
 # Stop the service
-Write-Host "Step 1: Stopping TiasasWeb..." -ForegroundColor Cyan
+Write-Log "" "White"
+Write-Log "Step 1/2: Stopping TiasasWeb..." "Cyan"
+Write-Log "Calling stop-service.ps1..." "Cyan"
 & "$PSScriptRoot\stop-service.ps1"
 
-Write-Host "`n=====================================`n" -ForegroundColor Yellow
+if ($LASTEXITCODE -ne 0) {
+    Write-Log "WARNING: Stop script exited with code $LASTEXITCODE" "Yellow"
+} else {
+    Write-Log "Stop script completed successfully" "Green"
+}
+
+Write-Log "" "White"
+Write-Log "==========================================" "Yellow"
+Write-Log "" "White"
 
 # Wait a moment
+Write-Log "Waiting 2 seconds before starting..." "Cyan"
 Start-Sleep -Seconds 2
 
 # Start the service
-Write-Host "Step 2: Starting TiasasWeb..." -ForegroundColor Cyan
+Write-Log "Step 2/2: Starting TiasasWeb..." "Cyan"
+Write-Log "Calling start-service.ps1..." "Cyan"
 & "$PSScriptRoot\start-service.ps1"
 
-Write-Host "`n=====================================" -ForegroundColor Yellow
-Write-Host "Restart complete!" -ForegroundColor Green
+if ($LASTEXITCODE -ne 0) {
+    Write-Log "ERROR: Start script exited with code $LASTEXITCODE" "Red"
+    Write-Log "RESTART OPERATION FAILED" "Red"
+    exit 1
+} else {
+    Write-Log "Start script completed successfully" "Green"
+}
+
+Write-Log "" "White"
+Write-Log "==========================================" "Yellow"
+Write-Log "RESTART OPERATION COMPLETED SUCCESSFULLY" "Green"
+Write-Log "==========================================" "Yellow"
