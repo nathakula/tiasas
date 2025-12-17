@@ -43,21 +43,23 @@ interface BenchmarkData {
 
 interface MonthlyData {
   month: string;
-  realized: number;
+  realized: number | null;
   navEnd: number | null;
+  // ... other fields if needed for chart
 }
 
-function AnimatedPerformanceStat({ value, suffix = "%", prefix = "" }: { value: number; suffix?: string; prefix?: string }) {
-  const animated = useCounterAnimation(value, 3000);
-  return (
-    <span>{prefix}{animated.toFixed(2)}{suffix}</span>
-  );
-}
+// Map the server type to client type if needed, or just use compatible shapes
+import { MonthlyPnlRow } from "@/lib/performance";
 
-
-export function PerformanceClient() {
+export function PerformanceClient({ initialMonthlyData, orgId }: { initialMonthlyData: MonthlyPnlRow[]; orgId: string }) {
   const [data, setData] = useState<BenchmarkData | null>(null);
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+
+  // Transform initial data to shape expected by chart if different, currently compatible mostly
+  const [monthlyData, setMonthlyData] = useState<any[]>(initialMonthlyData.map(m => ({
+    month: m.month,
+    realized: m.realized ?? 0,
+    navEnd: m.endNav,
+  })));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -76,16 +78,25 @@ export function PerformanceClient() {
         setLoading(true);
         setError(null);
 
-        // Fetch Performance & Benchmarks
-        const resPerf = await fetch(`/api/performance/benchmarks?year=${selectedYear}`);
+        // Fetch Performance & Benchmarks (Still client side for now, could move too but user said that was working)
+        const timestamp = new Date().getTime();
+        const resPerf = await fetch(`/api/performance/benchmarks?year=${selectedYear}&_t=${timestamp}`, { cache: "no-store" });
 
-        // Fetch Monthly PnL & NAV
-        const resMonthly = await fetch(`/api/pnl/monthly?year=${selectedYear}`);
+        // Only fetch monthly if we selected a different year than initial, OR if we want to ensure freshness
+        // But since we just mounted with fresh server data (thanks to key={orgId}), we might not need to fetch monthly immediately.
+        // However, if user changes year, we DO need to fetch.
 
-        // Handle Monthly Data
+        let months = [];
+        if (selectedYear === new Date().getFullYear() && initialMonthlyData && monthlyData.length > 0) {
+          // For current year on mount, we might already have it.
+          // But simpler to just fetch to be consistent when changing years.
+          // Actually, let's use the API for year changes.
+        }
+
+        const resMonthly = await fetch(`/api/pnl/monthly?year=${selectedYear}&_t=${timestamp}`, { cache: "no-store" });
         if (resMonthly.ok) {
           const mJson = await resMonthly.json();
-          const months = (mJson.months || []).map((m: any) => ({
+          months = (mJson.months || []).map((m: any) => ({
             month: m.month,
             realized: Number(m.realized ?? 0),
             navEnd: m.endNav == null ? null : Number(m.endNav),
@@ -252,8 +263,7 @@ export function PerformanceClient() {
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Your Return</p>
               <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-                {data.userReturn > 0 ? "+" : ""}
-                <AnimatedPerformanceStat key={`user-${data.userReturn}`} value={data.userReturn} />
+                {data.userReturn > 0 ? "+" : ""}{data.userReturn.toFixed(2)}%
               </p>
               <p className="text-xs text-slate-600 dark:text-slate-500 mt-2">
                 ${(data.currentEquity - data.startingCapital).toLocaleString()}
@@ -281,8 +291,7 @@ export function PerformanceClient() {
                     className={`text-3xl font-bold ${isOutperforming ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                       }`}
                   >
-                    {perf.difference > 0 ? "+" : ""}
-                    <AnimatedPerformanceStat key={`diff-${perf.symbol}`} value={perf.difference} suffix="pp" />
+                    {perf.difference > 0 ? "+" : ""}{perf.difference.toFixed(2)}pp
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                     {isOutperforming ? "Outperforming" : "Underperforming"}
@@ -366,8 +375,7 @@ export function PerformanceClient() {
                 <td className="py-3 font-medium text-slate-900 dark:text-slate-100">Your Portfolio</td>
                 <td className="py-3 text-slate-600 dark:text-slate-400">—</td>
                 <td className="py-3 text-right font-mono font-bold text-yellow-600 dark:text-yellow-400">
-                  {data.userReturn > 0 ? "+" : ""}
-                  <AnimatedPerformanceStat key={`table-user-${data.userReturn}`} value={data.userReturn} />
+                  {data.userReturn > 0 ? "+" : ""}{data.userReturn.toFixed(2)}%
                 </td>
                 <td className="py-3 text-right text-slate-600 dark:text-slate-400">—</td>
               </tr>
@@ -387,15 +395,13 @@ export function PerformanceClient() {
                       {benchmark.symbol}
                     </td>
                     <td className="py-3 text-right font-mono text-slate-700 dark:text-slate-300">
-                      {benchmark.ytdReturn > 0 ? "+" : ""}
-                      <AnimatedPerformanceStat key={`table-${benchmark.symbol}`} value={benchmark.ytdReturn} />
+                      {benchmark.ytdReturn > 0 ? "+" : ""}{benchmark.ytdReturn.toFixed(2)}%
                     </td>
                     <td
                       className={`py-3 text-right font-mono font-medium ${isOutperforming ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                         }`}
                     >
-                      {diff > 0 ? "+" : ""}
-                      <AnimatedPerformanceStat key={`table-diff-${benchmark.symbol}`} value={diff} suffix="pp" />
+                      {diff > 0 ? "+" : ""}{diff.toFixed(2)}pp
                     </td>
                   </tr>
                 );

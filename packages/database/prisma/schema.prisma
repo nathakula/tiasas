@@ -75,6 +75,7 @@ model Org {
   yearlyPerformanceSettings  YearlyPerformanceSettings[]
   capitalTransfers           CapitalTransfer[]
   invitations                Invitation[]
+  googleDriveIntegration     IntegrationGoogleDrive?
 }
 
 model Membership {
@@ -498,4 +499,47 @@ enum ProficiencyLevel {
   INTERMEDIATE
   ADVANCED
   PROFESSIONAL
+}
+
+// Google Drive Integration Models
+model IntegrationGoogleDrive {
+  id                      String   @id @default(cuid())
+  orgId                   String
+  enabled                 Boolean  @default(true)
+  folderId                String
+  refreshTokenEncrypted   String   // Encrypted with AES-GCM
+  accessToken             String?
+  tokenExpiry             DateTime?
+  scope                   String?
+  fileAgeFilterDays       Int      @default(30) // Only include files newer than N days
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  org                     Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  fileCache               GoogleDriveFileCache[]
+
+  @@unique([orgId])
+  @@index([orgId])
+}
+
+model GoogleDriveFileCache {
+  id                      String   @id @default(cuid())
+  integrationId           String
+  driveFileId             String
+  name                    String
+  mimeType                String
+  modifiedTime            DateTime
+  size                    BigInt?
+  webViewLink             String?
+  iconLink                String?
+  thumbnailLink           String?
+  lastSyncedAt            DateTime @default(now())
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  integration             IntegrationGoogleDrive @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, driveFileId])
+  @@index([integrationId])
+  @@index([modifiedTime])
 }

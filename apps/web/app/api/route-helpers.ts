@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { db as prisma } from "@/lib/db";
 import { Role } from "@tiasas/database";
 import { logAudit } from "@/lib/audit";
+import { getActiveOrgId } from "@/lib/org";
 
 // Role hierarchy for permission checks
 const ROLE_HIERARCHY: Record<Role, number> = {
@@ -17,15 +18,11 @@ const ROLE_HIERARCHY: Record<Role, number> = {
 export async function requireAuthAndOrg() {
   const session = await getServerSession(authOptions);
   if (!session?.user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) } as const;
-  let orgId = (await cookies()).get("active_org")?.value;
-  if (!orgId && session.user.email) {
-    // Fallback to first org membership if cookie not set
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-    if (user) {
-      const member = await prisma.membership.findFirst({ where: { userId: user.id }, orderBy: { createdAt: "asc" } });
-      if (member) orgId = member.orgId;
-    }
-  }
+  /*
+   * Use centralized logic from lib/org to ensure consistency.
+   * This avoids bugs where route helpers resolve defaults differently than the UI.
+   */
+  let orgId = await getActiveOrgId();
   if (!orgId) return { error: NextResponse.json({ error: "No active org" }, { status: 400 }) } as const;
   return { session, orgId } as const;
 }

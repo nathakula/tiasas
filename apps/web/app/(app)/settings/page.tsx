@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { PerformanceSettingsForm } from "@/components/settings/performance-settings-form";
 import { SeedDataManager } from "@/components/settings/seed-data-manager";
 
+import { getActiveOrgId } from "@/lib/org";
+
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user?.email
@@ -13,8 +15,9 @@ export default async function SettingsPage() {
     ? await prisma.membership.findMany({ where: { userId: user.id }, include: { org: true } })
     : [];
 
+  const orgId = await getActiveOrgId();
+
   // Fetch seed data statistics
-  const orgId = memberships[0]?.orgId;
   let seedDataStats = {
     hasSeedData: false,
     journalEntries: 0,
@@ -87,7 +90,9 @@ export default async function SettingsPage() {
         <div className="font-medium mb-2 text-slate-900 dark:text-slate-100">Organizations</div>
         <ul className="text-sm text-slate-700 dark:text-slate-300">
           {memberships.map((m) => (
-            <li key={m.id}>{m.org.name} — {m.role}</li>
+            <li key={m.id} className={m.orgId === orgId ? "font-bold text-gold-600" : ""}>
+              {m.org.name} — {m.role} {m.orgId === orgId && "(Active)"}
+            </li>
           ))}
         </ul>
       </div>
@@ -97,10 +102,10 @@ export default async function SettingsPage() {
       </div>
 
       {/* Demo Data Management */}
-      <SeedDataManager initialStats={seedDataStats} />
+      <SeedDataManager key={`seed-${orgId}`} initialStats={seedDataStats} />
 
       {/* Performance Settings */}
-      <PerformanceSettingsForm />
+      <PerformanceSettingsForm key={`perf-${orgId}`} />
     </div >
   );
 }

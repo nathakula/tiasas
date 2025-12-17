@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db as prisma } from "@/lib/db";
 import { fetchBenchmarkSeries, calculateEquityCurve } from "@tiasas/core/src/market/benchmarks";
+import { getActiveOrgId } from "@/lib/org";
 
 export const dynamic = "force-dynamic";
 
@@ -22,14 +23,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const membership = await prisma.membership.findFirst({
-      where: { user: { email: session.user.email } },
-      select: { orgId: true },
-    });
+    const orgId = await getActiveOrgId();
 
-    console.log("[Benchmarks API] Membership:", membership);
-
-    if (!membership) {
+    if (!orgId) {
       return NextResponse.json({ error: "No organization found" }, { status: 404 });
     }
 
@@ -41,7 +37,7 @@ export async function GET(request: NextRequest) {
     const settings = await prisma.yearlyPerformanceSettings.findUnique({
       where: {
         orgId_year: {
-          orgId: membership.orgId,
+          orgId: orgId,
           year,
         },
       },
@@ -62,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     const dailyPnl = await prisma.dailyPnl.findMany({
       where: {
-        orgId: membership.orgId,
+        orgId: orgId,
         date: {
           gte: startDate,
           lt: endDate,

@@ -1,0 +1,494 @@
+"use client";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { PortfolioAdvisor } from "@/components/ai/portfolio-advisor";
+import { DriveArtifacts } from "@/components/ai/drive-artifacts";
+
+type Tab = "chat" | "quick" | "deep" | "macro" | "notes" | "portfolio" | "drive";
+
+type Message = { role: "user" | "assistant"; content: string };
+
+export default function AIClient() {
+    const [tab, setTab] = useState<Tab>("portfolio");
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 flex-wrap">
+                <button className={`px-2 py-1 border rounded transition-colors ${tab === 'portfolio' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('portfolio')}>💼 Portfolio Advisor</button>
+                <button className={`px-2 py-1 border rounded transition-colors ${tab === 'chat' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('chat')}>💬 Chat</button>
+                <button className={`px-2 py-1 border rounded transition-colors ${tab === 'quick' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('quick')}>Quick Scan</button>
+                <button className={`px-2 py-1 border rounded transition-colors ${tab === 'deep' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('deep')}>Deep Dive</button>
+                <button className={`px-2 py-1 border rounded transition-colors ${tab === 'macro' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('macro')}>Macro</button>
+                <button className={`px-2 py-1 border rounded transition-colors ${tab === 'notes' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('notes')}>Notes → Actions</button>
+                <button className={`px-2 py-1 border rounded transition-colors ${tab === 'drive' ? 'bg-gold-600 text-white border-gold-600' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`} onClick={() => setTab('drive')}>📁 Drive Artifacts</button>
+            </div>
+            {tab === 'portfolio' && <PortfolioAdvisor />}
+            {tab === 'chat' && <ChatInterface />}
+            {tab === 'quick' && <QuickScan />}
+            {tab === 'deep' && <DeepDive />}
+            {tab === 'macro' && <MacroBox />}
+            {tab === 'notes' && <NotesActions />}
+            {tab === 'drive' && <DriveArtifacts />}
+            <div className="text-xs text-slate-500 dark:text-slate-400">AI outputs are informational only. Not investment advice.</div>
+        </div>
+    );
+}
+
+function ChatInterface() {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState("");
+    const [ticker, setTicker] = useState("");
+    const [loading, setLoading] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [messages]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!input.trim() || loading) return;
+
+        const userMessage: Message = { role: "user", content: input.trim() };
+        setMessages((prev) => [...prev, userMessage]);
+        setInput("");
+        setLoading(true);
+
+        try {
+            const res = await fetch("/api/ai/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: [...messages, userMessage],
+                    ticker: ticker || undefined,
+                }),
+            });
+            const data = await res.json();
+            if (data.error) {
+                setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${data.error}` }]);
+            } else {
+                setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
+            }
+        } catch (e: any) {
+            setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${e.message}` }]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const clearChat = () => {
+        setMessages([]);
+    };
+
+    return (
+        <div className="card flex flex-col h-[600px]">
+            {/* Header */}
+            <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                <div className="flex-1 flex items-center gap-2">
+                    <input
+                        type="text"
+                        className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 w-24"
+                        placeholder="Ticker"
+                        value={ticker}
+                        onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                    />
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Optional: adds live quote data to context</span>
+                </div>
+                <button
+                    onClick={clearChat}
+                    className="text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
+                >
+                    Clear Chat
+                </button>
+            </div>
+
+            {/* Messages */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.length === 0 && (
+                    <div className="text-center text-slate-500 dark:text-slate-400 py-12">
+                        <div className="text-4xl mb-3">🤖</div>
+                        <div className="font-medium text-slate-900 dark:text-slate-100 mb-2">Market Analysis Chat</div>
+                        <div className="text-sm max-w-md mx-auto">
+                            Ask about any ticker, strategy, or market analysis. Examples:
+                            <ul className="mt-2 space-y-1 text-left inline-block">
+                                <li>• "Analyze NVDA for entry points"</li>
+                                <li>• "What's the risk/reward on AAPL at $190?"</li>
+                                <li>• "Compare AMD vs INTC valuation"</li>
+                                <li>• "What-if: sell covered call at $500 strike"</li>
+                            </ul>
+                        </div>
+                    </div>
+                )}
+                {messages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                        <div
+                            className={`max-w-[80%] rounded-lg px-4 py-2 ${msg.role === "user"
+                                ? "bg-gold-600 text-white"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                                }`}
+                        >
+                            <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
+                        </div>
+                    </div>
+                ))}
+                {loading && (
+                    <div className="flex justify-start">
+                        <div className="bg-slate-100 dark:bg-slate-800 rounded-lg px-4 py-2 text-slate-500 dark:text-slate-400">
+                            <div className="flex items-center gap-2">
+                                <div className="animate-pulse">●</div>
+                                <div className="animate-pulse" style={{ animationDelay: "0.2s" }}>●</div>
+                                <div className="animate-pulse" style={{ animationDelay: "0.4s" }}>●</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Input */}
+            <form onSubmit={handleSubmit} className="p-3 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        className="flex-1 border border-slate-200 dark:border-slate-700 rounded px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                        placeholder="Ask about any ticker or strategy..."
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        disabled={loading}
+                    />
+                    <button
+                        type="submit"
+                        disabled={!input.trim() || loading}
+                        className="px-4 py-2 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors disabled:opacity-50"
+                    >
+                        Send
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+
+function QuickScan() {
+    const [ticker, setTicker] = useState("");
+    const [window, setWindow] = useState("3m");
+    const [res, setRes] = useState<any | null>(null);
+    const [snap, setSnap] = useState<any | null>(null);
+    async function run() {
+        const [r, s] = await Promise.all([
+            fetch('/api/ai/quick-scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticker, window }) }),
+            fetch(`/api/market/snapshot?t=${encodeURIComponent(ticker)}`)
+        ]);
+        setRes(await r.json());
+        setSnap(await s.json());
+    }
+    return (
+        <div className="card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+                <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Ticker" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} />
+                <select className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value={window} onChange={(e) => setWindow(e.target.value)}>
+                    <option value="1m">1m</option>
+                    <option value="3m">3m</option>
+                    <option value="6m">6m</option>
+                    <option value="1y">1y</option>
+                </select>
+                <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Scan</button>
+            </div>
+            {snap?.snapshot && <QuoteCard data={snap.snapshot} />}
+            {res && <QuickScanView data={res} />}
+        </div>
+    );
+}
+
+function DeepDive() {
+    const [ticker, setTicker] = useState("");
+    const [focus, setFocus] = useState("");
+    const [res, setRes] = useState<any | null>(null);
+    const [snap, setSnap] = useState<any | null>(null);
+    async function run() {
+        const [r, s] = await Promise.all([
+            fetch('/api/ai/deep-dive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticker, focus: focus || undefined }) }),
+            fetch(`/api/market/snapshot?t=${encodeURIComponent(ticker)}`)
+        ]);
+        setRes(await r.json());
+        setSnap(await s.json());
+    }
+    return (
+        <div className="card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+                <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Ticker" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} />
+                <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Focus (optional)" value={focus} onChange={(e) => setFocus(e.target.value)} />
+                <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Deep Dive</button>
+            </div>
+            {snap?.snapshot && <QuoteCard data={snap.snapshot} />}
+            {res && <DeepDiveView data={res} />}
+        </div>
+    );
+}
+
+function MacroBox() {
+    const [watchlist, setWatchlist] = useState("SPY,QQQ");
+    const [res, setRes] = useState<any | null>(null);
+    async function run() {
+        const wl = watchlist.split(',').map(s => s.trim()).filter(Boolean);
+        const r = await fetch('/api/ai/macro', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ watchlist: wl }) });
+        setRes(await r.json());
+    }
+    return (
+        <div className="card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+                <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Watchlist" value={watchlist} onChange={(e) => setWatchlist(e.target.value)} />
+                <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Generate</button>
+            </div>
+            {res && <MacroView data={res} />}
+        </div>
+    );
+}
+
+function NotesActions() {
+    const [id, setId] = useState("");
+    const [res, setRes] = useState<any | null>(null);
+    async function run() {
+        const r = await fetch('/api/ai/notes-to-actions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ journalEntryId: id }) });
+        setRes(await r.json());
+    }
+    return (
+        <div className="card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+                <input className="border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" placeholder="Journal entry id" value={id} onChange={(e) => setId(e.target.value)} />
+                <button className="px-3 py-1.5 rounded bg-gold-600 hover:bg-gold-700 text-white transition-colors" onClick={run}>Convert</button>
+            </div>
+            {res && <TasksView items={res} />}
+        </div>
+    );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "pos" | "neg" }) {
+    return (
+        <div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+            <div className={`text-lg font-semibold ${tone === 'pos' ? 'text-emerald-700 dark:text-emerald-400' : tone === 'neg' ? 'text-red-700 dark:text-red-400' : 'text-slate-900 dark:text-slate-100'}`}>{value}</div>
+        </div>
+    );
+}
+
+function PriceList({ title, items }: { title: string; items: any[] }) {
+    function toPrice(item: any): { price?: number; label?: string } {
+        if (item == null) return {};
+        if (typeof item === 'number') return { price: item };
+        const d: any = item;
+        const price = d.price ?? d.level ?? d.entryLevel ?? d.exitLevel ?? d.value ?? undefined;
+        const label = d.note ?? d.description ?? d.reason ?? d.label ?? undefined;
+        return { price: (typeof price === 'number' ? price : Number(price)), label };
+    }
+    return (
+        <div className="card p-3">
+            <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">{title}</div>
+            <ul className="text-sm space-y-1 text-slate-700 dark:text-slate-300">
+                {(Array.isArray(items) ? items : items ? [items] : []).map((it, i) => {
+                    const p = toPrice(it);
+                    const priceText = (p.price != null && !Number.isNaN(p.price)) ? `$${Number(p.price).toFixed(2)}` : '-';
+                    const label = p.label ?? '';
+                    return <li key={i} className="flex justify-between"><span>{label}</span><span>{priceText}</span></li>;
+                })}
+                {!items?.length && <li className="text-slate-500 dark:text-slate-400">-</li>}
+            </ul>
+        </div>
+    );
+}
+
+function ListBox({ title, items }: { title: string; items: any }) {
+    function fmt(item: any): string {
+        if (item == null) return "";
+        if (typeof item === "string") return item;
+        if (typeof item === "number" || typeof item === "boolean") return String(item);
+        // Try common fields from LLMs
+        const d = (item as any);
+        const parts: string[] = [];
+        if (d.description) parts.push(String(d.description));
+        if (d.text && parts.length === 0) parts.push(String(d.text));
+        const level = d.level ?? d.entryLevel ?? d.exitLevel ?? d.price;
+        if (level != null) parts.push(`@ ${level}`);
+        if (d.upside || d.downside) {
+            const ups = d.upside ? `Upside: ${d.upside}` : '';
+            const dns = d.downside ? `Downside: ${d.downside}` : '';
+            const combo = [ups, dns].filter(Boolean).join(" | ");
+            if (combo) parts.push(combo);
+        }
+        const note = d.note ?? d.reason;
+        if (note && parts.length === 0) parts.push(String(note));
+        if (parts.length > 0) return parts.join(" ");
+        try { return JSON.stringify(d); } catch { return String(d); }
+    }
+    return (
+        <div className="card p-3">
+            <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">{title}</div>
+            <ul className="list-disc list-inside text-sm space-y-1 text-slate-700 dark:text-slate-300">
+                {(Array.isArray(items) ? items : items ? [items] : []).map((t, i) => <li key={i}>{fmt(t)}</li>)}
+                {!items?.length && <li className="text-slate-500 dark:text-slate-400">-</li>}
+            </ul>
+        </div>
+    );
+}
+
+function Table({ rows, cols }: { rows: any; cols: { key: string; label: string }[] }) {
+    const arr: any[] = Array.isArray(rows)
+        ? rows
+        : (rows && typeof rows === 'object')
+            ? Object.entries(rows).map(([k, v]) => ({ key: k, value: v }))
+            : [];
+    return (
+        <table className="w-full text-sm">
+            <thead>
+                <tr className="text-left text-slate-500 dark:text-slate-400">
+                    {cols.map((c) => <th key={c.key} className="py-1 pr-2">{c.label}</th>)}
+                </tr>
+            </thead>
+            <tbody>
+                {arr.map((r, i) => (
+                    <tr key={i} className="border-t dark:border-slate-700">
+                        {cols.map((c) => <td key={c.key} className="py-1 pr-2 text-slate-900 dark:text-slate-100">{String(r[c.key] ?? '')}</td>)}
+                    </tr>
+                ))}
+                {arr.length === 0 && <tr><td className="py-2 text-slate-500 dark:text-slate-400" colSpan={cols.length}>No data</td></tr>}
+            </tbody>
+        </table>
+    );
+}
+
+function QuickScanView({ data }: { data: any }) {
+    const trendTone = data?.trend === 'up' ? 'pos' : data?.trend === 'down' ? 'neg' : undefined;
+    return (
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+                <div className="text-sm text-slate-600 dark:text-slate-400">{data.ticker} · window {data.window}</div>
+            </div>
+            <div className="grid md:grid-cols-5 gap-3 items-start">
+                <Stat label="Trend" value={String(data.trend ?? '-')} tone={trendTone as any} />
+                <Stat label="Supports" value={String(data.supports?.length ?? 0)} />
+                <Stat label="Resistances" value={String(data.resistances?.length ?? 0)} />
+                <Stat label="Ideas" value={`${(data.entryIdeas?.length ?? 0) + (data.exitIdeas?.length ?? 0)}`} />
+                <Stat label="Catalysts" value={String(data.catalysts?.length ?? 0)} />
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+                <PriceList title="Support Levels" items={data.supports ?? []} />
+                <PriceList title="Resistance Levels" items={data.resistances ?? []} />
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+                <ListBox title="Entry Ideas" items={data.entryIdeas ?? []} />
+                <ListBox title="Exit Ideas" items={data.exitIdeas ?? []} />
+            </div>
+            <div className="card p-3">
+                <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">Ranges</div>
+                <Table rows={data.ranges ?? []} cols={[{ key: 'period', label: 'Period' }, { key: 'chgPct', label: 'Chg %' }, { key: 'high', label: 'High' }, { key: 'low', label: 'Low' }, { key: 'atr', label: 'ATR' }]} />
+            </div>
+            <div className="card p-3">
+                <div className="text-sm font-medium mb-1 text-slate-900 dark:text-slate-100">Catalysts</div>
+                <Table rows={(data.catalysts ?? []).map((c: any) => ({ date: c.date, label: c.label }))} cols={[{ key: 'date', label: 'Date' }, { key: 'label', label: 'Label' }]} />
+            </div>
+            {data.macroNote && <div className="text-sm text-slate-700 dark:text-slate-300">{data.macroNote}</div>}
+            <div className="text-xs text-slate-500 dark:text-slate-400">{data.disclaimer}</div>
+        </div>
+    );
+}
+
+function DeepDiveView({ data }: { data: any }) {
+    const supports = data?.technicalZones?.supports ?? [];
+    const resistances = data?.technicalZones?.resistances ?? [];
+    const momentum = data?.technicalZones?.momentumNote;
+    function renderValuation(v: any) {
+        try {
+            const obj = typeof v === 'string' && v.trim().startsWith('{') ? JSON.parse(v) : v;
+            const m = obj?.multiples ?? obj;
+            if (m && typeof m === 'object') {
+                const rows = Object.entries(m).map(([k, val]) => `${k}: ${val}`);
+                return rows.length ? rows.join(', ') : String(v ?? '');
+            }
+            return String(v ?? '');
+        } catch { return String(v ?? ''); }
+    }
+    return (
+        <div className="space-y-3">
+            <div className="text-sm text-slate-600 dark:text-slate-400">{data.ticker}</div>
+            <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Overview</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{typeof data.overview === 'string' ? data.overview : (() => { try { return JSON.stringify(data.overview); } catch { return String(data.overview); } })()}</p></div>
+            <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Recent Results</div>
+                {Array.isArray(data.recentResults) ? (
+                    <ul className="list-disc list-inside text-sm space-y-1 mt-1 text-slate-700 dark:text-slate-300">{data.recentResults.map((x: any, i: number) => (<li key={i}>{typeof x === 'string' ? x : JSON.stringify(x)}</li>))}</ul>
+                ) : (
+                    <p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{String(data.recentResults ?? '')}</p>
+                )}
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+                <PriceList title="Supports" items={supports} />
+                <PriceList title="Resistances" items={resistances} />
+            </div>
+            {momentum && <div className="text-sm text-slate-700 dark:text-slate-300">{momentum}</div>}
+            <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Valuation</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{renderValuation(data.valuationContext)}</p></div>
+            {Array.isArray(data.comps) && data.comps.length > 0 && (
+                <div className="card p-3">
+                    <div className="font-medium mb-1 text-slate-900 dark:text-slate-100">Comps</div>
+                    <div className="flex flex-wrap gap-2">{data.comps.map((c: any, i: number) => (<span key={i} className="px-2 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300">{typeof c === 'string' ? c : JSON.stringify(c)}</span>))}</div>
+                </div>
+            )}
+            <div className="grid md:grid-cols-3 gap-3">
+                <ListBox title="Risks" items={data.risks ?? []} />
+                <ListBox title="Alternative Cases" items={data.alternativeCases ?? []} />
+                <ListBox title="Checklist" items={data.checklist ?? []} />
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">{data.disclaimer}</div>
+        </div>
+    );
+}
+
+function QuoteCard({ data }: { data: any }) {
+    const q = data?.quote ?? {};
+    const last = q.last ?? q.regularMarketPrice ?? null;
+    const changePct = q.changePct ?? q.regularMarketChangePercent ?? null;
+    const lo = q.fiftyTwoWeekLow ?? null;
+    const hi = q.fiftyTwoWeekHigh ?? null;
+    return (
+        <div className="card p-3">
+            <div className="flex items-center gap-6 text-sm">
+                <div><div className="text-slate-500 dark:text-slate-400">Last</div><div className="font-semibold text-slate-900 dark:text-slate-100">{fmtNum(last)}</div></div>
+                <div><div className="text-slate-500 dark:text-slate-400">Change %</div><div className={`font-semibold ${Number(changePct) > 0 ? 'text-emerald-700 dark:text-emerald-400' : Number(changePct) < 0 ? 'text-red-700 dark:text-red-400' : 'text-slate-900 dark:text-slate-100'}`}>{changePct != null ? (Number(changePct).toFixed(2) + '%') : '-'}</div></div>
+                <div><div className="text-slate-500 dark:text-slate-400">52w Range</div><div className="font-semibold text-slate-900 dark:text-slate-100">{fmtNum(lo)} – {fmtNum(hi)}</div></div>
+            </div>
+        </div>
+    );
+}
+
+function fmtNum(n: any) {
+    if (n == null || Number.isNaN(Number(n))) return '-';
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(n));
+}
+
+function MacroView({ data }: { data: any }) {
+    const week = data?.weekAhead ?? [];
+    return (
+        <div className="space-y-3">
+            <div className="card p-3"><div className="font-medium text-slate-900 dark:text-slate-100">Summary</div><p className="text-sm mt-1 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{data.summary}</p></div>
+            <div className="card p-3">
+                <div className="font-medium mb-1 text-slate-900 dark:text-slate-100">Week Ahead</div>
+                <Table rows={week} cols={[{ key: 'date', label: 'Date' }, { key: 'item', label: 'Item' }]} />
+            </div>
+            <ListBox title="Watchouts" items={data.watchouts ?? []} />
+            <div className="text-xs text-slate-500 dark:text-slate-400">{data.disclaimer}</div>
+        </div>
+    );
+}
+
+function TasksView({ items }: { items: any }) {
+    const groups = useMemo(() => {
+        const g: Record<string, string[]> = { today: [], this_week: [], this_month: [] } as any;
+        const list: any[] = Array.isArray(items) ? items : [];
+        list.forEach((t: any) => { const key = t?.horizon ?? 'today'; (g[key] ||= []).push((t?.text ?? '') + (t?.symbol ? ` (${t.symbol})` : '')); });
+        return g;
+    }, [items]);
+    return (
+        <div className="grid md:grid-cols-3 gap-3">
+            <ListBox title="Today" items={groups.today ?? []} />
+            <ListBox title="This Week" items={groups.this_week ?? []} />
+            <ListBox title="This Month" items={groups.this_month ?? []} />
+        </div>
+    );
+}

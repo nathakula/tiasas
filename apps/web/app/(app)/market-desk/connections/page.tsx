@@ -15,15 +15,10 @@ export const metadata = {
   description: "Manage broker connections and sync positions",
 };
 
-async function getOrgId(email: string): Promise<string | null> {
-  const membership = await prisma.membership.findFirst({
-    where: {
-      user: { email },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+import { getActiveOrgId } from "@/lib/org";
 
-  return membership?.orgId || null;
+async function getOrgId(email: string): Promise<string | null> {
+  return getActiveOrgId();
 }
 
 export default async function ConnectionsPage() {

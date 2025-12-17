@@ -12,6 +12,10 @@ export default async function JournalPage() {
   const orgId = await getActiveOrgId();
   if (!orgId) return <div>No active org.</div>;
 
+  // DEBUG: Temporary diagnostic to see why Org ID mismatches
+  const cookieStore = await import("next/headers").then(m => m.cookies());
+  const cookieVal = cookieStore.get("active_org")?.value;
+
   // Get current user's role
   const session = await getServerSession(authOptions);
   const user = session?.user?.email
@@ -19,8 +23,8 @@ export default async function JournalPage() {
     : null;
   const membership = user
     ? await prisma.membership.findUnique({
-        where: { userId_orgId: { userId: user.id, orgId } },
-      })
+      where: { userId_orgId: { userId: user.id, orgId } },
+    })
     : null;
   const userRole = membership?.role || null;
 
@@ -58,14 +62,18 @@ export default async function JournalPage() {
         </div>
       )}
 
+      <div className="bg-amber-100 p-2 text-xs font-mono text-amber-900 border border-amber-300 rounded mb-4">
+        DEBUG INFO: Resolved OrgId: {orgId} | Cookie Value: {cookieVal || "undefined"}
+      </div>
+
       {/* Daily P&L Entry Form - For entering numerical trading data (realized/unrealized P&L, equity) */}
       {canWrite && <DailyPnlForm />}
 
       {/* Daily P&L History Table - View and edit all daily P&L numerical records */}
-      <PnlTable initialEntries={pnlEntriesFormatted} />
+      <PnlTable key={orgId} initialEntries={pnlEntriesFormatted} />
 
       {/* Trading Journal - For writing observations, notes, and thoughts about your trading */}
-      <JournalClient initialEntries={entries} showCreate={canWrite} />
+      <JournalClient key={orgId} initialEntries={entries} showCreate={canWrite} />
     </div>
   );
 }

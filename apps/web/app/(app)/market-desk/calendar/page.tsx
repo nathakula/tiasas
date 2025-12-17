@@ -183,6 +183,7 @@ export default async function CalendarPage() {
 
   return (
     <CalendarClient
+      key={orgId}
       initialMonth={format(today, "yyyy-MM")}
       days={days.map(d => d.toISOString().slice(0, 10))}
       counts={Object.fromEntries(Array.from(byDay.entries()))}

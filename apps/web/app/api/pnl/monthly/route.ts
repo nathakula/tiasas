@@ -64,11 +64,17 @@ export async function GET(req: Request) {
        ORDER BY date_trunc('month', date)::date, date DESC
     ),
     nav_data AS (
-      SELECT date_trunc('month', date)::date AS month,
-             nav,
-             LAG(nav) OVER (ORDER BY date) AS prev_nav
-        FROM "MonthlyNav_eom"
-       WHERE "orgId" = ${orgId} AND date >= ${navFetchFrom} AND date < ${rangeToExclusive}
+      SELECT month,
+             MAX(nav) as nav,
+             MAX(prev_nav) as prev_nav
+      FROM (
+        SELECT date_trunc('month', date)::date AS month,
+               nav,
+               LAG(nav) OVER (ORDER BY date) AS prev_nav
+          FROM "MonthlyNav_eom"
+         WHERE "orgId" = ${orgId} AND date >= ${navFetchFrom} AND date < ${rangeToExclusive}
+      ) sub
+      GROUP BY month
     ),
     latest_nav_before AS (
       SELECT COALESCE(d.month, n.month) AS month,
@@ -102,8 +108,13 @@ export async function GET(req: Request) {
     return { month, realized, endNav, prevEndNav, navChange, returnPct, unrealizedSnapshot };
   });
 
-  const response = NextResponse.json({ months: data });
-  // Cache for 5 minutes since P&L data doesn't change frequently
-  response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
-  return response;
+  // Cache for 5 minutes    return NextResponse.json(
+  return NextResponse.json(
+    { months: data },
+    {
+      headers: {
+        "Cache-Control": "no-store, max-age=0, must-revalidate",
+      },
+    }
+  );
 }

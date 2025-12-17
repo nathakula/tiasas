@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/components/toast";
 import { ExportButton } from "@/components/export/export-button";
@@ -25,6 +25,12 @@ function formatDateSafe(date: Date, formatStr: string = "yyyy-MM-dd"): string {
 
 export function PnlTable({ initialEntries }: { initialEntries: PnlEntry[] }) {
   const [entries, setEntries] = useState<PnlEntry[]>(initialEntries);
+
+  // Sync state with props when initialEntries changes (e.g. workspace switch)
+  useEffect(() => {
+    setEntries(initialEntries);
+  }, [initialEntries]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ realized: string; unrealized: string; totalEquity: string; note: string }>({ realized: "", unrealized: "", totalEquity: "", note: "" });
   const [saving, setSaving] = useState(false);

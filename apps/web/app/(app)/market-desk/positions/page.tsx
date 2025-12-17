@@ -15,15 +15,11 @@ export const metadata = {
   description: "View and analyze positions across all broker accounts",
 };
 
-async function getOrgId(email: string): Promise<string | null> {
-  const membership = await prisma.membership.findFirst({
-    where: {
-      user: { email },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+import { getActiveOrgId } from "@/lib/org";
 
-  return membership?.orgId || null;
+async function getOrgId(email: string): Promise<string | null> {
+  // Use the shared helper which checks cookie -> session -> first membership
+  return getActiveOrgId();
 }
 
 export default async function PositionsPage() {
