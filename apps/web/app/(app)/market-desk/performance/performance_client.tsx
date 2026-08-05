@@ -12,6 +12,11 @@ interface BenchmarkData {
   startingCapital: number;
   currentEquity: number;
   userReturn: number;
+  capitalTransfers?: Array<{
+    date: string;
+    amount: number;
+    type: "DEPOSIT" | "WITHDRAWAL";
+  }>;
   series: {
     user: {
       symbol: string;
@@ -227,6 +232,20 @@ export function PerformanceClient({ initialMonthlyData, orgId }: { initialMonthl
 
   const benchmarkSymbols = data.series.benchmarks.map((b) => b.symbol);
 
+  // Group capital transfers by month for NAV chart annotations
+  const withdrawalsByMonth: Record<string, number> = {};
+  const depositsByMonth: Record<string, number> = {};
+  (data.capitalTransfers || []).forEach(t => {
+    const month = t.date.substring(0, 7);
+    if (t.type === "WITHDRAWAL") {
+      withdrawalsByMonth[month] = (withdrawalsByMonth[month] || 0) + t.amount;
+    } else if (t.type === "DEPOSIT") {
+      depositsByMonth[month] = (depositsByMonth[month] || 0) + t.amount;
+    }
+  });
+  const totalWithdrawals = Object.values(withdrawalsByMonth).reduce((s, v) => s + v, 0);
+  const totalDeposits = Object.values(depositsByMonth).reduce((s, v) => s + v, 0);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -346,7 +365,7 @@ export function PerformanceClient({ initialMonthlyData, orgId }: { initialMonthl
               }}
             />
           </div>
-          <NavByMonthChart key={`nav-${chartKey}`} monthly={monthlyData} />
+          <NavByMonthChart key={`nav-${chartKey}`} monthly={monthlyData} withdrawalsByMonth={withdrawalsByMonth} depositsByMonth={depositsByMonth} />
         </div>
       </div>
 
@@ -416,7 +435,14 @@ export function PerformanceClient({ initialMonthlyData, orgId }: { initialMonthl
         <div className="space-y-2">
           <p className="text-sm text-slate-600 dark:text-slate-400">
             <span className="font-medium text-slate-800 dark:text-slate-300">Starting Capital ({selectedYear}):</span>{" "}
-            ${data.startingCapital.toLocaleString()} →{" "}
+            ${data.startingCapital.toLocaleString()}
+            {totalDeposits > 0 && (
+              <>{" "}→ <span className="font-medium text-sky-700 dark:text-sky-400">+${totalDeposits.toLocaleString()} deposited</span></>
+            )}
+            {totalWithdrawals > 0 && (
+              <>{" "}→ <span className="font-medium text-amber-700 dark:text-amber-400">-${totalWithdrawals.toLocaleString()} withdrawn</span></>
+            )}
+            {" "}→{" "}
             <span className="font-medium text-slate-800 dark:text-slate-300">Current Equity:</span>{" "}
             ${data.currentEquity.toLocaleString()}
           </p>

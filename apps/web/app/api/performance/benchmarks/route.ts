@@ -52,25 +52,28 @@ export async function GET(request: NextRequest) {
     const startingCapital = Number(settings.startingCapital);
     const benchmarks = settings.benchmarks || ["SPY", "QQQ"];
 
-    // 2. Fetch user's daily equity data
+    // 2. Fetch user's daily equity data and capital transfers for the year
     const startDate = new Date(`${year}-01-01T00:00:00Z`);
     const endDate = new Date(`${year + 1}-01-01T00:00:00Z`);
 
-    const dailyPnl = await prisma.dailyPnl.findMany({
-      where: {
-        orgId: orgId,
-        date: {
-          gte: startDate,
-          lt: endDate,
+    const [dailyPnl, capitalTransfers] = await Promise.all([
+      prisma.dailyPnl.findMany({
+        where: {
+          orgId: orgId,
+          date: { gte: startDate, lt: endDate },
+          totalEquity: { not: null },
         },
-        totalEquity: { not: null },
-      },
-      select: {
-        date: true,
-        totalEquity: true,
-      },
-      orderBy: { date: "asc" },
-    });
+        select: { date: true, totalEquity: true },
+        orderBy: { date: "asc" },
+      }),
+      prisma.capitalTransfer.findMany({
+        where: {
+          orgId: orgId,
+          date: { gte: startDate, lt: endDate },
+        },
+        select: { date: true, amount: true, type: true },
+      }),
+    ]);
 
     if (dailyPnl.length === 0) {
       return NextResponse.json({
@@ -78,28 +81,45 @@ export async function GET(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // 3. Calculate user's equity curve as percentage returns
+    const transfers = capitalTransfers.map((t) => ({
+      date: t.date,
+      amount: Number(t.amount),
+      type: t.type as "DEPOSIT" | "WITHDRAWAL",
+    }));
+
+    console.log("[Benchmarks] Capital transfers found:", transfers.length, JSON.stringify(transfers.map(t => ({ date: t.date, amount: t.amount, type: t.type }))));
+
+    // 3. Calculate user's equity curve stripping out capital transfers so
+    //    deposits/withdrawals are not counted as gains/losses.
     const userEquityCurve = calculateEquityCurve(
-      dailyPnl.map(d => ({
-        date: d.date,
-        totalEquity: Number(d.totalEquity),
-      })),
-      startingCapital
+      dailyPnl.map(d => ({ date: d.date, totalEquity: Number(d.totalEquity) })),
+      startingCapital,
+      transfers
     );
 
     // 4. Fetch benchmark data for the SAME date range as user's portfolio
     // This ensures apples-to-apples comparison (YTD vs YTD, not trailing 12 months)
     const benchmarkSeries = await fetchBenchmarkSeries(benchmarks, range, startDate, new Date());
 
-    // 5. Calculate current stats
+    // 5. Calculate current stats — exclude capital flows from the return figure
     const latestEquity = Number(dailyPnl[dailyPnl.length - 1].totalEquity);
-    const userReturn = ((latestEquity - startingCapital) / startingCapital) * 100;
+    const netCashFlows = transfers.reduce(
+      (sum, t) => sum + (t.type === "DEPOSIT" ? t.amount : -t.amount),
+      0
+    );
+    const truePnL = latestEquity - startingCapital - netCashFlows;
+    const userReturn = (truePnL / startingCapital) * 100;
 
     return NextResponse.json({
       year,
       startingCapital,
       currentEquity: latestEquity,
       userReturn: Number(userReturn.toFixed(2)),
+      capitalTransfers: transfers.map(t => ({
+        date: t.date.toISOString().split('T')[0],
+        amount: t.amount,
+        type: t.type,
+      })),
       series: {
         user: {
           symbol: "USER",
